@@ -153,10 +153,14 @@ body {
 .theme-default-scaled {
   --primary: var(--color-neutral-600);
   --primary-foreground: var(--color-neutral-50);
+  --sidebar-accent: var(--color-neutral-100);
+  --sidebar-accent-foreground: var(--color-neutral-600);
 
   @variant dark {
     --primary: var(--color-neutral-500);
     --primary-foreground: var(--color-neutral-50);
+    --sidebar-accent: var(--color-neutral-800);
+    --sidebar-accent-foreground: var(--color-neutral-100);
   }
 }
 
@@ -164,10 +168,14 @@ body {
 .theme-blue-scaled {
   --primary: var(--color-blue-600);
   --primary-foreground: var(--color-blue-50);
+  --sidebar-accent: var(--color-blue-100);
+  --sidebar-accent-foreground: var(--color-blue-600);
 
   @variant dark {
     --primary: var(--color-blue-500);
     --primary-foreground: var(--color-blue-50);
+    --sidebar-accent: var(--color-blue-800);
+    --sidebar-accent-foreground: var(--color-blue-100);
   }
 }
 
@@ -175,10 +183,14 @@ body {
 .theme-green-scaled {
   --primary: var(--color-lime-600);
   --primary-foreground: var(--color-lime-50);
+  --sidebar-accent: var(--color-lime-100);
+  --sidebar-accent-foreground: var(--color-lime-600);
 
   @variant dark {
     --primary: var(--color-lime-600);
     --primary-foreground: var(--color-lime-50);
+    --sidebar-accent: var(--color-lime-800);
+    --sidebar-accent-foreground: var(--color-lime-100);
   }
 }
 
@@ -186,10 +198,14 @@ body {
 .theme-amber-scaled {
   --primary: var(--color-amber-600);
   --primary-foreground: var(--color-amber-50);
+  --sidebar-accent: var(--color-amber-100);
+  --sidebar-accent-foreground: var(--color-amber-600);
 
   @variant dark {
     --primary: var(--color-amber-500);
     --primary-foreground: var(--color-amber-50);
+    --sidebar-accent: var(--color-amber-800);
+    --sidebar-accent-foreground: var(--color-amber-100);
   }
 }
 
@@ -198,10 +214,14 @@ body {
   --font-sans: var(--font-mono);
   --primary: var(--color-neutral-600);
   --primary-foreground: var(--color-neutral-50);
+  --sidebar-accent: var(--color-neutral-100);
+  --sidebar-accent-foreground: var(--color-neutral-600);
 
   @variant dark {
     --primary: var(--color-neutral-500);
     --primary-foreground: var(--color-neutral-50);
+    --sidebar-accent: var(--color-neutral-800);
+    --sidebar-accent-foreground: var(--color-neutral-100);
   }
 
   .rounded-xs,
