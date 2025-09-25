@@ -5,7 +5,6 @@ import { Teacher } from "@/types/teacher";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,

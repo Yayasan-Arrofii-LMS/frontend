@@ -7,15 +7,10 @@ import { Toaster } from "@/components/ui/sonner";
 import { cookies } from "next/headers";
 import { cn } from "@/lib/utils";
 
-const META_THEME_COLORS = {
-  light: "#ffffff",
-  dark: "#09090b",
-};
-
 const fontSans = Poppins({
-  variable: "--font-sans",
+  variable: "--font-poppins",
   subsets: ["latin"],
-  weight: ["400", "700"],
+  weight: ["300", "400", "500", "600", "700"],
 });
 
 const fontMono = Geist_Mono({
@@ -42,10 +37,11 @@ export default async function RootLayout({
       <body
         className={cn(
           "bg-background overscroll-none font-sans antialiased",
+          fontSans.variable,
+          fontMono.variable,
           activeThemeValues ? `theme-${activeThemeValues}` : "",
           isScaled ? "theme-scaled" : ""
         )}
-        // className={`${fontSans.variable} ${fontMono.variable} antialiased`}
       >
         <ThemeProvider
           attribute="class"

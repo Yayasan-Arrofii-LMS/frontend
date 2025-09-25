@@ -1,9 +1,8 @@
-import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
-import { SidebarTrigger } from "@/components/ui/sidebar"
-import { ModeToggle } from "./mode-toggle"
-import { ThemeSelector } from "./theme-selector"
-import { DynamicHeaderTitle } from "./DynamicHeaderTitle"
+import { Separator } from "@/components/ui/separator";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { ModeToggle } from "./mode-toggle";
+import { ThemeSelector } from "./theme-selector";
+import { DynamicHeaderTitle } from "./DynamicHeaderTitle";
 
 export function SiteHeader() {
   return (
@@ -21,5 +20,5 @@ export function SiteHeader() {
         </div>
       </div>
     </header>
-  )
+  );
 }
