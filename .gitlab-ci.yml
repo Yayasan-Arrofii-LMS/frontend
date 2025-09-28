@@ -9,11 +9,12 @@ stages:
 variables:
   NODE_VERSION: "20"
   # Hapus NODE_ENV=production biar devDependencies ikut ter-install
-  # VERCEL_ORG_ID dan VERCEL_PROJECT_ID ambil dari CI/CD variables di GitLab
+  # VERCEL_ORG_ID, VERCEL_PROJECT_ID, dan VERCEL_TOKEN ambil dari CI/CD variables di GitLab
 
 .base_rules: &base_rules
   only:
     - main
+    - dev-deploy
 
 Install:
   <<: *base_rules
@@ -43,14 +44,18 @@ Build:
       - node_modules/
     expire_in: 1h
 
-
-# Deploy:
-#   <<: *base_rules
-#   stage: deploy
-#   needs:
-#     - Build
-#   environment:
-#     name: production
-#   script:
-#     - npm install -g vercel
-#     - vercel --prod --confirm --token=$VERCEL_TOKEN --scope=$VERCEL_ORG_ID
+Deploy:
+  <<: *base_rules
+  stage: deploy
+  needs:
+    - Build
+  environment:
+    name: production
+  script:
+    - npm install -g vercel
+    # Pull konfigurasi project dari Vercel (wajib untuk build & deploy)
+    - vercel pull --yes --environment=production --token=$VERCEL_TOKEN
+    # Build hasilnya berdasarkan output build yang sudah ada
+    - vercel build --prod --token=$VERCEL_TOKEN
+    # Deploy hasil build ke Vercel
+    - vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN
