@@ -24,15 +24,11 @@ export async function fetchTeachers(page: number = 1): Promise<{
   meta: TeachersApiResponse['meta'];
 }> {
   try {
-    console.log(`Fetching teachers from: ${BASE_URL}/teachers?page=${page}`);
-    
     const response = await fetch(`${BASE_URL}/teachers?page=${page}`, {
       headers: {
         'Content-Type': 'application/json',
       },
     });
-
-    console.log(`API Response status: ${response.status}`);
 
     if (!response.ok) {
       const errorMessage = `Failed to fetch teachers (${response.status})`;
@@ -49,8 +45,6 @@ export async function fetchTeachers(page: number = 1): Promise<{
     if (!data.success) {
       throw new ApiError(data.message || 'API request failed');
     }
-    
-    console.log('Teachers data fetched successfully');
     
     return {
       teachers: data.data.map(transformApiTeacher),

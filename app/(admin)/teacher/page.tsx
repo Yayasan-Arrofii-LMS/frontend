@@ -24,14 +24,21 @@ export default function TeacherPage() {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingData, setIsLoadingData] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
 
 
   useEffect(() => {
     const loadTeachers = async () => {
+      const isInitialLoad = isLoading; // Jika masih dalam state loading awal
+      
       try {
-        setIsLoading(true);
+        if (isInitialLoad) {
+          setIsLoading(true);
+        } else {
+          setIsLoadingData(true);
+        }
         setError(null);
         const result = await fetchTeachers(currentPage);
         setTeachers(result.teachers);
@@ -40,7 +47,11 @@ export default function TeacherPage() {
         console.error('Failed to fetch teachers:', error);
         setError(error instanceof Error ? error.message : 'Failed to fetch teachers');
       } finally {
-        setIsLoading(false);
+        if (isInitialLoad) {
+          setIsLoading(false);
+        } else {
+          setIsLoadingData(false);
+        }
       }
     };
 
@@ -85,6 +96,10 @@ export default function TeacherPage() {
     setIsAddModalOpen(false);
   };
 
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
   // Loading skeleton component
   const LoadingSkeleton = () => (
     <div className="px-4 lg:px-6">
@@ -95,7 +110,7 @@ export default function TeacherPage() {
         </div>
         <div className="rounded-md border">
           <div className="p-4">
-            {Array.from({ length: 5 }).map((_, i) => (
+            {Array.from({ length: 10 }).map((_, i) => (
               <div key={i} className="flex items-center space-x-4 py-3">
                 <Skeleton className="h-10 w-10 rounded-full" />
                 <div className="space-y-2">
@@ -161,6 +176,9 @@ export default function TeacherPage() {
                 data={teachers}
                 onViewDetail={handleViewDetail}
                 onAddTeacher={handleOpenAddModal}
+                meta={meta || undefined}
+                onPageChange={handlePageChange}
+                isLoading={isLoadingData}
               />
             </div>
           )}

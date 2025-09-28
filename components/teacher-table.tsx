@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useRef, useEffect } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -38,16 +38,102 @@ interface TeacherTableProps {
   data: Teacher[];
   onViewDetail: (teacher: Teacher) => void;
   onAddTeacher: () => void;
+  // Server-side pagination props
+  meta?: {
+    itemCount: number;
+    totalItems: number;
+    itemsPerPage: number;
+    totalPages: number;
+    currentPage: number;
+  };
+  onPageChange?: (page: number) => void;
+  isLoading?: boolean;
 }
+
+// Komponen terpisah untuk data tabel agar hanya bagian ini yang re-render
+const TableData = React.memo(({ 
+  table, 
+  columns, 
+  isLoading 
+}: { 
+  table: any; 
+  columns: ColumnDef<Teacher>[]; 
+  isLoading: boolean; 
+}) => {
+  if (isLoading) {
+    return (
+      <>
+        {Array.from({ length: 10 }).map((_, index) => (
+          <TableRow key={`loading-${index}`}>
+            <TableCell className="text-center">
+              <div className="flex justify-center">
+                <div className="h-10 w-10 rounded-full bg-muted animate-pulse" />
+              </div>
+            </TableCell>
+            <TableCell>
+              <div className="h-4 bg-muted rounded animate-pulse" />
+            </TableCell>
+            <TableCell>
+              <div className="h-4 bg-muted rounded animate-pulse w-3/4" />
+            </TableCell>
+            <TableCell className="text-center">
+              <div className="flex justify-center">
+                <div className="h-8 w-8 rounded bg-muted animate-pulse" />
+              </div>
+            </TableCell>
+          </TableRow>
+        ))}
+      </>
+    );
+  }
+
+  return (
+    <>
+      {table.getRowModel().rows?.length ? (
+        table.getRowModel().rows.map((row: any) => (
+          <TableRow
+            key={row.id}
+            data-state={row.getIsSelected() && "selected"}
+          >
+            {row.getVisibleCells().map((cell: any) => (
+              <TableCell key={cell.id}>
+                {flexRender(
+                  cell.column.columnDef.cell,
+                  cell.getContext()
+                )}
+              </TableCell>
+            ))}
+          </TableRow>
+        ))
+      ) : (
+        <TableRow>
+          <TableCell
+            colSpan={columns.length}
+            className="h-24 text-center"
+          >
+            Tidak ada data guru.
+          </TableCell>
+        </TableRow>
+      )}
+    </>
+  );
+});
+
+TableData.displayName = "TableData";
 
 export function TeacherTable({
   data,
   onViewDetail,
   onAddTeacher,
+  meta,
+  onPageChange,
+  isLoading = false,
 }: TeacherTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+  const [scrollPosition, setScrollPosition] = useState(0);
 
   const columns: ColumnDef<Teacher>[] = useMemo(
     () => [
@@ -128,7 +214,8 @@ export function TeacherTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
+    // Remove client-side pagination when using server-side
+    ...(meta ? {} : { getPaginationRowModel: getPaginationRowModel() }),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     onSortingChange: setSorting,
@@ -141,13 +228,14 @@ export function TeacherTable({
     },
     initialState: {
       pagination: {
-        pageSize: 10,
+        pageSize: meta?.itemsPerPage || 10,
       },
     },
   });
 
-  const pageCount = table.getPageCount();
-  const currentPage = table.getState().pagination.pageIndex + 1;
+  // Use server pagination if meta is available, otherwise use client pagination
+  const pageCount = meta?.totalPages || table.getPageCount();
+  const currentPage = meta?.currentPage || (table.getState().pagination.pageIndex + 1);
 
   // Generate page numbers to show
   const getPageNumbers = () => {
@@ -185,6 +273,59 @@ export function TeacherTable({
     return pages;
   };
 
+  // Handle page navigation
+  const handlePageChange = (page: number) => {
+    if (meta && onPageChange) {
+      // Server-side pagination
+      onPageChange(page);
+    } else {
+      // Client-side pagination
+      table.setPageIndex(page - 1);
+    }
+  };
+
+  const handlePreviousPage = () => {
+    if (meta && onPageChange) {
+      if (currentPage > 1) {
+        onPageChange(currentPage - 1);
+      }
+    } else {
+      table.previousPage();
+    }
+  };
+
+  const handleNextPage = () => {
+    if (meta && onPageChange) {
+      if (currentPage < pageCount) {
+        onPageChange(currentPage + 1);
+      }
+    } else {
+      table.nextPage();
+    }
+  };
+
+  const canPreviousPage = meta ? currentPage > 1 : table.getCanPreviousPage();
+  const canNextPage = meta ? currentPage < pageCount : table.getCanNextPage();
+
+  // Menyimpan posisi scroll sebelum loading dan mengembalikannya setelah loading selesai
+  useEffect(() => {
+    if (isLoading) {
+      // Simpan posisi scroll saat mulai loading
+      const currentScrollY = window.scrollY;
+      setScrollPosition(currentScrollY);
+    } else if (scrollPosition > 0) {
+      // Kembalikan posisi scroll setelah loading selesai dengan delay yang lebih kecil
+      const timer = setTimeout(() => {
+        window.scrollTo({
+          top: scrollPosition,
+          behavior: 'auto' // Menggunakan 'auto' untuk pergerakan yang lebih cepat
+        });
+      }, 50); // Delay 50ms untuk memastikan DOM sudah ter-render
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading, scrollPosition]);
+
   return (
     <div className="space-y-4">
       {/* Header with Search and Add Button */}
@@ -205,7 +346,7 @@ export function TeacherTable({
       </div>
 
       {/* Table */}
-      <div className="rounded-md border">
+      <div ref={tableContainerRef} className="rounded-md border">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -224,32 +365,11 @@ export function TeacherTable({
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
-                  Tidak ada data guru.
-                </TableCell>
-              </TableRow>
-            )}
+            <TableData 
+              table={table} 
+              columns={columns} 
+              isLoading={isLoading} 
+            />
           </TableBody>
         </Table>
       </div>
@@ -258,18 +378,34 @@ export function TeacherTable({
       {pageCount > 1 && (
         <div className="flex flex-col items-center gap-4">
           {/* Info Text */}
-          <div className="text-sm text-muted-foreground text-center">
-            Menampilkan{" "}
-            {table.getState().pagination.pageIndex *
-              table.getState().pagination.pageSize +
-              1}
-            {" - "}
-            {Math.min(
-              (table.getState().pagination.pageIndex + 1) *
-                table.getState().pagination.pageSize,
-              data.length
-            )}{" "}
-            dari {data.length} guru
+          <div className="text-sm text-muted-foreground text-center flex items-center justify-center gap-2">
+            {isLoading && (
+              <div className="h-3 w-3 animate-spin rounded-full border border-current border-t-transparent" />
+            )}
+            {meta ? (
+              <>
+                Menampilkan{" "}
+                {Math.min((currentPage - 1) * meta.itemsPerPage + 1, meta.totalItems)}
+                {" - "}
+                {Math.min(currentPage * meta.itemsPerPage, meta.totalItems)}{" "}
+                dari {meta.totalItems} guru
+                {isLoading && <span className="text-xs opacity-70">(memuat...)</span>}
+              </>
+            ) : (
+              <>
+                Menampilkan{" "}
+                {table.getState().pagination.pageIndex *
+                  table.getState().pagination.pageSize +
+                  1}
+                {" - "}
+                {Math.min(
+                  (table.getState().pagination.pageIndex + 1) *
+                    table.getState().pagination.pageSize,
+                  data.length
+                )}{" "}
+                dari {data.length} guru
+              </>
+            )}
           </div>
 
           {/* Pagination Controls */}
@@ -277,10 +413,12 @@ export function TeacherTable({
             <PaginationContent className="gap-1">
               <PaginationItem>
                 <PaginationPrevious
-                  onClick={() => table.previousPage()}
+                  onClick={handlePreviousPage}
                   className={
-                    !table.getCanPreviousPage()
+                    !canPreviousPage
                       ? "pointer-events-none opacity-50"
+                      : isLoading
+                      ? "cursor-pointer opacity-70"
                       : "cursor-pointer"
                   }
                 />
@@ -294,11 +432,22 @@ export function TeacherTable({
                     </span>
                   ) : (
                     <PaginationLink
-                      onClick={() => table.setPageIndex((page as number) - 1)}
+                      onClick={() => handlePageChange(page as number)}
                       isActive={currentPage === page}
-                      className="cursor-pointer"
+                      className={
+                        currentPage === page && isLoading
+                          ? "cursor-pointer opacity-70"
+                          : "cursor-pointer"
+                      }
                     >
-                      {page}
+                      {isLoading && currentPage === page ? (
+                        <div className="flex items-center gap-2">
+                          <div className="h-3 w-3 animate-spin rounded-full border border-current border-t-transparent" />
+                          {page}
+                        </div>
+                      ) : (
+                        page
+                      )}
                     </PaginationLink>
                   )}
                 </PaginationItem>
@@ -306,10 +455,12 @@ export function TeacherTable({
 
               <PaginationItem>
                 <PaginationNext
-                  onClick={() => table.nextPage()}
+                  onClick={handleNextPage}
                   className={
-                    !table.getCanNextPage()
+                    !canNextPage
                       ? "pointer-events-none opacity-50"
+                      : isLoading
+                      ? "cursor-pointer opacity-70"
                       : "cursor-pointer"
                   }
                 />
