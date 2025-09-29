@@ -53,10 +53,4 @@ Deploy:
     name: production
   script:
     - npm install -g vercel
-    - vercel --token $VERCEL_TOKEN
-    # Pull konfigurasi project dari Vercel (wajib untuk build & deploy)
-    - vercel pull --yes --environment=production
-    # Build hasilnya berdasarkan output build yang sudah ada
-    - vercel build --prod
-    # Deploy hasil build ke Vercel
-    - vercel deploy --prebuilt --prod
+    - vercel deploy --prod --token=$VERCEL_TOKEN --yes
