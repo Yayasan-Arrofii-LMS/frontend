@@ -56,7 +56,7 @@ export default function TeacherPage() {
     };
 
     loadTeachers();
-  }, [currentPage]);
+  }, [currentPage, isLoading]);
 
   const handleViewDetail = (teacher: Teacher) => {
     setSelectedTeacher(teacher);

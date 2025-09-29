@@ -29,7 +29,7 @@ import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@/components/ui/toggle-group"
-import { DashboardData, ChartDataPoint } from "@/types/dashboard"
+import { DashboardData } from "@/types/dashboard"
 
 export const description = "Separate charts for teachers and students"
 
