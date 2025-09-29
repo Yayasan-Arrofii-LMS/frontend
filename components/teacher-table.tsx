@@ -56,7 +56,7 @@ const TableData = React.memo(({
   columns, 
   isLoading 
 }: { 
-  table: any; 
+  table: ReturnType<typeof useReactTable<Teacher>>; 
   columns: ColumnDef<Teacher>[]; 
   isLoading: boolean; 
 }) => {
@@ -90,12 +90,12 @@ const TableData = React.memo(({
   return (
     <>
       {table.getRowModel().rows?.length ? (
-        table.getRowModel().rows.map((row: any) => (
+        table.getRowModel().rows.map((row) => (
           <TableRow
             key={row.id}
             data-state={row.getIsSelected() && "selected"}
           >
-            {row.getVisibleCells().map((cell: any) => (
+            {row.getVisibleCells().map((cell) => (
               <TableCell key={cell.id}>
                 {flexRender(
                   cell.column.columnDef.cell,
