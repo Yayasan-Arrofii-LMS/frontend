@@ -48,76 +48,116 @@ interface TeacherTableProps {
   };
   onPageChange?: (page: number) => void;
   isLoading?: boolean;
+  // Server-side search props
+  searchValue?: string;
+  onSearchChange?: (search: string) => void;
 }
 
 // Komponen terpisah untuk data tabel agar hanya bagian ini yang re-render
-const TableData = React.memo(({ 
-  table, 
-  columns, 
-  isLoading 
-}: { 
-  table: ReturnType<typeof useReactTable<Teacher>>; 
-  columns: ColumnDef<Teacher>[]; 
-  isLoading: boolean; 
-}) => {
-  if (isLoading) {
+const TableData = React.memo(
+  ({
+    table,
+    columns,
+    isLoading,
+    searchValue,
+    onAddTeacher,
+  }: {
+    table: ReturnType<typeof useReactTable<Teacher>>;
+    columns: ColumnDef<Teacher>[];
+    isLoading: boolean;
+    searchValue?: string;
+    onAddTeacher?: () => void;
+  }) => {
+    // Always show skeleton when loading for better UX
+    if (isLoading) {
+      return (
+        <>
+          {Array.from({ length: 8 }).map((_, index) => (
+            <TableRow 
+              key={`loading-${index}`}
+              className="animate-in fade-in-0 duration-300"
+              style={{ 
+                animationDelay: `${index * 40}ms`,
+                animationFillMode: 'both'
+              }}
+            >
+              <TableCell className="text-center">
+                <div className="flex justify-center">
+                  <div 
+                    className="h-10 w-10 rounded-full bg-muted animate-pulse"
+                    style={{ animationDelay: `${index * 100}ms` }}
+                  />
+                </div>
+              </TableCell>
+              <TableCell>
+                <div 
+                  className="h-4 bg-muted rounded animate-pulse"
+                  style={{ animationDelay: `${index * 100 + 50}ms` }}
+                />
+              </TableCell>
+              <TableCell>
+                <div 
+                  className="h-4 bg-muted rounded animate-pulse w-3/4"
+                  style={{ animationDelay: `${index * 100 + 100}ms` }}
+                />
+              </TableCell>
+              <TableCell className="text-center">
+                <div className="flex justify-center">
+                  <div 
+                    className="h-8 w-8 rounded bg-muted animate-pulse"
+                    style={{ animationDelay: `${index * 100 + 150}ms` }}
+                  />
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </>
+      );
+    }
+
     return (
       <>
-        {Array.from({ length: 10 }).map((_, index) => (
-          <TableRow key={`loading-${index}`}>
-            <TableCell className="text-center">
-              <div className="flex justify-center">
-                <div className="h-10 w-10 rounded-full bg-muted animate-pulse" />
-              </div>
-            </TableCell>
-            <TableCell>
-              <div className="h-4 bg-muted rounded animate-pulse" />
-            </TableCell>
-            <TableCell>
-              <div className="h-4 bg-muted rounded animate-pulse w-3/4" />
-            </TableCell>
-            <TableCell className="text-center">
-              <div className="flex justify-center">
-                <div className="h-8 w-8 rounded bg-muted animate-pulse" />
+        {table.getRowModel().rows?.length ? (
+          table.getRowModel().rows.map((row, index) => (
+            <TableRow
+              key={row.id}
+              data-state={row.getIsSelected() && "selected"}
+              className="animate-in fade-in-0 slide-in-from-bottom-4 duration-300"
+              style={{ 
+                animationDelay: `${index * 50}ms`,
+                animationFillMode: 'both'
+              }}
+            >
+              {row.getVisibleCells().map((cell) => (
+                <TableCell key={cell.id}>
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                </TableCell>
+              ))}
+            </TableRow>
+          ))
+        ) : (
+          <TableRow className="animate-in fade-in-0 slide-in-from-bottom-2 duration-300">
+            <TableCell colSpan={columns.length} className="h-24 text-center">
+              <div className="flex flex-col items-center justify-center space-y-2 animate-in zoom-in-95 duration-300 delay-150">
+                <div className="text-muted-foreground">
+                  {searchValue ? "Tidak ada guru yang ditemukan" : "Belum ada data guru"}
+                </div>
+                {!searchValue && (
+                  <button
+                    onClick={() => onAddTeacher?.()}
+                    className="text-blue-500 hover:text-blue-700 underline text-sm transition-colors duration-200"
+                  >
+                    Tambah guru pertama
+                  </button>
+                )}
               </div>
             </TableCell>
           </TableRow>
-        ))}
+        )}
       </>
     );
   }
-
-  return (
-    <>
-      {table.getRowModel().rows?.length ? (
-        table.getRowModel().rows.map((row) => (
-          <TableRow
-            key={row.id}
-            data-state={row.getIsSelected() && "selected"}
-          >
-            {row.getVisibleCells().map((cell) => (
-              <TableCell key={cell.id}>
-                {flexRender(
-                  cell.column.columnDef.cell,
-                  cell.getContext()
-                )}
-              </TableCell>
-            ))}
-          </TableRow>
-        ))
-      ) : (
-        <TableRow>
-          <TableCell
-            colSpan={columns.length}
-            className="h-24 text-center"
-          >
-            Tidak ada data guru.
-          </TableCell>
-        </TableRow>
-      )}
-    </>
-  );
-});
+);
 
 TableData.displayName = "TableData";
 
@@ -128,11 +168,15 @@ export function TeacherTable({
   meta,
   onPageChange,
   isLoading = false,
+  searchValue = "",
+  onSearchChange,
 }: TeacherTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [globalFilter, setGlobalFilter] = useState("");
   const tableContainerRef = useRef<HTMLDivElement>(null);
+
+  // Memoize data to prevent unnecessary re-renders
+  const memoizedData = useMemo(() => data, [data]);
   const [scrollPosition, setScrollPosition] = useState(0);
 
   const columns: ColumnDef<Teacher>[] = useMemo(
@@ -211,7 +255,7 @@ export function TeacherTable({
   );
 
   const table = useReactTable({
-    data,
+    data: memoizedData,
     columns,
     getCoreRowModel: getCoreRowModel(),
     // Remove client-side pagination when using server-side
@@ -220,11 +264,9 @@ export function TeacherTable({
     getFilteredRowModel: getFilteredRowModel(),
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
-    onGlobalFilterChange: setGlobalFilter,
     state: {
       sorting,
       columnFilters,
-      globalFilter,
     },
     initialState: {
       pagination: {
@@ -235,7 +277,8 @@ export function TeacherTable({
 
   // Use server pagination if meta is available, otherwise use client pagination
   const pageCount = meta?.totalPages || table.getPageCount();
-  const currentPage = meta?.currentPage || (table.getState().pagination.pageIndex + 1);
+  const currentPage =
+    meta?.currentPage || table.getState().pagination.pageIndex + 1;
 
   // Generate page numbers to show
   const getPageNumbers = () => {
@@ -318,10 +361,10 @@ export function TeacherTable({
       const timer = setTimeout(() => {
         window.scrollTo({
           top: scrollPosition,
-          behavior: 'auto' // Menggunakan 'auto' untuk pergerakan yang lebih cepat
+          behavior: "auto", // Menggunakan 'auto' untuk pergerakan yang lebih cepat
         });
       }, 50); // Delay 50ms untuk memastikan DOM sudah ter-render
-      
+
       return () => clearTimeout(timer);
     }
   }, [isLoading, scrollPosition]);
@@ -334,8 +377,8 @@ export function TeacherTable({
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Cari guru..."
-            value={globalFilter ?? ""}
-            onChange={(event) => setGlobalFilter(String(event.target.value))}
+            value={searchValue}
+            onChange={(event) => onSearchChange?.(event.target.value)}
             className="pl-9"
           />
         </div>
@@ -368,7 +411,9 @@ export function TeacherTable({
             <TableData 
               table={table} 
               columns={columns} 
-              isLoading={isLoading} 
+              isLoading={isLoading}
+              searchValue={searchValue}
+              onAddTeacher={onAddTeacher}
             />
           </TableBody>
         </Table>
@@ -385,11 +430,19 @@ export function TeacherTable({
             {meta ? (
               <>
                 Menampilkan{" "}
-                {Math.min((currentPage - 1) * meta.itemsPerPage + 1, meta.totalItems)}
+                {Math.min(
+                  (currentPage - 1) * meta.itemsPerPage + 1,
+                  meta.totalItems
+                )}
                 {" - "}
-                {Math.min(currentPage * meta.itemsPerPage, meta.totalItems)}{" "}
+                {Math.min(
+                  currentPage * meta.itemsPerPage,
+                  meta.totalItems
+                )}{" "}
                 dari {meta.totalItems} guru
-                {isLoading && <span className="text-xs opacity-70">(memuat...)</span>}
+                {isLoading && (
+                  <span className="text-xs opacity-70">(memuat...)</span>
+                )}
               </>
             ) : (
               <>

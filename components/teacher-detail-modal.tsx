@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { Teacher } from "@/types/teacher";
+import { deleteTeacher, updateTeacher } from "@/lib/api/teachers";
 import {
   Dialog,
   DialogContent,
@@ -13,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Edit, Trash2, Save, X } from "lucide-react";
+import { Edit, Trash2, Save, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface TeacherDetailModalProps {
@@ -33,21 +34,25 @@ export function TeacherDetailModal({
 }: TeacherDetailModalProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<Teacher | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [currentTeacher, setCurrentTeacher] = useState<Teacher | null>(null);
 
   React.useEffect(() => {
     if (teacher) {
+      setCurrentTeacher(teacher);
       setEditForm(teacher);
     }
     setIsEditing(false);
   }, [teacher, isOpen]);
 
-  if (!teacher) return null;
+  if (!currentTeacher) return null;
 
   const handleEdit = () => {
     setIsEditing(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (editForm) {
       // Validasi field yang wajib diisi
       if (!editForm.fullName.trim()) {
@@ -63,22 +68,49 @@ export function TeacherDetailModal({
         return;
       }
 
-      onUpdate(editForm);
-      toast.success("Data guru berhasil diperbarui");
-      onClose(); // Tutup modal setelah simpan untuk UX yang lebih baik
+      setIsSaving(true);
+      try {
+        const updatedTeacher = await updateTeacher(currentTeacher.id, {
+          name: editForm.fullName,
+          username: editForm.username,
+          email: editForm.email,
+        });
+
+        // Update local state to show new data
+        setCurrentTeacher(updatedTeacher);
+        setEditForm(updatedTeacher);
+
+        onUpdate(updatedTeacher);
+        toast.success("Data guru berhasil diperbarui");
+        setIsEditing(false);
+      } catch (error) {
+        console.error("Error updating teacher:", error);
+        toast.error("Gagal memperbarui data guru. Silakan coba lagi.");
+      } finally {
+        setIsSaving(false);
+      }
     }
   };
 
   const handleCancel = () => {
-    setEditForm(teacher);
+    setEditForm(currentTeacher);
     setIsEditing(false);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (window.confirm("Apakah Anda yakin ingin menghapus guru ini?")) {
-      onDelete(teacher.id);
-      toast.success("Data guru berhasil dihapus");
-      onClose();
+      setIsDeleting(true);
+      try {
+        await deleteTeacher(currentTeacher.id);
+        onDelete(currentTeacher.id);
+        toast.success("Data guru berhasil dihapus");
+        onClose();
+      } catch (error) {
+        console.error("Error deleting teacher:", error);
+        toast.error("Gagal menghapus guru. Silakan coba lagi.");
+      } finally {
+        setIsDeleting(false);
+      }
     }
   };
 
@@ -112,12 +144,16 @@ export function TeacherDetailModal({
                 <Avatar className="h-20 w-20">
                   <AvatarImage
                     src={
-                      isEditing ? editForm?.profilePhoto : teacher.profilePhoto
+                      isEditing
+                        ? editForm?.profilePhoto
+                        : currentTeacher.profilePhoto
                     }
-                    alt={isEditing ? editForm?.fullName : teacher.fullName}
+                    alt={
+                      isEditing ? editForm?.fullName : currentTeacher.fullName
+                    }
                   />
                   <AvatarFallback className="text-lg">
-                    {(isEditing ? editForm?.fullName : teacher.fullName)
+                    {(isEditing ? editForm?.fullName : currentTeacher.fullName)
                       ?.split(" ")
                       .slice(0, 2)
                       .map((n) => n[0])
@@ -148,7 +184,7 @@ export function TeacherDetailModal({
                     />
                   ) : (
                     <p className="text-sm border rounded-md px-3 py-2 bg-muted">
-                      {teacher.fullName}
+                      {currentTeacher.fullName}
                     </p>
                   )}
                 </div>
@@ -170,7 +206,7 @@ export function TeacherDetailModal({
                     />
                   ) : (
                     <p className="text-sm border rounded-md px-3 py-2 bg-muted">
-                      {teacher.username}
+                      {currentTeacher.username}
                     </p>
                   )}
                 </div>
@@ -192,7 +228,7 @@ export function TeacherDetailModal({
                     />
                   ) : (
                     <p className="text-sm border rounded-md px-3 py-2 bg-muted">
-                      {teacher.email}
+                      {currentTeacher.email}
                     </p>
                   )}
                 </div>
@@ -204,22 +240,38 @@ export function TeacherDetailModal({
         <DialogFooter className="flex gap-2">
           {isEditing ? (
             <>
-              <Button onClick={handleCancel} variant="outline">
+              <Button
+                onClick={handleCancel}
+                variant="outline"
+                disabled={isSaving}
+              >
                 <X className="h-4 w-4 mr-2" />
                 Batal
               </Button>
-              <Button onClick={handleSave}>
-                <Save className="h-4 w-4 mr-2" />
-                Simpan
+              <Button onClick={handleSave} disabled={isSaving}>
+                {isSaving ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4 mr-2" />
+                )}
+                {isSaving ? "Menyimpan..." : "Simpan"}
               </Button>
             </>
           ) : (
             <>
-              <Button onClick={handleDelete} variant="destructive">
-                <Trash2 className="h-4 w-4 mr-2" />
-                Hapus
+              <Button
+                onClick={handleDelete}
+                variant="destructive"
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4 mr-2" />
+                )}
+                {isDeleting ? "Menghapus..." : "Hapus"}
               </Button>
-              <Button onClick={handleEdit}>
+              <Button onClick={handleEdit} disabled={isDeleting}>
                 <Edit className="h-4 w-4 mr-2" />
                 Edit
               </Button>

@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { Teacher } from "@/types/teacher";
+import { createTeacher } from "@/lib/api/teachers";
 import {
   Dialog,
   DialogContent,
@@ -12,13 +13,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface AddTeacherModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (teacher: Omit<Teacher, "id">) => void;
+  onAdd: (teacher: Teacher) => void;
 }
 
 export function AddTeacherModal({
@@ -27,10 +28,11 @@ export function AddTeacherModal({
   onAdd,
 }: AddTeacherModalProps) {
   const [formData, setFormData] = useState({
-    fullName: "",
+    name: "",
     username: "",
     email: "",
   });
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({
@@ -39,38 +41,35 @@ export function AddTeacherModal({
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
 
-    const teacherData: Omit<Teacher, "id"> = {
-      ...formData,
-      // Add default values for required fields
-      profilePhoto: "", // Default empty, teacher can add later
-      phoneNumber: "",
-      address: "",
-      dateOfBirth: new Date().toISOString().split("T")[0],
-      subjects: [],
-      joinDate: new Date().toISOString().split("T")[0],
-      status: "active",
-    };
+    try {
+      const newTeacher = await createTeacher(formData);
+      onAdd(newTeacher);
+      toast.success("Guru baru berhasil ditambahkan");
 
-    onAdd(teacherData);
-    toast.success("Guru baru berhasil ditambahkan");
+      // Reset form
+      setFormData({
+        name: "",
+        username: "",
+        email: "",
+      });
 
-    // Reset form
-    setFormData({
-      fullName: "",
-      username: "",
-      email: "",
-    });
-
-    onClose();
+      onClose();
+    } catch (error) {
+      console.error("Error creating teacher:", error);
+      toast.error("Gagal menambahkan guru. Silakan coba lagi.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleClose = () => {
     // Reset form when closing
     setFormData({
-      fullName: "",
+      name: "",
       username: "",
       email: "",
     });
@@ -82,17 +81,23 @@ export function AddTeacherModal({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-center">Tambah Guru Baru</DialogTitle>
+          <div className="text-sm text-muted-foreground text-center mt-2">
+            <p>
+              Password default akan diset otomatis. Guru dapat mengubah password
+              setelah login pertama.
+            </p>
+          </div>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Personal Information */}
           <div className="grid grid-cols-1 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="fullName">Nama Lengkap *</Label>
+              <Label htmlFor="name">Nama Lengkap *</Label>
               <Input
-                id="fullName"
-                value={formData.fullName}
-                onChange={(e) => handleInputChange("fullName", e.target.value)}
+                id="name"
+                value={formData.name}
+                onChange={(e) => handleInputChange("name", e.target.value)}
                 placeholder="Nama lengkap guru"
                 required
               />
@@ -123,13 +128,22 @@ export function AddTeacherModal({
           </div>
 
           <DialogFooter className="flex gap-2">
-            <Button type="button" onClick={handleClose} variant="outline">
+            <Button
+              type="button"
+              onClick={handleClose}
+              variant="outline"
+              disabled={isLoading}
+            >
               <X className="h-4 w-4 mr-2" />
               Batal
             </Button>
-            <Button type="submit">
-              <Plus className="h-4 w-4 mr-2" />
-              Tambah Guru
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Plus className="h-4 w-4 mr-2" />
+              )}
+              {isLoading ? "Menambah..." : "Tambah Guru"}
             </Button>
           </DialogFooter>
         </form>
