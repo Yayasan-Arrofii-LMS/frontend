@@ -224,7 +224,9 @@ export default function TeacherPage() {
               <PaginationContent className="gap-1">
                 <PaginationItem>
                   <PaginationPrevious
-                    onClick={() => handlePageChange(Math.max(1, meta.currentPage - 1))}
+                    onClick={() =>
+                      handlePageChange(Math.max(1, meta.currentPage - 1))
+                    }
                     className={
                       meta.currentPage <= 1
                         ? "pointer-events-none opacity-50"
@@ -234,13 +236,15 @@ export default function TeacherPage() {
                 </PaginationItem>
                 {/* Simplified pagination untuk loading state */}
                 <PaginationItem>
-                  <PaginationLink isActive>
-                    {meta.currentPage}
-                  </PaginationLink>
+                  <PaginationLink isActive>{meta.currentPage}</PaginationLink>
                 </PaginationItem>
                 <PaginationItem>
                   <PaginationNext
-                    onClick={() => handlePageChange(Math.min(meta.totalPages, meta.currentPage + 1))}
+                    onClick={() =>
+                      handlePageChange(
+                        Math.min(meta.totalPages, meta.currentPage + 1)
+                      )
+                    }
                     className={
                       meta.currentPage >= meta.totalPages
                         ? "pointer-events-none opacity-50"

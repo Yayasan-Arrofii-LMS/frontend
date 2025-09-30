@@ -13,10 +13,10 @@ interface SectionCardsProps {
 
 // Helper function to format ratio - show as integer if it's a whole number, otherwise show 2 decimal places
 function formatRatio(numerator: number, denominator: number): string {
-  if (denominator === 0) return '0';
-  
+  if (denominator === 0) return "0";
+
   const ratio = numerator / denominator;
-  
+
   // Check if it's a whole number
   if (ratio % 1 === 0) {
     return ratio.toString();
@@ -30,7 +30,7 @@ export function SectionCards({ data }: SectionCardsProps) {
     <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
       <Card className="@container/card">
         <CardHeader>
-          <CardDescription>Total Teachers</CardDescription>
+          <CardDescription>Total Guru</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
             {data.teacherCount.toLocaleString()}
           </CardTitle>
@@ -44,7 +44,7 @@ export function SectionCards({ data }: SectionCardsProps) {
       </Card>
       <Card className="@container/card">
         <CardHeader>
-          <CardDescription>Total Students</CardDescription>
+          <CardDescription>Total Siswa</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
             {data.studentCount.toLocaleString()}
           </CardTitle>
@@ -58,7 +58,7 @@ export function SectionCards({ data }: SectionCardsProps) {
       </Card>
       <Card className="@container/card">
         <CardHeader>
-          <CardDescription>Total Classes</CardDescription>
+          <CardDescription>Total Kelas</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
             {data.classCount.toLocaleString()}
           </CardTitle>
@@ -72,7 +72,7 @@ export function SectionCards({ data }: SectionCardsProps) {
       </Card>
       <Card className="@container/card">
         <CardHeader>
-          <CardDescription>Student-Teacher Ratio</CardDescription>
+          <CardDescription>Rasio Siswa:Guru</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
             {formatRatio(data.studentCount, data.teacherCount)}:1
           </CardTitle>
