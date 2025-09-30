@@ -59,54 +59,31 @@ const TableData = React.memo(
     table,
     columns,
     isLoading,
-    searchValue,
-    onAddTeacher,
   }: {
     table: ReturnType<typeof useReactTable<Teacher>>;
     columns: ColumnDef<Teacher>[];
     isLoading: boolean;
-    searchValue?: string;
-    onAddTeacher?: () => void;
   }) => {
     // Always show skeleton when loading for better UX
     if (isLoading) {
       return (
         <>
           {Array.from({ length: 8 }).map((_, index) => (
-            <TableRow 
-              key={`loading-${index}`}
-              className="animate-in fade-in-0 duration-300"
-              style={{ 
-                animationDelay: `${index * 40}ms`,
-                animationFillMode: 'both'
-              }}
-            >
+            <TableRow key={`loading-${index}`}>
               <TableCell className="text-center">
                 <div className="flex justify-center">
-                  <div 
-                    className="h-10 w-10 rounded-full bg-muted animate-pulse"
-                    style={{ animationDelay: `${index * 100}ms` }}
-                  />
+                  <div className="h-10 w-10 rounded-full bg-muted animate-pulse" />
                 </div>
               </TableCell>
               <TableCell>
-                <div 
-                  className="h-4 bg-muted rounded animate-pulse"
-                  style={{ animationDelay: `${index * 100 + 50}ms` }}
-                />
+                <div className="h-4 bg-muted rounded animate-pulse" />
               </TableCell>
               <TableCell>
-                <div 
-                  className="h-4 bg-muted rounded animate-pulse w-3/4"
-                  style={{ animationDelay: `${index * 100 + 100}ms` }}
-                />
+                <div className="h-4 bg-muted rounded animate-pulse w-3/4" />
               </TableCell>
               <TableCell className="text-center">
                 <div className="flex justify-center">
-                  <div 
-                    className="h-8 w-8 rounded bg-muted animate-pulse"
-                    style={{ animationDelay: `${index * 100 + 150}ms` }}
-                  />
+                  <div className="h-8 w-8 rounded bg-muted animate-pulse" />
                 </div>
               </TableCell>
             </TableRow>
@@ -118,15 +95,10 @@ const TableData = React.memo(
     return (
       <>
         {table.getRowModel().rows?.length ? (
-          table.getRowModel().rows.map((row, index) => (
+          table.getRowModel().rows.map((row) => (
             <TableRow
               key={row.id}
               data-state={row.getIsSelected() && "selected"}
-              className="animate-in fade-in-0 slide-in-from-bottom-4 duration-300"
-              style={{ 
-                animationDelay: `${index * 50}ms`,
-                animationFillMode: 'both'
-              }}
             >
               {row.getVisibleCells().map((cell) => (
                 <TableCell key={cell.id}>
@@ -136,21 +108,9 @@ const TableData = React.memo(
             </TableRow>
           ))
         ) : (
-          <TableRow className="animate-in fade-in-0 slide-in-from-bottom-2 duration-300">
+          <TableRow>
             <TableCell colSpan={columns.length} className="h-24 text-center">
-              <div className="flex flex-col items-center justify-center space-y-2 animate-in zoom-in-95 duration-300 delay-150">
-                <div className="text-muted-foreground">
-                  {searchValue ? "Tidak ada guru yang ditemukan" : "Belum ada data guru"}
-                </div>
-                {!searchValue && (
-                  <button
-                    onClick={() => onAddTeacher?.()}
-                    className="text-blue-500 hover:text-blue-700 underline text-sm transition-colors duration-200"
-                  >
-                    Tambah guru pertama
-                  </button>
-                )}
-              </div>
+              Tidak ada data guru.
             </TableCell>
           </TableRow>
         )}
@@ -408,13 +368,7 @@ export function TeacherTable({
             ))}
           </TableHeader>
           <TableBody>
-            <TableData 
-              table={table} 
-              columns={columns} 
-              isLoading={isLoading}
-              searchValue={searchValue}
-              onAddTeacher={onAddTeacher}
-            />
+            <TableData table={table} columns={columns} isLoading={isLoading} />
           </TableBody>
         </Table>
       </div>

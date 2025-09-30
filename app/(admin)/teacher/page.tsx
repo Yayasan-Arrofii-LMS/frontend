@@ -63,15 +63,9 @@ export default function TeacherPage() {
           );
         } finally {
           if (isInitialLoad) {
-            // Add slight delay for smooth transition from skeleton to data
-            setTimeout(() => {
-              setIsLoading(false);
-            }, 200);
+            setIsLoading(false);
           } else {
-            // Add slight delay for smooth transition
-            setTimeout(() => {
-              setIsLoadingData(false);
-            }, 150);
+            setIsLoadingData(false);
           }
         }
       };
