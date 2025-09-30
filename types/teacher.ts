@@ -44,3 +44,35 @@ export interface TeachersApiResponse {
     currentPage: number;
   };
 }
+
+export interface CreateTeacherRequest {
+  name: string;
+  username: string;
+  email: string;
+  password: string;
+  passwordConfirmation: string;
+}
+
+export interface CreateTeacherResponse {
+  success: boolean;
+  message: string;
+  data: ApiTeacher;
+}
+
+export interface DeleteTeacherResponse {
+  success: boolean;
+  message: string;
+  data: null;
+}
+
+export interface UpdateTeacherRequest {
+  name?: string;
+  username?: string;
+  email?: string;
+}
+
+export interface UpdateTeacherResponse {
+  success: boolean;
+  message: string;
+  data: ApiTeacher;
+}

@@ -6,7 +6,13 @@ import { TeacherTable } from "@/components/teacher-table";
 import { TeacherDetailModal } from "@/components/teacher-detail-modal";
 import { AddTeacherModal } from "@/components/add-teacher-modal";
 import { fetchTeachers } from "@/lib/api/teachers";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface TeacherMeta {
@@ -27,36 +33,54 @@ export default function TeacherPage() {
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-
+  const [searchValue, setSearchValue] = useState("");
 
   useEffect(() => {
-    const loadTeachers = async () => {
-      const isInitialLoad = isLoading; // Jika masih dalam state loading awal
-      
-      try {
-        if (isInitialLoad) {
-          setIsLoading(true);
-        } else {
-          setIsLoadingData(true);
-        }
-        setError(null);
-        const result = await fetchTeachers(currentPage);
-        setTeachers(result.teachers);
-        setMeta(result.meta);
-      } catch (error) {
-        console.error('Failed to fetch teachers:', error);
-        setError(error instanceof Error ? error.message : 'Failed to fetch teachers');
-      } finally {
-        if (isInitialLoad) {
-          setIsLoading(false);
-        } else {
-          setIsLoadingData(false);
-        }
-      }
-    };
+    // Debounce search to avoid too many API calls
+    const timeoutId = setTimeout(() => {
+      const loadTeachers = async () => {
+        const isInitialLoad = isLoading; // Jika masih dalam state loading awal
+        const isSearch = searchValue.trim() !== "";
 
-    loadTeachers();
-  }, [currentPage, isLoading]);
+        try {
+          if (isInitialLoad) {
+            setIsLoading(true);
+          } else {
+            // Always show loading state for better UX
+            setIsLoadingData(true);
+          }
+          setError(null);
+          const result = await fetchTeachers(
+            currentPage,
+            searchValue || undefined
+          );
+          setTeachers(result.teachers);
+          setMeta(result.meta);
+        } catch (error) {
+          console.error("Failed to fetch teachers:", error);
+          setError(
+            error instanceof Error ? error.message : "Failed to fetch teachers"
+          );
+        } finally {
+          if (isInitialLoad) {
+            // Add slight delay for smooth transition from skeleton to data
+            setTimeout(() => {
+              setIsLoading(false);
+            }, 200);
+          } else {
+            // Add slight delay for smooth transition
+            setTimeout(() => {
+              setIsLoadingData(false);
+            }, 150);
+          }
+        }
+      };
+
+      loadTeachers();
+    }, 600); // Balanced debounce for good UX with skeleton loading
+
+    return () => clearTimeout(timeoutId);
+  }, [currentPage, searchValue, isLoading]);
 
   const handleViewDetail = (teacher: Teacher) => {
     setSelectedTeacher(teacher);
@@ -80,12 +104,16 @@ export default function TeacherPage() {
     setTeachers((prev) => prev.filter((teacher) => teacher.id !== teacherId));
   };
 
-  const handleAddTeacher = (newTeacherData: Omit<Teacher, "id">) => {
-    const newTeacher: Teacher = {
-      ...newTeacherData,
-      id: Date.now().toString(),
-    };
-    setTeachers((prev) => [...prev, newTeacher]);
+  const handleAddTeacher = (newTeacher: Teacher) => {
+    setTeachers((prev) => [newTeacher, ...prev]);
+    // Optionally refresh the data to get updated pagination
+    if (meta) {
+      setMeta({
+        ...meta,
+        totalItems: meta.totalItems + 1,
+        itemCount: Math.min(meta.itemsPerPage, meta.itemCount + 1),
+      });
+    }
   };
 
   const handleOpenAddModal = () => {
@@ -98,6 +126,14 @@ export default function TeacherPage() {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
+  };
+
+  const handleSearchChange = (search: string) => {
+    setSearchValue(search);
+    // Reset to first page when search changes
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
   };
 
   // Loading skeleton component
@@ -167,19 +203,25 @@ export default function TeacherPage() {
           </div>
 
           {isLoading && <LoadingSkeleton />}
-          
-          {error && <ErrorDisplay />}
-          
-          {!isLoading && !error && (
+
+          {!isLoading && (
             <div className="px-4 lg:px-6">
-              <TeacherTable
-                data={teachers}
-                onViewDetail={handleViewDetail}
-                onAddTeacher={handleOpenAddModal}
-                meta={meta || undefined}
-                onPageChange={handlePageChange}
-                isLoading={isLoadingData}
-              />
+              {error ? (
+                <div className="text-center py-8">
+                  <p className="text-red-600">Error: {error}</p>
+                </div>
+              ) : (
+                <TeacherTable
+                  data={teachers}
+                  onViewDetail={handleViewDetail}
+                  onAddTeacher={handleOpenAddModal}
+                  meta={meta || undefined}
+                  onPageChange={handlePageChange}
+                  isLoading={isLoadingData}
+                  searchValue={searchValue}
+                  onSearchChange={handleSearchChange}
+                />
+              )}
             </div>
           )}
         </div>
