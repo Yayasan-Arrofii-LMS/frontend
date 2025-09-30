@@ -6,7 +6,7 @@ const BASE_URL =
 
 export async function fetchDashboardData(): Promise<DashboardApiResponse> {
   try {
-    const response = await fetch(`${BASE_URL}/api/v1/dashboard`, {
+    const response = await fetch(`${BASE_URL}/dashboard`, {
       headers: {
         "Content-Type": "application/json",
       },

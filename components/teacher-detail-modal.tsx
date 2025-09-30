@@ -10,6 +10,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,6 +48,7 @@ export function TeacherDetailModal({
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [currentTeacher, setCurrentTeacher] = useState<Teacher | null>(null);
+  const [showDeleteAlert, setShowDeleteAlert] = useState(false);
 
   React.useEffect(() => {
     if (teacher) {
@@ -97,20 +109,23 @@ export function TeacherDetailModal({
     setIsEditing(false);
   };
 
-  const handleDelete = async () => {
-    if (window.confirm("Apakah Anda yakin ingin menghapus guru ini?")) {
-      setIsDeleting(true);
-      try {
-        await deleteTeacher(currentTeacher.id);
-        onDelete(currentTeacher.id);
-        toast.success("Data guru berhasil dihapus");
-        onClose();
-      } catch (error) {
-        console.error("Error deleting teacher:", error);
-        toast.error("Gagal menghapus guru. Silakan coba lagi.");
-      } finally {
-        setIsDeleting(false);
-      }
+  const handleDelete = () => {
+    setShowDeleteAlert(true);
+  };
+
+  const confirmDelete = async () => {
+    setIsDeleting(true);
+    try {
+      await deleteTeacher(currentTeacher.id);
+      onDelete(currentTeacher.id);
+      toast.success("Data guru berhasil dihapus");
+      setShowDeleteAlert(false);
+      onClose();
+    } catch (error) {
+      console.error("Error deleting teacher:", error);
+      toast.error("Gagal menghapus guru. Silakan coba lagi.");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -259,18 +274,58 @@ export function TeacherDetailModal({
             </>
           ) : (
             <>
-              <Button
-                onClick={handleDelete}
-                variant="destructive"
-                disabled={isDeleting}
-              >
-                {isDeleting ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Trash2 className="h-4 w-4 mr-2" />
-                )}
-                {isDeleting ? "Menghapus..." : "Hapus"}
-              </Button>
+              <AlertDialog open={showDeleteAlert} onOpenChange={setShowDeleteAlert}>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="destructive"
+                    disabled={isDeleting}
+                    onClick={handleDelete}
+                  >
+                    {isDeleting ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4 mr-2" />
+                    )}
+                    {isDeleting ? "Menghapus..." : "Hapus"}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Konfirmasi Hapus Guru</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Apakah Anda yakin ingin menghapus data guru{" "}
+                      <span className="font-semibold">{currentTeacher.fullName}</span>?
+                      <br />
+                      <br />
+                      <span className="text-red-600 font-medium">
+                        Tindakan ini tidak dapat dibatalkan.
+                      </span>
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel disabled={isDeleting}>
+                      Batal
+                    </AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={confirmDelete}
+                      disabled={isDeleting}
+                      className="bg-red-600 text-white hover:bg-red-700"
+                    >
+                      {isDeleting ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Menghapus...
+                        </>
+                      ) : (
+                        <>
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Hapus
+                        </>
+                      )}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
               <Button onClick={handleEdit} disabled={isDeleting}>
                 <Edit className="h-4 w-4 mr-2" />
                 Edit

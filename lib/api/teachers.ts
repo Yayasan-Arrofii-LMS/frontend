@@ -47,7 +47,7 @@ export async function fetchTeachers(
     }
 
     const response = await fetch(
-      `${BASE_URL}/api/v1/teachers?${params.toString()}`,
+      `${BASE_URL}/teachers?${params.toString()}`,
       {
         headers: {
           "Content-Type": "application/json",
@@ -105,7 +105,7 @@ export async function createTeacher(
   };
 
   try {
-    const response = await fetch(`${BASE_URL}/api/v1/teachers`, {
+    const response = await fetch(`${BASE_URL}/teachers`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -143,7 +143,7 @@ export async function createTeacher(
 
 export async function deleteTeacher(teacherId: string): Promise<void> {
   try {
-    const response = await fetch(`${BASE_URL}/api/v1/teachers/${teacherId}`, {
+    const response = await fetch(`${BASE_URL}/teachers/${teacherId}`, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
@@ -182,7 +182,7 @@ export async function updateTeacher(
   teacherData: UpdateTeacherRequest
 ): Promise<Teacher> {
   try {
-    const response = await fetch(`${BASE_URL}/api/v1/teachers/${teacherId}`, {
+    const response = await fetch(`${BASE_URL}/teachers/${teacherId}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",

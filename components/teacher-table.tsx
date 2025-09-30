@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState, useRef, useEffect } from "react";
+import React, { useMemo, useState, useRef } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -47,7 +47,6 @@ interface TeacherTableProps {
     currentPage: number;
   };
   onPageChange?: (page: number) => void;
-  isLoading?: boolean;
   // Server-side search props
   searchValue?: string;
   onSearchChange?: (search: string) => void;
@@ -58,75 +57,21 @@ const TableData = React.memo(
   ({
     table,
     columns,
-    isLoading,
     searchValue,
     onAddTeacher,
   }: {
     table: ReturnType<typeof useReactTable<Teacher>>;
     columns: ColumnDef<Teacher>[];
-    isLoading: boolean;
     searchValue?: string;
     onAddTeacher?: () => void;
   }) => {
-    // Always show skeleton when loading for better UX
-    if (isLoading) {
-      return (
-        <>
-          {Array.from({ length: 8 }).map((_, index) => (
-            <TableRow 
-              key={`loading-${index}`}
-              className="animate-in fade-in-0 duration-300"
-              style={{ 
-                animationDelay: `${index * 40}ms`,
-                animationFillMode: 'both'
-              }}
-            >
-              <TableCell className="text-center">
-                <div className="flex justify-center">
-                  <div 
-                    className="h-10 w-10 rounded-full bg-muted animate-pulse"
-                    style={{ animationDelay: `${index * 100}ms` }}
-                  />
-                </div>
-              </TableCell>
-              <TableCell>
-                <div 
-                  className="h-4 bg-muted rounded animate-pulse"
-                  style={{ animationDelay: `${index * 100 + 50}ms` }}
-                />
-              </TableCell>
-              <TableCell>
-                <div 
-                  className="h-4 bg-muted rounded animate-pulse w-3/4"
-                  style={{ animationDelay: `${index * 100 + 100}ms` }}
-                />
-              </TableCell>
-              <TableCell className="text-center">
-                <div className="flex justify-center">
-                  <div 
-                    className="h-8 w-8 rounded bg-muted animate-pulse"
-                    style={{ animationDelay: `${index * 100 + 150}ms` }}
-                  />
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </>
-      );
-    }
-
     return (
       <>
         {table.getRowModel().rows?.length ? (
-          table.getRowModel().rows.map((row, index) => (
+          table.getRowModel().rows.map((row) => (
             <TableRow
               key={row.id}
               data-state={row.getIsSelected() && "selected"}
-              className="animate-in fade-in-0 slide-in-from-bottom-4 duration-300"
-              style={{ 
-                animationDelay: `${index * 50}ms`,
-                animationFillMode: 'both'
-              }}
             >
               {row.getVisibleCells().map((cell) => (
                 <TableCell key={cell.id}>
@@ -136,9 +81,9 @@ const TableData = React.memo(
             </TableRow>
           ))
         ) : (
-          <TableRow className="animate-in fade-in-0 slide-in-from-bottom-2 duration-300">
+          <TableRow>
             <TableCell colSpan={columns.length} className="h-24 text-center">
-              <div className="flex flex-col items-center justify-center space-y-2 animate-in zoom-in-95 duration-300 delay-150">
+              <div className="flex flex-col items-center justify-center space-y-2">
                 <div className="text-muted-foreground">
                   {searchValue ? "Tidak ada guru yang ditemukan" : "Belum ada data guru"}
                 </div>
@@ -167,7 +112,6 @@ export function TeacherTable({
   onAddTeacher,
   meta,
   onPageChange,
-  isLoading = false,
   searchValue = "",
   onSearchChange,
 }: TeacherTableProps) {
@@ -177,13 +121,12 @@ export function TeacherTable({
 
   // Memoize data to prevent unnecessary re-renders
   const memoizedData = useMemo(() => data, [data]);
-  const [scrollPosition, setScrollPosition] = useState(0);
 
   const columns: ColumnDef<Teacher>[] = useMemo(
     () => [
       {
         accessorKey: "profilePhoto",
-        header: () => <div className="text-center">Profile</div>,
+        header: () => <div className="text-center">Profil</div>,
         cell: ({ row }) => {
           const teacher = row.original;
           return (
@@ -350,25 +293,6 @@ export function TeacherTable({
   const canPreviousPage = meta ? currentPage > 1 : table.getCanPreviousPage();
   const canNextPage = meta ? currentPage < pageCount : table.getCanNextPage();
 
-  // Menyimpan posisi scroll sebelum loading dan mengembalikannya setelah loading selesai
-  useEffect(() => {
-    if (isLoading) {
-      // Simpan posisi scroll saat mulai loading
-      const currentScrollY = window.scrollY;
-      setScrollPosition(currentScrollY);
-    } else if (scrollPosition > 0) {
-      // Kembalikan posisi scroll setelah loading selesai dengan delay yang lebih kecil
-      const timer = setTimeout(() => {
-        window.scrollTo({
-          top: scrollPosition,
-          behavior: "auto", // Menggunakan 'auto' untuk pergerakan yang lebih cepat
-        });
-      }, 50); // Delay 50ms untuk memastikan DOM sudah ter-render
-
-      return () => clearTimeout(timer);
-    }
-  }, [isLoading, scrollPosition]);
-
   return (
     <div className="space-y-4">
       {/* Header with Search and Add Button */}
@@ -411,7 +335,6 @@ export function TeacherTable({
             <TableData 
               table={table} 
               columns={columns} 
-              isLoading={isLoading}
               searchValue={searchValue}
               onAddTeacher={onAddTeacher}
             />
@@ -424,9 +347,6 @@ export function TeacherTable({
         <div className="flex flex-col items-center gap-4">
           {/* Info Text */}
           <div className="text-sm text-muted-foreground text-center flex items-center justify-center gap-2">
-            {isLoading && (
-              <div className="h-3 w-3 animate-spin rounded-full border border-current border-t-transparent" />
-            )}
             {meta ? (
               <>
                 Menampilkan{" "}
@@ -440,9 +360,6 @@ export function TeacherTable({
                   meta.totalItems
                 )}{" "}
                 dari {meta.totalItems} guru
-                {isLoading && (
-                  <span className="text-xs opacity-70">(memuat...)</span>
-                )}
               </>
             ) : (
               <>
@@ -470,8 +387,6 @@ export function TeacherTable({
                   className={
                     !canPreviousPage
                       ? "pointer-events-none opacity-50"
-                      : isLoading
-                      ? "cursor-pointer opacity-70"
                       : "cursor-pointer"
                   }
                 />
@@ -487,20 +402,9 @@ export function TeacherTable({
                     <PaginationLink
                       onClick={() => handlePageChange(page as number)}
                       isActive={currentPage === page}
-                      className={
-                        currentPage === page && isLoading
-                          ? "cursor-pointer opacity-70"
-                          : "cursor-pointer"
-                      }
+                      className="cursor-pointer"
                     >
-                      {isLoading && currentPage === page ? (
-                        <div className="flex items-center gap-2">
-                          <div className="h-3 w-3 animate-spin rounded-full border border-current border-t-transparent" />
-                          {page}
-                        </div>
-                      ) : (
-                        page
-                      )}
+                      {page}
                     </PaginationLink>
                   )}
                 </PaginationItem>
@@ -512,8 +416,6 @@ export function TeacherTable({
                   className={
                     !canNextPage
                       ? "pointer-events-none opacity-50"
-                      : isLoading
-                      ? "cursor-pointer opacity-70"
                       : "cursor-pointer"
                   }
                 />

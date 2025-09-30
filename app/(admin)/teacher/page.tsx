@@ -6,14 +6,26 @@ import { TeacherTable } from "@/components/teacher-table";
 import { TeacherDetailModal } from "@/components/teacher-detail-modal";
 import { AddTeacherModal } from "@/components/add-teacher-modal";
 import { fetchTeachers } from "@/lib/api/teachers";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import { Plus, Search } from "lucide-react";
 
 interface TeacherMeta {
   itemCount: number;
@@ -30,57 +42,53 @@ export default function TeacherPage() {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingData, setIsLoadingData] = useState(false);
+  const [isPageChanging, setIsPageChanging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchValue, setSearchValue] = useState("");
 
   useEffect(() => {
-    // Debounce search to avoid too many API calls
-    const timeoutId = setTimeout(() => {
-      const loadTeachers = async () => {
-        const isInitialLoad = isLoading; // Jika masih dalam state loading awal
-        const isSearch = searchValue.trim() !== "";
+    const loadTeachers = async () => {
+      const isInitialLoad = isLoading; // Jika masih dalam state loading awal
 
-        try {
-          if (isInitialLoad) {
-            setIsLoading(true);
-          } else {
-            // Always show loading state for better UX
-            setIsLoadingData(true);
-          }
-          setError(null);
-          const result = await fetchTeachers(
-            currentPage,
-            searchValue || undefined
-          );
-          setTeachers(result.teachers);
-          setMeta(result.meta);
-        } catch (error) {
-          console.error("Failed to fetch teachers:", error);
-          setError(
-            error instanceof Error ? error.message : "Failed to fetch teachers"
-          );
-        } finally {
-          if (isInitialLoad) {
-            // Add slight delay for smooth transition from skeleton to data
-            setTimeout(() => {
-              setIsLoading(false);
-            }, 200);
-          } else {
-            // Add slight delay for smooth transition
-            setTimeout(() => {
-              setIsLoadingData(false);
-            }, 150);
-          }
+      try {
+        if (isInitialLoad) {
+          setIsLoading(true);
         }
-      };
+        setError(null);
+        const result = await fetchTeachers(
+          currentPage,
+          searchValue || undefined
+        );
+        setTeachers(result.teachers);
+        setMeta(result.meta);
+      } catch (error) {
+        console.error("Failed to fetch teachers:", error);
+        setError(
+          error instanceof Error ? error.message : "Failed to fetch teachers"
+        );
+      } finally {
+        if (isInitialLoad) {
+          setTimeout(() => {
+            setIsLoading(false);
+          }, 200);
+        } else {
+          setIsPageChanging(false);
+        }
+      }
+    };
 
+    // Debounce hanya untuk search, tidak untuk pagination
+    if (searchValue.trim() !== "" && !isPageChanging) {
+      const timeoutId = setTimeout(() => {
+        loadTeachers();
+      }, 600);
+      return () => clearTimeout(timeoutId);
+    } else {
+      // Langsung load untuk pagination atau initial load
       loadTeachers();
-    }, 600); // Balanced debounce for good UX with skeleton loading
-
-    return () => clearTimeout(timeoutId);
-  }, [currentPage, searchValue, isLoading]);
+    }
+  }, [currentPage, searchValue, isLoading, isPageChanging]);
 
   const handleViewDetail = (teacher: Teacher) => {
     setSelectedTeacher(teacher);
@@ -125,6 +133,7 @@ export default function TeacherPage() {
   };
 
   const handlePageChange = (page: number) => {
+    setIsPageChanging(true);
     setCurrentPage(page);
   };
 
@@ -136,49 +145,114 @@ export default function TeacherPage() {
     }
   };
 
-  // Loading skeleton component
+  // Loading skeleton component - hanya untuk data rows
   const LoadingSkeleton = () => (
     <div className="px-4 lg:px-6">
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-8 w-32" />
-          <Skeleton className="h-10 w-24" />
-        </div>
-        <div className="rounded-md border">
-          <div className="p-4">
-            {Array.from({ length: 10 }).map((_, i) => (
-              <div key={i} className="flex items-center space-x-4 py-3">
-                <Skeleton className="h-10 w-10 rounded-full" />
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-32" />
-                  <Skeleton className="h-3 w-48" />
-                </div>
-              </div>
-            ))}
+        {/* Search dan Add Button tetap ditampilkan */}
+        <div className="flex flex-col sm:flex-row justify-between gap-4">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Cari guru..."
+              value={searchValue}
+              onChange={(event) => handleSearchChange(event.target.value)}
+              className="pl-9"
+            />
           </div>
+          <Button onClick={handleOpenAddModal}>
+            <Plus className="h-4 w-4 mr-2" />
+            Tambah Guru
+          </Button>
         </div>
-      </div>
-    </div>
-  );
 
-  // Error component
-  const ErrorDisplay = () => (
-    <div className="px-4 lg:px-6">
-      <Card className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950">
-        <CardHeader>
-          <CardTitle className="text-red-800 dark:text-red-200">
-            Error Loading Teachers
-          </CardTitle>
-          <CardDescription className="text-red-700 dark:text-red-300">
-            {error}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-red-600 dark:text-red-400">
-            Please check your API connection and try refreshing the page.
-          </p>
-        </CardContent>
-      </Card>
+        {/* Table dengan skeleton hanya di bagian data */}
+        <div className="rounded-md border">
+          <Table>
+            {/* Header tetap ditampilkan */}
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-center">Profile</TableHead>
+                <TableHead>Nama Lengkap</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead className="text-center">Aksi</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {/* Hanya skeleton rows */}
+              {Array.from({ length: 10 }).map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell className="text-center">
+                    <div className="flex justify-center">
+                      <Skeleton className="h-10 w-10 rounded-full" />
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-32" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-48" />
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <div className="flex justify-center">
+                      <Skeleton className="h-8 w-8 rounded" />
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+
+        {/* Pagination tetap ditampilkan jika ada meta */}
+        {meta && meta.totalPages > 1 && (
+          <div className="flex flex-col items-center gap-4">
+            <div className="text-sm text-muted-foreground text-center">
+              Menampilkan{" "}
+              {Math.min(
+                (meta.currentPage - 1) * meta.itemsPerPage + 1,
+                meta.totalItems
+              )}
+              {" - "}
+              {Math.min(
+                meta.currentPage * meta.itemsPerPage,
+                meta.totalItems
+              )}{" "}
+              dari {meta.totalItems} guru
+            </div>
+            <Pagination>
+              <PaginationContent className="gap-1">
+                <PaginationItem>
+                  <PaginationPrevious
+                    onClick={() => handlePageChange(Math.max(1, meta.currentPage - 1))}
+                    className={
+                      meta.currentPage <= 1
+                        ? "pointer-events-none opacity-50"
+                        : "cursor-pointer"
+                    }
+                  />
+                </PaginationItem>
+                {/* Simplified pagination untuk loading state */}
+                <PaginationItem>
+                  <PaginationLink isActive>
+                    {meta.currentPage}
+                  </PaginationLink>
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={() => handlePageChange(Math.min(meta.totalPages, meta.currentPage + 1))}
+                    className={
+                      meta.currentPage >= meta.totalPages
+                        ? "pointer-events-none opacity-50"
+                        : "cursor-pointer"
+                    }
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        )}
+      </div>
     </div>
   );
 
@@ -202,9 +276,9 @@ export default function TeacherPage() {
             </div>
           </div>
 
-          {isLoading && <LoadingSkeleton />}
+          {(isLoading || isPageChanging) && <LoadingSkeleton />}
 
-          {!isLoading && (
+          {!isLoading && !isPageChanging && (
             <div className="px-4 lg:px-6">
               {error ? (
                 <div className="text-center py-8">
@@ -217,7 +291,6 @@ export default function TeacherPage() {
                   onAddTeacher={handleOpenAddModal}
                   meta={meta || undefined}
                   onPageChange={handlePageChange}
-                  isLoading={isLoadingData}
                   searchValue={searchValue}
                   onSearchChange={handleSearchChange}
                 />
