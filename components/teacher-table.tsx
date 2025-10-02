@@ -85,7 +85,9 @@ const TableData = React.memo(
             <TableCell colSpan={columns.length} className="h-24 text-center">
               <div className="flex flex-col items-center justify-center space-y-2">
                 <div className="text-muted-foreground">
-                  {searchValue ? "Tidak ada guru yang ditemukan" : "Belum ada data guru"}
+                  {searchValue
+                    ? "Tidak ada guru yang ditemukan"
+                    : "Belum ada data guru"}
                 </div>
                 {!searchValue && (
                   <button
@@ -332,9 +334,9 @@ export function TeacherTable({
             ))}
           </TableHeader>
           <TableBody>
-            <TableData 
-              table={table} 
-              columns={columns} 
+            <TableData
+              table={table}
+              columns={columns}
               searchValue={searchValue}
               onAddTeacher={onAddTeacher}
             />

@@ -46,14 +46,11 @@ export async function fetchTeachers(
       params.append("search", search.trim());
     }
 
-    const response = await fetch(
-      `${BASE_URL}/teachers?${params.toString()}`,
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    const response = await fetch(`${BASE_URL}/teachers?${params.toString()}`, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
 
     if (!response.ok) {
       const errorMessage = `Failed to fetch teachers (${response.status})`;
@@ -95,8 +92,8 @@ export async function fetchTeachers(
 export async function createTeacher(
   teacherData: Omit<CreateTeacherRequest, "password" | "passwordConfirmation">
 ): Promise<Teacher> {
-  // Add default password for new teachers
-  const defaultPassword = "SekolahAlam2025!";
+  // Use username as default password for new teachers
+  const defaultPassword = teacherData.username;
 
   const requestData: CreateTeacherRequest = {
     ...teacherData,
