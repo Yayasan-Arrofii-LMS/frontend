@@ -25,8 +25,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Edit, Trash2, Save, X, Loader2 } from "lucide-react";
+import { Edit, Trash2, Save, X, Loader2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { z } from "zod";
+
+// Validation schema untuk update teacher
+const teacherUpdateSchema = z.object({
+  fullName: z
+    .string()
+    .min(4, "Nama harus minimal 4 karakter")
+    .max(100, "Nama maksimal 100 karakter"),
+  username: z
+    .string()
+    .min(4, "Username harus minimal 4 karakter")
+    .max(50, "Username maksimal 50 karakter"),
+  email: z.string().email("Email tidak valid"),
+});
 
 interface TeacherDetailModalProps {
   teacher: Teacher | null;
@@ -49,6 +63,11 @@ export function TeacherDetailModal({
   const [isSaving, setIsSaving] = useState(false);
   const [currentTeacher, setCurrentTeacher] = useState<Teacher | null>(null);
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
+  const [errors, setErrors] = useState<{
+    fullName?: string;
+    username?: string;
+    email?: string;
+  }>({});
 
   React.useEffect(() => {
     if (teacher) {
@@ -62,22 +81,31 @@ export function TeacherDetailModal({
 
   const handleEdit = () => {
     setIsEditing(true);
+    setErrors({}); // Clear errors saat mulai edit
   };
 
   const handleSave = async () => {
     if (editForm) {
-      // Validasi field yang wajib diisi
-      if (!editForm.fullName.trim()) {
-        toast.error("Nama lengkap harus diisi");
-        return;
-      }
-      if (!editForm.username.trim()) {
-        toast.error("Username harus diisi");
-        return;
-      }
-      if (!editForm.email.trim()) {
-        toast.error("Email harus diisi");
-        return;
+      // Validasi form data
+      try {
+        teacherUpdateSchema.parse({
+          fullName: editForm.fullName,
+          username: editForm.username,
+          email: editForm.email,
+        });
+        setErrors({}); // Clear errors jika validasi berhasil
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          const fieldErrors: { fullName?: string; username?: string; email?: string } = {};
+          error.issues.forEach((issue) => {
+            if (issue.path[0]) {
+              fieldErrors[issue.path[0] as keyof typeof fieldErrors] = issue.message;
+            }
+          });
+          setErrors(fieldErrors);
+          toast.error("Mohon perbaiki kesalahan pada form");
+          return;
+        }
       }
 
       setIsSaving(true);
@@ -95,9 +123,39 @@ export function TeacherDetailModal({
         onUpdate(updatedTeacher);
         toast.success("Data guru berhasil diperbarui");
         setIsEditing(false);
-      } catch (error) {
+        setErrors({});
+      } catch (error: any) {
         console.error("Error updating teacher:", error);
-        toast.error("Gagal memperbarui data guru. Silakan coba lagi.");
+        
+        // Handle backend validation errors
+        if (error.validationErrors) {
+          const backendErrors: { fullName?: string; username?: string; email?: string } = {};
+          
+          // Map backend errors to form fields (backend uses 'name', frontend uses 'fullName')
+          Object.keys(error.validationErrors).forEach((field) => {
+            const errorMessages = error.validationErrors[field];
+            if (errorMessages && errorMessages.length > 0) {
+              // Map 'name' from backend to 'fullName' in frontend
+              const frontendField = field === 'name' ? 'fullName' : field;
+              backendErrors[frontendField as keyof typeof backendErrors] = errorMessages[0];
+            }
+          });
+          
+          setErrors(backendErrors);
+          
+          // Show specific error messages
+          if (backendErrors.email) {
+            toast.error(backendErrors.email);
+          }
+          if (backendErrors.username) {
+            toast.error(backendErrors.username);
+          }
+          if (backendErrors.fullName) {
+            toast.error(backendErrors.fullName);
+          }
+        } else {
+          toast.error(error.message || "Gagal memperbarui data guru. Silakan coba lagi.");
+        }
       } finally {
         setIsSaving(false);
       }
@@ -107,6 +165,7 @@ export function TeacherDetailModal({
   const handleCancel = () => {
     setEditForm(currentTeacher);
     setIsEditing(false);
+    setErrors({}); // Clear errors saat cancel
   };
 
   const handleDelete = () => {
@@ -138,6 +197,10 @@ export function TeacherDetailModal({
         ...editForm,
         [field]: value,
       });
+      // Clear error saat user mulai mengetik
+      if (errors[field as keyof typeof errors]) {
+        setErrors({ ...errors, [field]: undefined });
+      }
     }
   };
 
@@ -188,15 +251,24 @@ export function TeacherDetailModal({
                     {isEditing && <span className="text-red-500">*</span>}
                   </Label>
                   {isEditing ? (
-                    <Input
-                      id="fullName"
-                      value={editForm?.fullName || ""}
-                      onChange={(e) =>
-                        handleInputChange("fullName", e.target.value)
-                      }
-                      required
-                      placeholder="Nama lengkap guru"
-                    />
+                    <>
+                      <Input
+                        id="fullName"
+                        value={editForm?.fullName || ""}
+                        onChange={(e) =>
+                          handleInputChange("fullName", e.target.value)
+                        }
+                        required
+                        placeholder="Nama lengkap guru"
+                        className={errors.fullName ? "border-red-500" : ""}
+                      />
+                      {errors.fullName && (
+                        <div className="flex items-center gap-2 text-red-500 text-sm">
+                          <AlertCircle className="h-4 w-4" />
+                          <span>{errors.fullName}</span>
+                        </div>
+                      )}
+                    </>
                   ) : (
                     <p className="text-sm border rounded-md px-3 py-2 bg-muted">
                       {currentTeacher.fullName}
@@ -210,15 +282,24 @@ export function TeacherDetailModal({
                     {isEditing && <span className="text-red-500">*</span>}
                   </Label>
                   {isEditing ? (
-                    <Input
-                      id="username"
-                      value={editForm?.username || ""}
-                      onChange={(e) =>
-                        handleInputChange("username", e.target.value)
-                      }
-                      required
-                      placeholder="username"
-                    />
+                    <>
+                      <Input
+                        id="username"
+                        value={editForm?.username || ""}
+                        onChange={(e) =>
+                          handleInputChange("username", e.target.value)
+                        }
+                        required
+                        placeholder="username"
+                        className={errors.username ? "border-red-500" : ""}
+                      />
+                      {errors.username && (
+                        <div className="flex items-center gap-2 text-red-500 text-sm">
+                          <AlertCircle className="h-4 w-4" />
+                          <span>{errors.username}</span>
+                        </div>
+                      )}
+                    </>
                   ) : (
                     <p className="text-sm border rounded-md px-3 py-2 bg-muted">
                       {currentTeacher.username}
@@ -231,16 +312,25 @@ export function TeacherDetailModal({
                     Email {isEditing && <span className="text-red-500">*</span>}
                   </Label>
                   {isEditing ? (
-                    <Input
-                      id="email"
-                      type="email"
-                      value={editForm?.email || ""}
-                      onChange={(e) =>
-                        handleInputChange("email", e.target.value)
-                      }
-                      required
-                      placeholder="email@example.com"
-                    />
+                    <>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={editForm?.email || ""}
+                        onChange={(e) =>
+                          handleInputChange("email", e.target.value)
+                        }
+                        required
+                        placeholder="email@example.com"
+                        className={errors.email ? "border-red-500" : ""}
+                      />
+                      {errors.email && (
+                        <div className="flex items-center gap-2 text-red-500 text-sm">
+                          <AlertCircle className="h-4 w-4" />
+                          <span>{errors.email}</span>
+                        </div>
+                      )}
+                    </>
                   ) : (
                     <p className="text-sm border rounded-md px-3 py-2 bg-muted">
                       {currentTeacher.email}

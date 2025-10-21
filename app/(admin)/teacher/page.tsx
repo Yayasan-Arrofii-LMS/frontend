@@ -49,7 +49,7 @@ export default function TeacherPage() {
 
   useEffect(() => {
     const loadTeachers = async () => {
-      const isInitialLoad = isLoading; // Jika masih dalam state loading awal
+      const isInitialLoad = isLoading;
 
       try {
         if (isInitialLoad) {
@@ -110,6 +110,14 @@ export default function TeacherPage() {
 
   const handleDeleteTeacher = (teacherId: string) => {
     setTeachers((prev) => prev.filter((teacher) => teacher.id !== teacherId));
+    // Update meta to reflect deleted teacher
+    if (meta) {
+      setMeta({
+        ...meta,
+        totalItems: meta.totalItems - 1,
+        itemCount: Math.max(0, meta.itemCount - 1),
+      });
+    }
   };
 
   const handleAddTeacher = (newTeacher: Teacher) => {

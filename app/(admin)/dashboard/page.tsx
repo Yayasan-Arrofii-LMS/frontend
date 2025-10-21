@@ -64,48 +64,24 @@ async function DashboardContent() {
   } catch (error) {
     console.error('Dashboard error:', error);
     
-    const fallbackData = {
-      teacherCount: 10,
-      studentCount: 100,
-      classCount: 10,
-      Chart: {
-        teacher: {
-          oneYear: {
-            "1": 1, "2": 1, "3": 0, "4": 0, "5": 2, "6": 1,
-            "7": 1, "8": 1, "9": 1, "10": 0, "11": 0, "12": 0
-          },
-          fiveYear: {
-            "2021": 0, "2022": 0, "2023": 0, "2024": 2, "2025": 8
-          }
-        },
-        student: {
-          oneYear: {
-            "1": 6, "2": 5, "3": 11, "4": 7, "5": 8, "6": 9,
-            "7": 12, "8": 9, "9": 9, "10": 0, "11": 0, "12": 0
-          },
-          fiveYear: {
-            "2021": 0, "2022": 0, "2023": 0, "2024": 24, "2025": 76
-          }
-        }
-      }
-    };
-    
     return (
-      <>
-        <div className="px-4 lg:px-6 mb-4">
-          <Card className="border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950">
-            <CardContent className="pt-6">
-              <p className="text-sm text-amber-800 dark:text-amber-200">
-                ⚠️ Using fallback data. API connection failed: {error instanceof Error ? error.message : 'Unknown error'}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-        <SectionCards data={fallbackData} />
-        <div className="px-4 lg:px-6">
-          <ChartAreaInteractive data={fallbackData} />
-        </div>
-      </>
+      <div className="px-4 lg:px-6">
+        <Card className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950">
+          <CardHeader>
+            <CardTitle className="text-red-800 dark:text-red-200">
+              Error Loading Dashboard
+            </CardTitle>
+            <CardDescription className="text-red-700 dark:text-red-300">
+              {error instanceof Error ? error.message : 'Unknown error occurred'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-red-600 dark:text-red-400">
+              Please check your API connection and try refreshing the page.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 }

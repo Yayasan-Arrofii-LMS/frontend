@@ -56,7 +56,10 @@ export interface CreateTeacherRequest {
 export interface CreateTeacherResponse {
   success: boolean;
   message: string;
-  data: ApiTeacher;
+  data: ApiTeacher | null;
+  errors?: {
+    [key: string]: string[];
+  };
 }
 
 export interface DeleteTeacherResponse {
@@ -74,5 +77,8 @@ export interface UpdateTeacherRequest {
 export interface UpdateTeacherResponse {
   success: boolean;
   message: string;
-  data: ApiTeacher;
+  data: ApiTeacher | null;
+  errors?: {
+    [key: string]: string[];
+  };
 }

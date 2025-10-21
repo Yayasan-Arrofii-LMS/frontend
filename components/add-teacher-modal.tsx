@@ -13,8 +13,22 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, X, Loader2 } from "lucide-react";
+import { Plus, X, Loader2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { z } from "zod";
+
+// Validation schema sesuai dengan backend
+const teacherCreateSchema = z.object({
+  name: z
+    .string()
+    .min(4, "Nama harus minimal 4 karakter")
+    .max(100, "Nama maksimal 100 karakter"),
+  username: z
+    .string()
+    .min(4, "Username harus minimal 4 karakter")
+    .max(50, "Username maksimal 50 karakter"),
+  email: z.string().email("Email tidak valid"),
+});
 
 interface AddTeacherModalProps {
   isOpen: boolean;
@@ -33,16 +47,47 @@ export function AddTeacherModal({
     email: "",
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<{
+    name?: string;
+    username?: string;
+    email?: string;
+  }>({});
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
     }));
+    // Clear error untuk field yang sedang diubah
+    if (errors[field as keyof typeof errors]) {
+      setErrors((prev) => ({
+        ...prev,
+        [field]: undefined,
+      }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validasi form data
+    try {
+      teacherCreateSchema.parse(formData);
+      setErrors({}); // Clear errors jika validasi berhasil
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const fieldErrors: { name?: string; username?: string; email?: string } = {};
+        error.issues.forEach((issue) => {
+          if (issue.path[0]) {
+            fieldErrors[issue.path[0] as keyof typeof fieldErrors] = issue.message;
+          }
+        });
+        setErrors(fieldErrors);
+        toast.error("Mohon perbaiki kesalahan pada form");
+        return;
+      }
+    }
+
     setIsLoading(true);
 
     try {
@@ -56,11 +101,39 @@ export function AddTeacherModal({
         username: "",
         email: "",
       });
+      setErrors({});
 
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating teacher:", error);
-      toast.error("Gagal menambahkan guru. Silakan coba lagi.");
+      
+      // Handle backend validation errors
+      if (error.validationErrors) {
+        const backendErrors: { name?: string; username?: string; email?: string } = {};
+        
+        // Map backend errors to form fields
+        Object.keys(error.validationErrors).forEach((field) => {
+          const errorMessages = error.validationErrors[field];
+          if (errorMessages && errorMessages.length > 0) {
+            backendErrors[field as keyof typeof backendErrors] = errorMessages[0];
+          }
+        });
+        
+        setErrors(backendErrors);
+        
+        // Show specific error messages
+        if (backendErrors.email) {
+          toast.error(backendErrors.email);
+        }
+        if (backendErrors.username) {
+          toast.error(backendErrors.username);
+        }
+        if (backendErrors.name) {
+          toast.error(backendErrors.name);
+        }
+      } else {
+        toast.error(error.message || "Gagal menambahkan guru. Silakan coba lagi.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -73,6 +146,7 @@ export function AddTeacherModal({
       username: "",
       email: "",
     });
+    setErrors({});
     onClose();
   };
 
@@ -98,9 +172,16 @@ export function AddTeacherModal({
                 id="name"
                 value={formData.name}
                 onChange={(e) => handleInputChange("name", e.target.value)}
-                placeholder="Nama lengkap guru"
+                placeholder="Nama lengkap guru (minimal 4 karakter)"
                 required
+                className={errors.name ? "border-red-500" : ""}
               />
+              {errors.name && (
+                <div className="flex items-center gap-1 text-sm text-red-600">
+                  <AlertCircle className="h-4 w-4" />
+                  <span>{errors.name}</span>
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -109,9 +190,16 @@ export function AddTeacherModal({
                 id="username"
                 value={formData.username}
                 onChange={(e) => handleInputChange("username", e.target.value)}
-                placeholder="username"
+                placeholder="username (minimal 4 karakter)"
                 required
+                className={errors.username ? "border-red-500" : ""}
               />
+              {errors.username && (
+                <div className="flex items-center gap-1 text-sm text-red-600">
+                  <AlertCircle className="h-4 w-4" />
+                  <span>{errors.username}</span>
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -123,7 +211,14 @@ export function AddTeacherModal({
                 onChange={(e) => handleInputChange("email", e.target.value)}
                 placeholder="email@example.com"
                 required
+                className={errors.email ? "border-red-500" : ""}
               />
+              {errors.email && (
+                <div className="flex items-center gap-1 text-sm text-red-600">
+                  <AlertCircle className="h-4 w-4" />
+                  <span>{errors.email}</span>
+                </div>
+              )}
             </div>
           </div>
 

@@ -110,20 +110,29 @@ export async function createTeacher(
       body: JSON.stringify(requestData),
     });
 
-    if (!response.ok) {
-      const errorMessage = `Failed to create teacher (${response.status})`;
-      throw new ApiError(errorMessage, response.status);
-    }
-
     const data: CreateTeacherResponse = await response.json();
 
-    // Validate response structure
-    if (!data || typeof data.success !== "boolean" || !data.data) {
-      throw new ApiError("Invalid API response format");
+    // Check if request failed
+    if (!response.ok || !data.success) {
+      // Handle validation errors
+      if (data.errors) {
+        const error = new ApiError(
+          data.message || "Validation failed",
+          response.status
+        );
+        // Attach validation errors to the error object
+        (error as any).validationErrors = data.errors;
+        throw error;
+      }
+      throw new ApiError(
+        data.message || `Failed to create teacher (${response.status})`,
+        response.status
+      );
     }
 
-    if (!data.success) {
-      throw new ApiError(data.message || "API request failed");
+    // Validate response structure
+    if (!data.data) {
+      throw new ApiError("Invalid API response format");
     }
 
     return transformApiTeacher(data.data);
@@ -187,20 +196,29 @@ export async function updateTeacher(
       body: JSON.stringify(teacherData),
     });
 
-    if (!response.ok) {
-      const errorMessage = `Failed to update teacher (${response.status})`;
-      throw new ApiError(errorMessage, response.status);
-    }
-
     const data: UpdateTeacherResponse = await response.json();
 
-    // Validate response structure
-    if (!data || typeof data.success !== "boolean" || !data.data) {
-      throw new ApiError("Invalid API response format");
+    // Check if request failed
+    if (!response.ok || !data.success) {
+      // Handle validation errors
+      if (data.errors) {
+        const error = new ApiError(
+          data.message || "Validation failed",
+          response.status
+        );
+        // Attach validation errors to the error object
+        (error as any).validationErrors = data.errors;
+        throw error;
+      }
+      throw new ApiError(
+        data.message || `Failed to update teacher (${response.status})`,
+        response.status
+      );
     }
 
-    if (!data.success) {
-      throw new ApiError(data.message || "API request failed");
+    // Validate response structure
+    if (!data.data) {
+      throw new ApiError("Invalid API response format");
     }
 
     return transformApiTeacher(data.data);

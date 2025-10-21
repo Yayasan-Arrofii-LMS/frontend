@@ -32,6 +32,10 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
               <Input id="name" type="text" placeholder="Sekolah Alam" required />
             </Field>
             <Field>
+              <FieldLabel htmlFor="username">Username</FieldLabel>
+              <Input id="username" type="text" placeholder="sekolahalam" required />
+            </Field>
+            <Field>
               <FieldLabel htmlFor="email">Email</FieldLabel>
               <Input
                 id="email"
