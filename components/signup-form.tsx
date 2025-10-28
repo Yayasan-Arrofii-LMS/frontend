@@ -50,15 +50,17 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
       newErrors.email = "Invalid email format";
     }
 
-    if (!formData.password) {
+    if (!formData.password.trim()) {
       newErrors.password = "Password is required";
-    } else if (formData.password.length < 8) {
+    } else if (formData.password.trim().length < 8) {
       newErrors.password = "Password must be at least 8 characters";
     }
 
-    if (!formData.passwordConfirmation) {
+    if (!formData.passwordConfirmation.trim()) {
       newErrors.passwordConfirmation = "Please confirm your password";
-    } else if (formData.password !== formData.passwordConfirmation) {
+    } else if (
+      formData.password.trim() !== formData.passwordConfirmation.trim()
+    ) {
       newErrors.passwordConfirmation = "Passwords do not match";
     }
 

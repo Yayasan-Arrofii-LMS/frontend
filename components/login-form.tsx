@@ -41,7 +41,7 @@ export function LoginForm({
       newErrors.usernameoremail = "Email or username is required";
     }
 
-    if (!formData.password) {
+    if (!formData.password.trim()) {
       newErrors.password = "Password is required";
     }
 
@@ -71,16 +71,22 @@ export function LoginForm({
     } catch (error) {
       const message = error instanceof Error ? error.message : "Login failed";
 
-      if (message === "Account not verified") {
+      // Cek apakah akun belum diverifikasi
+      if (
+        message.includes("not verified") ||
+        message.includes("Account not verified")
+      ) {
         toast.error("Please verify your account first");
         // Store email untuk verification jika ada di usernameoremail
         if (formData.usernameoremail.includes("@")) {
-          sessionStorage.setItem("verification_email", formData.usernameoremail);
+          sessionStorage.setItem(
+            "verification_email",
+            formData.usernameoremail
+          );
           router.push("/otp");
         }
-      } else if (message === "Invalid credentials") {
-        toast.error("Invalid email/username or password");
       } else {
+        // Tampilkan pesan error apa adanya dari backend
         toast.error(message);
       }
     } finally {
@@ -110,7 +116,9 @@ export function LoginForm({
           <form onSubmit={handleSubmit}>
             <FieldGroup>
               <Field>
-                <FieldLabel htmlFor="usernameoremail">Email or Username</FieldLabel>
+                <FieldLabel htmlFor="usernameoremail">
+                  Email or Username
+                </FieldLabel>
                 <Input
                   id="usernameoremail"
                   type="text"

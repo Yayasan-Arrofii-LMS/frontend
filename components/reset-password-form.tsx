@@ -46,15 +46,17 @@ export function ResetPasswordForm({
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.newPassword) {
+    if (!formData.newPassword.trim()) {
       newErrors.newPassword = "Password is required";
-    } else if (formData.newPassword.length < 8) {
+    } else if (formData.newPassword.trim().length < 8) {
       newErrors.newPassword = "Password must be at least 8 characters";
     }
 
-    if (!formData.confirmPassword) {
+    if (!formData.confirmPassword.trim()) {
       newErrors.confirmPassword = "Please confirm your password";
-    } else if (formData.newPassword !== formData.confirmPassword) {
+    } else if (
+      formData.newPassword.trim() !== formData.confirmPassword.trim()
+    ) {
       newErrors.confirmPassword = "Passwords do not match";
     }
 
