@@ -21,7 +21,7 @@ export interface LoginData {
 }
 
 export interface VerifyOTPData {
-  token?: string; // Token akan ada jika dari forgot password flow
+  reset_token?: string; // Token akan ada jika dari forgot password flow
 }
 
 // Register user
@@ -59,11 +59,11 @@ export async function register(data: {
 
 // Login user
 export async function login(data: {
-  identifier: string; // username or email
+  usernameoremail: string; // username or email
   password: string;
 }): Promise<AuthResponse<LoginData>> {
   const formData = new URLSearchParams();
-  formData.append("username", data.identifier); // backend accepts username field for both username/email
+  formData.append("usernameoremail", data.usernameoremail); // backend accepts username field for both username/email
   formData.append("password", data.password);
 
   const response = await fetch(`${BASE_URL}/login`, {
@@ -152,7 +152,7 @@ export async function resetPassword(data: {
   confirmPassword: string;
 }): Promise<AuthResponse<null>> {
   const response = await fetch(`${BASE_URL}/reset-password`, {
-    method: "POST",
+    method: "PATCH",
     headers: {
       "Content-Type": "application/json",
     },

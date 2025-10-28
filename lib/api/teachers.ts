@@ -121,7 +121,7 @@ export async function createTeacher(
           response.status
         );
         // Attach validation errors to the error object
-        (error as any).validationErrors = data.errors;
+        (error as ApiError & { validationErrors: Record<string, string[]> }).validationErrors = data.errors;
         throw error;
       }
       throw new ApiError(
@@ -207,7 +207,7 @@ export async function updateTeacher(
           response.status
         );
         // Attach validation errors to the error object
-        (error as any).validationErrors = data.errors;
+        (error as ApiError & { validationErrors: Record<string, string[]> }).validationErrors = data.errors;
         throw error;
       }
       throw new ApiError(

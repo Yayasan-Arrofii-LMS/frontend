@@ -29,7 +29,7 @@ export function LoginForm({
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
-    identifier: "",
+    usernameoremail: "",
     password: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -37,8 +37,8 @@ export function LoginForm({
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.identifier.trim()) {
-      newErrors.identifier = "Email or username is required";
+    if (!formData.usernameoremail.trim()) {
+      newErrors.usernameoremail = "Email or username is required";
     }
 
     if (!formData.password) {
@@ -73,9 +73,9 @@ export function LoginForm({
 
       if (message === "Account not verified") {
         toast.error("Please verify your account first");
-        // Store email untuk verification jika ada di identifier
-        if (formData.identifier.includes("@")) {
-          sessionStorage.setItem("verification_email", formData.identifier);
+        // Store email untuk verification jika ada di usernameoremail
+        if (formData.usernameoremail.includes("@")) {
+          sessionStorage.setItem("verification_email", formData.usernameoremail);
           router.push("/otp");
         }
       } else if (message === "Invalid credentials") {
@@ -110,19 +110,19 @@ export function LoginForm({
           <form onSubmit={handleSubmit}>
             <FieldGroup>
               <Field>
-                <FieldLabel htmlFor="identifier">Email or Username</FieldLabel>
+                <FieldLabel htmlFor="usernameoremail">Email or Username</FieldLabel>
                 <Input
-                  id="identifier"
+                  id="usernameoremail"
                   type="text"
                   placeholder="sekolah@alam.com or sekolahalam"
-                  value={formData.identifier}
+                  value={formData.usernameoremail}
                   onChange={handleChange}
                   disabled={isLoading}
                   required
                 />
-                {errors.identifier && (
+                {errors.usernameoremail && (
                   <FieldDescription className="text-red-500">
-                    {errors.identifier}
+                    {errors.usernameoremail}
                   </FieldDescription>
                 )}
               </Field>

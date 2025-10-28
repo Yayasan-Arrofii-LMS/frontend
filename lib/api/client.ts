@@ -3,7 +3,7 @@ import { getAuthToken, removeAuthToken } from "./auth";
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001/api/v1";
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   message: string;
   data: T;
@@ -13,7 +13,7 @@ export class ApiError extends Error {
   constructor(
     message: string,
     public statusCode?: number,
-    public response?: any
+    public response?: unknown
   ) {
     super(message);
     this.name = "ApiError";
@@ -24,7 +24,7 @@ export class ApiError extends Error {
  * Authenticated fetch wrapper
  * Automatically includes auth token and handles common errors
  */
-export async function authenticatedFetch<T = any>(
+export async function authenticatedFetch<T = unknown>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> {
@@ -92,7 +92,7 @@ export async function authenticatedFetch<T = any>(
 /**
  * GET request
  */
-export async function get<T = any>(endpoint: string): Promise<ApiResponse<T>> {
+export async function get<T = unknown>(endpoint: string): Promise<ApiResponse<T>> {
   return authenticatedFetch<T>(endpoint, {
     method: "GET",
   });
@@ -101,9 +101,9 @@ export async function get<T = any>(endpoint: string): Promise<ApiResponse<T>> {
 /**
  * POST request
  */
-export async function post<T = any>(
+export async function post<T = unknown>(
   endpoint: string,
-  data?: any
+  data?: unknown
 ): Promise<ApiResponse<T>> {
   return authenticatedFetch<T>(endpoint, {
     method: "POST",
@@ -114,9 +114,9 @@ export async function post<T = any>(
 /**
  * PUT request
  */
-export async function put<T = any>(
+export async function put<T = unknown>(
   endpoint: string,
-  data?: any
+  data?: unknown
 ): Promise<ApiResponse<T>> {
   return authenticatedFetch<T>(endpoint, {
     method: "PUT",
@@ -127,7 +127,7 @@ export async function put<T = any>(
 /**
  * DELETE request
  */
-export async function del<T = any>(endpoint: string): Promise<ApiResponse<T>> {
+export async function del<T = unknown>(endpoint: string): Promise<ApiResponse<T>> {
   return authenticatedFetch<T>(endpoint, {
     method: "DELETE",
   });
@@ -136,9 +136,9 @@ export async function del<T = any>(endpoint: string): Promise<ApiResponse<T>> {
 /**
  * PATCH request
  */
-export async function patch<T = any>(
+export async function patch<T = unknown>(
   endpoint: string,
-  data?: any
+  data?: unknown
 ): Promise<ApiResponse<T>> {
   return authenticatedFetch<T>(endpoint, {
     method: "PATCH",

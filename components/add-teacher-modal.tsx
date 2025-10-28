@@ -104,16 +104,17 @@ export function AddTeacherModal({
       setErrors({});
 
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error creating teacher:", error);
       
       // Handle backend validation errors
-      if (error.validationErrors) {
+      const err = error as { validationErrors?: Record<string, string[]>; message?: string };
+      if (err.validationErrors) {
         const backendErrors: { name?: string; username?: string; email?: string } = {};
         
         // Map backend errors to form fields
-        Object.keys(error.validationErrors).forEach((field) => {
-          const errorMessages = error.validationErrors[field];
+        Object.keys(err.validationErrors).forEach((field) => {
+          const errorMessages = err.validationErrors?.[field];
           if (errorMessages && errorMessages.length > 0) {
             backendErrors[field as keyof typeof backendErrors] = errorMessages[0];
           }
@@ -132,7 +133,7 @@ export function AddTeacherModal({
           toast.error(backendErrors.name);
         }
       } else {
-        toast.error(error.message || "Gagal menambahkan guru. Silakan coba lagi.");
+        toast.error(err.message || "Gagal menambahkan guru. Silakan coba lagi.");
       }
     } finally {
       setIsLoading(false);

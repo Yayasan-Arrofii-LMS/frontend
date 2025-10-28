@@ -124,16 +124,17 @@ export function TeacherDetailModal({
         toast.success("Data guru berhasil diperbarui");
         setIsEditing(false);
         setErrors({});
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("Error updating teacher:", error);
         
         // Handle backend validation errors
-        if (error.validationErrors) {
+        const err = error as { validationErrors?: Record<string, string[]>; message?: string };
+        if (err.validationErrors) {
           const backendErrors: { fullName?: string; username?: string; email?: string } = {};
           
           // Map backend errors to form fields (backend uses 'name', frontend uses 'fullName')
-          Object.keys(error.validationErrors).forEach((field) => {
-            const errorMessages = error.validationErrors[field];
+          Object.keys(err.validationErrors).forEach((field) => {
+            const errorMessages = err.validationErrors?.[field];
             if (errorMessages && errorMessages.length > 0) {
               // Map 'name' from backend to 'fullName' in frontend
               const frontendField = field === 'name' ? 'fullName' : field;
@@ -154,7 +155,7 @@ export function TeacherDetailModal({
             toast.error(backendErrors.fullName);
           }
         } else {
-          toast.error(error.message || "Gagal memperbarui data guru. Silakan coba lagi.");
+          toast.error(err.message || "Gagal memperbarui data guru. Silakan coba lagi.");
         }
       } finally {
         setIsSaving(false);

@@ -19,20 +19,17 @@ import {
   InputOTPGroup,
   InputOTPSlot,
 } from "@/components/ui/input-otp";
-import Link from "next/link";
 import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { verifyOTP, resendOTP } from "@/lib/api/auth";
 import { toast } from "sonner";
 
 export function OTPForm({ ...props }: React.ComponentProps<typeof Card>) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [otp, setOtp] = useState("");
   const [email, setEmail] = useState("");
-  const isForgotPasswordFlow = searchParams.get("flow") === "forgot-password";
 
   useEffect(() => {
     // Get email from session storage
@@ -75,9 +72,9 @@ export function OTPForm({ ...props }: React.ComponentProps<typeof Card>) {
       if (response.success) {
         toast.success(response.message || "OTP verified successfully!");
 
-        if (isForgotPasswordFlow && response.data?.token) {
+        if (response.data?.reset_token) {
           // For forgot password flow, store reset token and redirect to reset password
-          sessionStorage.setItem("reset_token", response.data.token);
+          sessionStorage.setItem("reset_token", response.data.reset_token);
           sessionStorage.removeItem("verification_email");
           sessionStorage.removeItem("otp_sent");
           router.push("/reset-password");
