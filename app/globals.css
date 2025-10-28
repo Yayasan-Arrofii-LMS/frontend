@@ -252,3 +252,9 @@ body {
     @apply !rounded-none !shadow-none;
   }
 }
+
+/* Custom styles for required labels */
+label.required::after {
+  content: " *";
+  color: var(--color-destructive);
+}
