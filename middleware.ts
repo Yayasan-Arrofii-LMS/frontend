@@ -10,6 +10,7 @@ const authRoutes = [
   "/register",
   "/forgot-password",
   "/reset-password",
+  "/otp",
 ];
 
 export function middleware(request: NextRequest) {
@@ -26,11 +27,10 @@ export function middleware(request: NextRequest) {
   // Check if accessing auth route
   const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route));
 
-  // Redirect to login if accessing protected route without token
+  // Return 404 if accessing protected route without token (untuk keamanan)
+  // Tidak redirect ke login agar tidak mengekspos bahwa route tersebut ada
   if (isProtectedRoute && !token) {
-    const url = new URL("/login", request.url);
-    url.searchParams.set("redirect", pathname);
-    return NextResponse.redirect(url);
+    return NextResponse.rewrite(new URL("/not-found", request.url));
   }
 
   // Redirect to dashboard if accessing auth route with token
