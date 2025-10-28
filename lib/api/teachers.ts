@@ -11,7 +11,20 @@ import {
 import { ApiError, handleApiError } from "@/lib/errors";
 
 const BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001/api/v1";
+
+// Helper to get auth token
+async function getToken(): Promise<string | null> {
+  if (typeof window !== "undefined") {
+    // Client-side: get from localStorage
+    return localStorage.getItem("auth_token");
+  } else {
+    // Server-side: get from cookies
+    const { cookies } = await import("next/headers");
+    const cookieStore = await cookies();
+    return cookieStore.get("auth_token")?.value || null;
+  }
+}
 
 function transformApiTeacher(apiTeacher: ApiTeacher): Teacher {
   return {
@@ -37,6 +50,12 @@ export async function fetchTeachers(
   meta: TeachersApiResponse["meta"];
 }> {
   try {
+    const token = await getToken();
+
+    if (!token) {
+      throw new ApiError("Authentication token not found", 401);
+    }
+
     // Build query parameters
     const params = new URLSearchParams({
       page: page.toString(),
@@ -49,6 +68,7 @@ export async function fetchTeachers(
     const response = await fetch(`${BASE_URL}/teachers?${params.toString()}`, {
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
       },
     });
 
@@ -102,10 +122,17 @@ export async function createTeacher(
   };
 
   try {
+    const token = await getToken();
+
+    if (!token) {
+      throw new ApiError("Authentication token not found", 401);
+    }
+
     const response = await fetch(`${BASE_URL}/teachers`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(requestData),
     });
@@ -121,7 +148,9 @@ export async function createTeacher(
           response.status
         );
         // Attach validation errors to the error object
-        (error as ApiError & { validationErrors: Record<string, string[]> }).validationErrors = data.errors;
+        (
+          error as ApiError & { validationErrors: Record<string, string[]> }
+        ).validationErrors = data.errors;
         throw error;
       }
       throw new ApiError(
@@ -149,10 +178,17 @@ export async function createTeacher(
 
 export async function deleteTeacher(teacherId: string): Promise<void> {
   try {
+    const token = await getToken();
+
+    if (!token) {
+      throw new ApiError("Authentication token not found", 401);
+    }
+
     const response = await fetch(`${BASE_URL}/teachers/${teacherId}`, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
       },
     });
 
@@ -188,10 +224,17 @@ export async function updateTeacher(
   teacherData: UpdateTeacherRequest
 ): Promise<Teacher> {
   try {
+    const token = await getToken();
+
+    if (!token) {
+      throw new ApiError("Authentication token not found", 401);
+    }
+
     const response = await fetch(`${BASE_URL}/teachers/${teacherId}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(teacherData),
     });
@@ -207,7 +250,9 @@ export async function updateTeacher(
           response.status
         );
         // Attach validation errors to the error object
-        (error as ApiError & { validationErrors: Record<string, string[]> }).validationErrors = data.errors;
+        (
+          error as ApiError & { validationErrors: Record<string, string[]> }
+        ).validationErrors = data.errors;
         throw error;
       }
       throw new ApiError(
