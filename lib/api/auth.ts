@@ -1,6 +1,7 @@
-// API client untuk authentication endpoints
-const BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001/api/v1";
+// API client untuk authentication endpoints (client -> internal Next.js API routes)
+// These client helpers call our own server-side API routes under /api/auth/*
+// which will forward the requests to the real backend. This keeps external
+// API credentials and host configuration on the server.
 
 // Response types
 export interface AuthResponse<T = null> {
@@ -32,19 +33,10 @@ export async function register(data: {
   password: string;
   passwordConfirmation: string;
 }): Promise<AuthResponse<RegisterData>> {
-  const formData = new URLSearchParams();
-  formData.append("username", data.username);
-  formData.append("name", data.name);
-  formData.append("email", data.email);
-  formData.append("password", data.password);
-  formData.append("passwordConfirmation", data.passwordConfirmation);
-
-  const response = await fetch(`${BASE_URL}/register`, {
+  const response = await fetch(`/api/auth/register`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: formData.toString(),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
   });
 
   const result = await response.json();
@@ -62,16 +54,10 @@ export async function login(data: {
   usernameoremail: string; // username or email
   password: string;
 }): Promise<AuthResponse<LoginData>> {
-  const formData = new URLSearchParams();
-  formData.append("usernameoremail", data.usernameoremail); // backend accepts username field for both username/email
-  formData.append("password", data.password);
-
-  const response = await fetch(`${BASE_URL}/login`, {
+  const response = await fetch(`/api/auth/login`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: formData.toString(),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
   });
 
   const result = await response.json();
@@ -88,11 +74,9 @@ export async function verifyOTP(data: {
   email: string;
   code: string;
 }): Promise<AuthResponse<VerifyOTPData | null>> {
-  const response = await fetch(`${BASE_URL}/verify-otp`, {
+  const response = await fetch(`/api/auth/verify-otp`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
 
@@ -107,11 +91,9 @@ export async function verifyOTP(data: {
 
 // Resend OTP
 export async function resendOTP(email: string): Promise<AuthResponse<null>> {
-  const response = await fetch(`${BASE_URL}/resend-otp`, {
+  const response = await fetch(`/api/auth/resend-otp`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email }),
   });
 
@@ -128,11 +110,9 @@ export async function resendOTP(email: string): Promise<AuthResponse<null>> {
 export async function forgotPassword(
   email: string
 ): Promise<AuthResponse<null>> {
-  const response = await fetch(`${BASE_URL}/forgot-password`, {
+  const response = await fetch(`/api/auth/forgot-password`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email }),
   });
 
@@ -151,11 +131,9 @@ export async function resetPassword(data: {
   newPassword: string;
   confirmPassword: string;
 }): Promise<AuthResponse<null>> {
-  const response = await fetch(`${BASE_URL}/reset-password`, {
+  const response = await fetch(`/api/auth/reset-password`, {
     method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
 
