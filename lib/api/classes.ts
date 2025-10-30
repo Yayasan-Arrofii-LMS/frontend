@@ -92,13 +92,7 @@ export async function fetchClasses(
       },
     };
   } catch (error) {
-    const apiError = handleApiError(error);
-    console.error("Error fetching classes:", {
-      message: apiError.message,
-      status: apiError.status,
-      baseUrl: BASE_URL,
-    });
-    throw apiError;
+    throw handleApiError(error);
   }
 }
 
@@ -118,10 +112,7 @@ export async function createClass(data: CreateClassRequest): Promise<Class> {
     // Jika ada cover image, tambahkan ke form data dengan nama field "file" sesuai backend
     if (data.coverImage) {
       formData.append("file", data.coverImage);
-      console.log("Uploading file:", data.coverImage.name, data.coverImage.type);
     }
-
-    console.log("Creating class with data:", { name: data.title, description: data.description });
 
     const response = await fetch(`${BASE_URL}/classes`, {
       method: "POST",
@@ -163,13 +154,7 @@ export async function createClass(data: CreateClassRequest): Promise<Class> {
 
     return newClass;
   } catch (error) {
-    const apiError = handleApiError(error);
-    console.error("Error creating class:", {
-      message: apiError.message,
-      status: apiError.status,
-      baseUrl: BASE_URL,
-    });
-    throw apiError;
+    throw handleApiError(error);
   }
 }
 
@@ -235,13 +220,7 @@ export async function updateClass(
 
     return updatedClass;
   } catch (error) {
-    const apiError = handleApiError(error);
-    console.error("Error updating class:", {
-      message: apiError.message,
-      status: apiError.status,
-      baseUrl: BASE_URL,
-    });
-    throw apiError;
+    throw handleApiError(error);
   }
 }
 
@@ -271,13 +250,7 @@ export async function deleteClass(id: string): Promise<void> {
       );
     }
   } catch (error) {
-    const apiError = handleApiError(error);
-    console.error("Error deleting class:", {
-      message: apiError.message,
-      status: apiError.status,
-      baseUrl: BASE_URL,
-    });
-    throw apiError;
+    throw handleApiError(error);
   }
 }
 
@@ -329,12 +302,6 @@ export async function getClassById(id: string): Promise<Class> {
 
     return classData;
   } catch (error) {
-    const apiError = handleApiError(error);
-    console.error("Error getting class:", {
-      message: apiError.message,
-      status: apiError.status,
-      baseUrl: BASE_URL,
-    });
-    throw apiError;
+    throw handleApiError(error);
   }
 }
