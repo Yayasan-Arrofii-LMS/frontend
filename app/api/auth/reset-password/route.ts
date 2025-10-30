@@ -43,9 +43,10 @@ export async function PATCH(req: Request) {
       );
     } // Success response
     return NextResponse.json(data, { status: 200 });
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const error = err as Error;
     return NextResponse.json(
-      { success: false, message: err.message || "Server error", data: null },
+      { success: false, message: error.message || "Server error", data: null },
       { status: 500 }
     );
   }

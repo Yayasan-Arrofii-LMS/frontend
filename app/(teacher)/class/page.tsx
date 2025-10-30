@@ -20,8 +20,7 @@ interface ClassMeta {
 }
 
 export default function ClassPage() {
-  const [allClasses, setAllClasses] = useState<Class[]>([]); // Store all classes
-  const [filteredClasses, setFilteredClasses] = useState<Class[]>([]); // For display
+  const [classes, setClasses] = useState<Class[]>([]);
   const [meta, setMeta] = useState<ClassMeta | null>(null);
   const [selectedClass, setSelectedClass] = useState<Class | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -32,28 +31,32 @@ export default function ClassPage() {
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchValue, setSearchValue] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
-  // Load all classes once on mount
+  // Debounce search value
   useEffect(() => {
-    loadAllClasses();
-  }, []);
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchValue);
+    }, 600);
 
-  // Filter and paginate whenever search or page changes
+    return () => clearTimeout(timer);
+  }, [searchValue]);
+
+  // Load classes whenever page or search changes
   useEffect(() => {
-    filterAndPaginateClasses();
-  }, [searchValue, currentPage, allClasses]);
+    loadClasses();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, debouncedSearch]);
 
-  const loadAllClasses = async () => {
+  const loadClasses = async () => {
     try {
       setIsLoading(true);
       setError(null);
 
-      // Fetch all classes without pagination
-      const { classes: fetchedClasses } = await fetchClasses(1, "");
-      // Since we're using dummy data, we can fetch all at once
-      // In real API, you might need to fetch with a large limit or loop through pages
-
-      setAllClasses(fetchedClasses);
+      const result = await fetchClasses(currentPage, debouncedSearch);
+      
+      setClasses(result.classes);
+      setMeta(result.meta);
     } catch (err) {
       console.error("Error fetching classes:", err);
       setError("Gagal memuat data kelas");
@@ -61,37 +64,6 @@ export default function ClassPage() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const filterAndPaginateClasses = () => {
-    let filtered = [...allClasses];
-
-    // Filter by search
-    if (searchValue.trim() !== "") {
-      const searchLower = searchValue.toLowerCase();
-      filtered = filtered.filter(
-        (cls) =>
-          cls.title.toLowerCase().includes(searchLower) ||
-          cls.description.toLowerCase().includes(searchLower)
-      );
-    }
-
-    // Pagination
-    const itemsPerPage = 6;
-    const totalItems = filtered.length;
-    const totalPages = Math.ceil(totalItems / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const paginatedClasses = filtered.slice(startIndex, endIndex);
-
-    setFilteredClasses(paginatedClasses);
-    setMeta({
-      itemCount: paginatedClasses.length,
-      totalItems,
-      itemsPerPage,
-      totalPages,
-      currentPage,
-    });
   };
 
   const handlePageChange = (page: number) => {
@@ -107,11 +79,11 @@ export default function ClassPage() {
     setIsAddModalOpen(true);
   };
 
-  const handleClassAdded = (newClass: Class) => {
-    // Add to allClasses array
-    setAllClasses((prev) => [newClass, ...prev]);
+  const handleClassAdded = () => {
+    // Reload classes to get fresh data from API
     setCurrentPage(1);
-    setSearchValue(""); // Clear search
+    setSearchValue("");
+    loadClasses();
   };
 
   const handleEditClass = (classData: Class) => {
@@ -119,13 +91,9 @@ export default function ClassPage() {
     setIsEditModalOpen(true);
   };
 
-  const handleClassUpdated = (updatedClass: Class) => {
-    // Update in allClasses array
-    setAllClasses((prevClasses) =>
-      prevClasses.map((cls) =>
-        cls.id === updatedClass.id ? updatedClass : cls
-      )
-    );
+  const handleClassUpdated = () => {
+    // Reload classes to get fresh data from API
+    loadClasses();
   };
 
   const handleDeleteClass = (classData: Class) => {
@@ -141,16 +109,8 @@ export default function ClassPage() {
       await deleteClass(selectedClass.id);
       toast.success("Kelas berhasil dihapus");
 
-      // Remove from allClasses array
-      setAllClasses((prev) =>
-        prev.filter((cls) => cls.id !== selectedClass.id)
-      );
-
-      // Reset to page 1 if current page becomes empty
-      const shouldResetPage = filteredClasses.length === 1 && currentPage > 1;
-      if (shouldResetPage) {
-        setCurrentPage(currentPage - 1);
-      }
+      // Reload classes from API
+      await loadClasses();
 
       setIsDeleteDialogOpen(false);
       setSelectedClass(null);
@@ -208,7 +168,7 @@ export default function ClassPage() {
             </h3>
             <p className="text-muted-foreground mb-6 max-w-sm">{error}</p>
             <button
-              onClick={() => loadAllClasses()}
+              onClick={() => loadClasses()}
               className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
             >
               Coba Lagi
@@ -232,7 +192,7 @@ export default function ClassPage() {
       {/* Class Grid with Loading Overlay */}
       <div className="relative">
         <ClassGrid
-          data={filteredClasses}
+          data={classes}
           onEdit={handleEditClass}
           onDelete={handleDeleteClass}
           onAddClass={handleAddClass}

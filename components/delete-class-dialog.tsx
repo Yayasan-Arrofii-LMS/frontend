@@ -2,7 +2,6 @@
 
 import React from "react";
 import { Class } from "@/types/class";
-import { deleteClass } from "@/lib/api/classes";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,7 +13,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Loader2 } from "lucide-react";
-import { toast } from "sonner";
 
 interface DeleteClassDialogProps {
   isOpen: boolean;
