@@ -8,7 +8,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/components/ui/optimized-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,6 +21,7 @@ interface EditSectionModalProps {
   isOpen: boolean;
   onClose: () => void;
   onUpdate: () => void;
+  classId: string;
   section: Section;
 }
 
@@ -28,6 +29,7 @@ export function EditSectionModal({
   isOpen,
   onClose,
   onUpdate,
+  classId,
   section,
 }: EditSectionModalProps) {
   const [title, setTitle] = useState(section.title);
@@ -47,21 +49,33 @@ export function EditSectionModal({
       return;
     }
 
+    if (title.trim().length < 10) {
+      toast.error("Judul section minimal 10 karakter");
+      return;
+    }
+
+    if (title.trim().length > 255) {
+      toast.error("Judul section maksimal 255 karakter");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      await updateSection(section.id, {
+      await updateSection(classId, section.id, {
         title: title.trim(),
-        description: description.trim() || undefined,
+        description: description.trim() || null,
       });
       toast.success("Section berhasil diperbarui");
       onUpdate();
       onClose();
-    } catch (error) {
+    } catch {
       toast.error("Gagal memperbarui section");
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  if (!isOpen) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

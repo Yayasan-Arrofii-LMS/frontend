@@ -8,7 +8,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/components/ui/optimized-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -41,16 +41,26 @@ export function AddSectionModal({
       return;
     }
 
+    if (title.trim().length < 10) {
+      toast.error("Judul section minimal 10 karakter");
+      return;
+    }
+
+    if (title.trim().length > 255) {
+      toast.error("Judul section maksimal 255 karakter");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       await createSection(classId, {
         title: title.trim(),
-        description: description.trim() || undefined,
+        description: description.trim() || null,
       });
       toast.success("Section berhasil ditambahkan");
       onAdd();
       handleClose();
-    } catch (error) {
+    } catch {
       toast.error("Gagal menambahkan section");
     } finally {
       setIsSubmitting(false);
@@ -64,6 +74,8 @@ export function AddSectionModal({
       onClose();
     }
   };
+
+  if (!isOpen) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>

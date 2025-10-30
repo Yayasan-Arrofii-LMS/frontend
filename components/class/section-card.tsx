@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, memo, useCallback } from "react";
 import { Section, Material } from "@/types/section";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,16 +11,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { MoreVertical, Plus, Pencil, Trash2, FileText, Video, Image as ImageIcon, FileIcon, GripVertical } from "lucide-react";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/optimized-dialog";
+import { MoreVertical, Plus, Pencil, Trash2, FileText, GripVertical } from "lucide-react";
 import { EditSectionModal } from "@/components/class/edit-section-modal";
 import { AddMaterialModal } from "@/components/class/add-material-modal";
 import { EditMaterialModal } from "@/components/class/edit-material-modal";
@@ -49,22 +47,19 @@ import {
 interface SectionCardProps {
   section: Section;
   sectionNumber: number;
+  classId: string;
   onUpdate: () => void;
   onDelete: () => void;
 }
 
 interface MaterialItemProps {
   material: Material;
-  getMaterialIcon: (type: Material["type"]) => React.ReactNode;
-  getMaterialTypeLabel: (type: Material["type"]) => string;
   onEdit: (material: Material) => void;
-  onDelete: (materialId: string) => void;
+  onDelete: (materialId: number) => void;
 }
 
-function MaterialItem({
+const MaterialItem = memo(function MaterialItem({
   material,
-  getMaterialIcon,
-  getMaterialTypeLabel,
   onEdit,
   onDelete,
 }: MaterialItemProps) {
@@ -86,45 +81,37 @@ function MaterialItem({
     <div
       ref={setNodeRef}
       style={style}
-      className={`border rounded-lg p-4 hover:bg-accent/50 transition-colors ${
+      className={`border rounded-lg p-4 hover:bg-accent/50 transition-colors overflow-hidden ${
         isDragging ? "opacity-30" : "opacity-100"
       }`}
     >
-      <div className="flex items-start justify-between">
-        <div className="flex items-start gap-3 flex-1">
+      <div className="flex items-start justify-between gap-2 min-w-0">
+        <div className="flex items-start gap-3 flex-1 min-w-0">
           <div
             {...attributes}
             {...listeners}
-            className="cursor-grab active:cursor-grabbing mt-0.5"
+            className="cursor-grab active:cursor-grabbing mt-0.5 flex-shrink-0"
           >
             <GripVertical className="h-4 w-4 text-muted-foreground" />
           </div>
-          <div className="mt-0.5">{getMaterialIcon(material.type)}</div>
+          <div className="mt-0.5 flex-shrink-0"><FileText className="h-4 w-4" /></div>
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <h4 className="font-medium">{material.title}</h4>
-              <span className="text-xs bg-muted px-2 py-0.5 rounded">
-                {getMaterialTypeLabel(material.type)}
-              </span>
+            <div className="flex items-center gap-2 mb-1 min-w-0">
+              <h4 className="font-medium flex-1 min-w-0 break-all line-clamp-1">{material.title}</h4>
+              {material.xp && (
+                <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded flex-shrink-0 whitespace-nowrap">
+                  {material.xp} XP
+                </span>
+              )}
             </div>
-            <p className="text-sm text-muted-foreground line-clamp-2">
-              {material.description}
+            <p className="text-sm text-muted-foreground break-all line-clamp-2">
+              {material.content}
             </p>
-            {material.youtubeUrl && (
-              <a
-                href={material.youtubeUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-primary hover:underline mt-1 inline-block"
-              >
-                Lihat di YouTube
-              </a>
-            )}
           </div>
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="ml-2">
+            <Button variant="ghost" size="icon" className="ml-2 flex-shrink-0">
               <MoreVertical className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
@@ -145,11 +132,12 @@ function MaterialItem({
       </div>
     </div>
   );
-}
+});
 
 export function SectionCard({
   section,
   sectionNumber,
+  classId,
   onUpdate,
   onDelete,
 }: SectionCardProps) {
@@ -158,9 +146,9 @@ export function SectionCard({
   const [isDeleting, setIsDeleting] = useState(false);
   const [isAddMaterialOpen, setIsAddMaterialOpen] = useState(false);
   const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
-  const [deletingMaterialId, setDeletingMaterialId] = useState<string | null>(null);
+  const [deletingMaterialId, setDeletingMaterialId] = useState<number | null>(null);
   const [isDeletingMaterial, setIsDeletingMaterial] = useState(false);
-  const [localMaterials, setLocalMaterials] = useState(section.materials);
+  const [localMaterials, setLocalMaterials] = useState(section.Material);
   const [activeMaterial, setActiveMaterial] = useState<Material | null>(null);
 
   const {
@@ -172,15 +160,15 @@ export function SectionCard({
     isDragging,
   } = useSortable({ id: section.id });
 
-  // Sync localMaterials when section.materials changes (after CRUD operations)
+  // Sync localMaterials when section.Material changes (after CRUD operations)
   useEffect(() => {
-    setLocalMaterials(section.materials);
-  }, [section.materials]);
+    setLocalMaterials(section.Material);
+  }, [section.Material]);
 
-  const style = {
+  const style = useMemo(() => ({
     transform: CSS.Transform.toString(transform),
     transition,
-  };
+  }), [transform, transition]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -193,42 +181,42 @@ export function SectionCard({
     })
   );
 
-  const handleDelete = async () => {
+  const handleDelete = useCallback(async () => {
     setIsDeleting(true);
     try {
-      await deleteSection(section.id);
+      await deleteSection(classId, section.id);
       onDelete();
       setIsDeleteOpen(false);
-    } catch (error) {
+    } catch {
       toast.error("Gagal menghapus section");
     } finally {
       setIsDeleting(false);
     }
-  };
+  }, [classId, section.id, onDelete]);
 
-  const handleDeleteMaterial = async (materialId: string) => {
+  const handleDeleteMaterial = useCallback(async (materialId: number) => {
     setIsDeletingMaterial(true);
     try {
-      await deleteMaterial(materialId);
+      await deleteMaterial(classId, section.id, materialId);
       toast.success("Materi berhasil dihapus");
       onUpdate();
       setDeletingMaterialId(null);
-    } catch (error) {
+    } catch {
       toast.error("Gagal menghapus materi");
     } finally {
       setIsDeletingMaterial(false);
     }
-  };
+  }, [classId, section.id, onUpdate]);
 
-  const handleMaterialDragStart = (event: DragStartEvent) => {
+  const handleMaterialDragStart = useCallback((event: DragStartEvent) => {
     const { active } = event;
     const material = localMaterials.find((m) => m.id === active.id);
     if (material) {
       setActiveMaterial(material);
     }
-  };
+  }, [localMaterials]);
 
-  const handleMaterialDragEnd = async (event: DragEndEvent) => {
+  const handleMaterialDragEnd = useCallback(async (event: DragEndEvent) => {
     const { active, over } = event;
 
     setActiveMaterial(null);
@@ -241,47 +229,33 @@ export function SectionCard({
 
       const newMaterials = arrayMove(localMaterials, oldIndex, newIndex);
       
+      // Store original orders before update
+      const originalOrders = localMaterials.map((m, index) => ({
+        id: m.id,
+        order: index + 1,
+      }));
+      
       // Update UI immediately
       setLocalMaterials(newMaterials);
 
       try {
-        // Save to backend
-        await reorderMaterials(section.id, newMaterials.map((m) => m.id));
+        // Save to backend with new order (only changed materials will be updated)
+        const materialOrders = newMaterials.map((m, index) => ({
+          id: m.id,
+          order: index + 1,
+        }));
+        await reorderMaterials(classId, section.id, materialOrders, originalOrders);
         toast.success("Urutan materi berhasil diubah");
         // Don't call onUpdate() to avoid re-fetching and skeleton loading
-      } catch (error) {
+      } catch {
         // Revert on error
         toast.error("Gagal mengubah urutan materi");
-        setLocalMaterials(section.materials);
+        setLocalMaterials(section.Material);
       }
     }
-  };
+  }, [localMaterials, classId, section.id, section.Material]);
 
-  const getMaterialIcon = (type: Material["type"]) => {
-    switch (type) {
-      case "video":
-        return <Video className="h-4 w-4" />;
-      case "image":
-        return <ImageIcon className="h-4 w-4" />;
-      case "text":
-        return <FileText className="h-4 w-4" />;
-      case "document":
-        return <FileIcon className="h-4 w-4" />;
-    }
-  };
-
-  const getMaterialTypeLabel = (type: Material["type"]) => {
-    switch (type) {
-      case "video":
-        return "Video";
-      case "image":
-        return "Gambar";
-      case "text":
-        return "Teks";
-      case "document":
-        return "Dokumen";
-    }
-  };
+  const materialIds = useMemo(() => localMaterials.map((m) => m.id), [localMaterials]);
 
   return (
     <>
@@ -290,31 +264,31 @@ export function SectionCard({
         style={style}
         className={isDragging ? "opacity-30" : "opacity-100"}
       >
-        <CardHeader className="pb-4">
-          <div className="flex items-start justify-between">
-            <div className="flex items-start gap-2 flex-1">
+        <CardHeader className="pb-4 overflow-hidden">
+          <div className="flex items-start justify-between gap-2 min-w-0">
+            <div className="flex items-start gap-2 flex-1 min-w-0">
               <div
                 {...attributes}
                 {...listeners}
-                className="cursor-grab active:cursor-grabbing mt-1"
+                className="cursor-grab active:cursor-grabbing mt-1 flex-shrink-0"
               >
                 <GripVertical className="h-5 w-5 text-muted-foreground" />
               </div>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-sm font-medium text-muted-foreground">
                     Section {sectionNumber}
                   </span>
                 </div>
-                <h3 className="text-xl font-semibold mb-1">{section.title}</h3>
+                <h3 className="text-xl font-semibold mb-1 break-all line-clamp-1">{section.title}</h3>
                 {section.description && (
-                  <p className="text-sm text-muted-foreground">{section.description}</p>
+                  <p className="text-sm text-muted-foreground break-all line-clamp-2">{section.description}</p>
                 )}
               </div>
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" className="flex-shrink-0">
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -334,9 +308,9 @@ export function SectionCard({
             </DropdownMenu>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 overflow-hidden">
           {/* Materials List */}
-          {section.materials.length === 0 ? (
+          {section.Material.length === 0 ? (
             <div className="border-2 border-dashed rounded-lg p-8 text-center">
               <Plus className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
               <p className="text-sm text-muted-foreground mb-4">
@@ -356,7 +330,7 @@ export function SectionCard({
                 onDragEnd={handleMaterialDragEnd}
               >
                 <SortableContext
-                  items={localMaterials.map((m) => m.id)}
+                  items={materialIds}
                   strategy={verticalListSortingStrategy}
                 >
                   <div className="space-y-3">
@@ -364,8 +338,6 @@ export function SectionCard({
                       <MaterialItem
                         key={material.id}
                         material={material}
-                        getMaterialIcon={getMaterialIcon}
-                        getMaterialTypeLabel={getMaterialTypeLabel}
                         onEdit={setEditingMaterial}
                         onDelete={setDeletingMaterialId}
                       />
@@ -374,19 +346,21 @@ export function SectionCard({
                 </SortableContext>
                 <DragOverlay>
                   {activeMaterial ? (
-                    <div className="border rounded-lg p-4 bg-background shadow-lg">
-                      <div className="flex items-start gap-3">
-                        <GripVertical className="h-4 w-4 text-muted-foreground mt-0.5" />
-                        <div className="mt-0.5">{getMaterialIcon(activeMaterial.type)}</div>
+                    <div className="border rounded-lg p-4 bg-background shadow-lg w-full max-w-2xl overflow-hidden">
+                      <div className="flex items-start gap-3 min-w-0">
+                        <GripVertical className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                        <div className="mt-0.5 flex-shrink-0"><FileText className="h-4 w-4" /></div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h4 className="font-medium">{activeMaterial.title}</h4>
-                            <span className="text-xs bg-muted px-2 py-0.5 rounded">
-                              {getMaterialTypeLabel(activeMaterial.type)}
-                            </span>
+                          <div className="flex items-center gap-2 mb-1 min-w-0">
+                            <h4 className="font-medium flex-1 min-w-0 break-all line-clamp-1">{activeMaterial.title}</h4>
+                            {activeMaterial.xp && (
+                              <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded flex-shrink-0 whitespace-nowrap">
+                                {activeMaterial.xp} XP
+                              </span>
+                            )}
                           </div>
-                          <p className="text-sm text-muted-foreground line-clamp-2">
-                            {activeMaterial.description}
+                          <p className="text-sm text-muted-foreground break-all line-clamp-2">
+                            {activeMaterial.content}
                           </p>
                         </div>
                       </div>
@@ -413,38 +387,46 @@ export function SectionCard({
         isOpen={isEditOpen}
         onClose={() => setIsEditOpen(false)}
         onUpdate={onUpdate}
+        classId={classId}
         section={section}
       />
 
       {/* Delete Section Dialog */}
-      <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Hapus Section?</AlertDialogTitle>
-            <AlertDialogDescription>
+      <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Hapus Section?</DialogTitle>
+            <DialogDescription>
               Apakah Anda yakin ingin menghapus section &quot;{section.title}&quot;? 
               Semua materi di dalam section ini juga akan dihapus. 
               Tindakan ini tidak dapat dibatalkan.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Batal</AlertDialogCancel>
-            <AlertDialogAction
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteOpen(false)}
+              disabled={isDeleting}
+            >
+              Batal
+            </Button>
+            <Button
+              variant="destructive"
               onClick={handleDelete}
               disabled={isDeleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {isDeleting ? "Menghapus..." : "Hapus"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Add Material Modal */}
       <AddMaterialModal
         isOpen={isAddMaterialOpen}
         onClose={() => setIsAddMaterialOpen(false)}
         onAdd={onUpdate}
+        classId={classId}
         sectionId={section.id}
       />
 
@@ -454,35 +436,43 @@ export function SectionCard({
           isOpen={true}
           onClose={() => setEditingMaterial(null)}
           onUpdate={onUpdate}
+          classId={classId}
+          sectionId={section.id}
           material={editingMaterial}
         />
       )}
 
       {/* Delete Material Dialog */}
-      <AlertDialog
+      <Dialog
         open={deletingMaterialId !== null}
         onOpenChange={(open) => !open && setDeletingMaterialId(null)}
       >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Hapus Materi?</AlertDialogTitle>
-            <AlertDialogDescription>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Hapus Materi?</DialogTitle>
+            <DialogDescription>
               Apakah Anda yakin ingin menghapus materi ini? 
               Tindakan ini tidak dapat dibatalkan.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Batal</AlertDialogCancel>
-            <AlertDialogAction
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeletingMaterialId(null)}
+              disabled={isDeletingMaterial}
+            >
+              Batal
+            </Button>
+            <Button
+              variant="destructive"
               onClick={() => deletingMaterialId && handleDeleteMaterial(deletingMaterialId)}
               disabled={isDeletingMaterial}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {isDeletingMaterial ? "Menghapus..." : "Hapus"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

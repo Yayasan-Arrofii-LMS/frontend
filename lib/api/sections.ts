@@ -1,281 +1,342 @@
-import { ClassDetail, Section, Material } from "@/types/section";
+import {
+  ClassDetail,
+  Class,
+  ClassResponse,
+  Section,
+  Material,
+  SectionsResponse,
+  SectionResponse,
+  MaterialResponse,
+  MaterialsResponse,
+  CreateSectionInput,
+  UpdateSectionInput,
+  CreateMaterialInput,
+  UpdateMaterialInput,
+} from "@/types/section";
 
-// Dummy data untuk sections dan materials
-const DUMMY_SECTIONS: Section[] = [
-  {
-    id: "section-1",
-    title: "Pengenalan Dasar",
-    description: "Memahami konsep dasar dan fundamental",
-    order: 1,
-    materials: [
-      {
-        id: "material-1",
-        title: "Video Pengenalan",
-        description: "Video pengenalan materi pembelajaran",
-        type: "video",
-        content: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-        youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-        order: 1,
-        createdAt: "2024-01-15T08:00:00Z",
-        updatedAt: "2024-01-15T08:00:00Z",
-      },
-      {
-        id: "material-2",
-        title: "Materi Teori",
-        description: "Penjelasan lengkap tentang teori dasar",
-        type: "text",
-        content:
-          "Ini adalah konten teks lengkap tentang teori dasar yang perlu dipelajari. Materi ini mencakup berbagai aspek fundamental yang penting untuk dipahami sebelum melanjutkan ke materi berikutnya.",
-        order: 2,
-        createdAt: "2024-01-15T09:00:00Z",
-        updatedAt: "2024-01-15T09:00:00Z",
-      },
-      {
-        id: "material-3",
-        title: "Diagram Konsep",
-        description: "Visualisasi konsep dalam bentuk diagram",
-        type: "image",
-        content:
-          "https://images.unsplash.com/photo-1509228627152-72ae9ae6848d?w=800&q=80",
-        order: 3,
-        createdAt: "2024-01-15T10:00:00Z",
-        updatedAt: "2024-01-15T10:00:00Z",
-      },
-    ],
-    createdAt: "2024-01-15T08:00:00Z",
-    updatedAt: "2024-01-15T08:00:00Z",
-  },
-  {
-    id: "section-2",
-    title: "Materi Lanjutan",
-    description: "Pembahasan mendalam dan praktik",
-    order: 2,
-    materials: [
-      {
-        id: "material-4",
-        title: "Tutorial Praktik",
-        description: "Video tutorial step by step",
-        type: "video",
-        content: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-        youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-        order: 1,
-        createdAt: "2024-01-16T08:00:00Z",
-        updatedAt: "2024-01-16T08:00:00Z",
-      },
-      {
-        id: "material-5",
-        title: "Modul PDF",
-        description: "Modul pembelajaran dalam format PDF",
-        type: "document",
-        content: "https://example.com/module.pdf",
-        order: 2,
-        createdAt: "2024-01-16T09:00:00Z",
-        updatedAt: "2024-01-16T09:00:00Z",
-      },
-    ],
-    createdAt: "2024-01-16T08:00:00Z",
-    updatedAt: "2024-01-16T08:00:00Z",
-  },
-  {
-    id: "section-3",
-    title: "Evaluasi dan Latihan",
-    description: "Soal-soal latihan dan evaluasi pemahaman",
-    order: 3,
-    materials: [],
-    createdAt: "2024-01-17T08:00:00Z",
-    updatedAt: "2024-01-17T08:00:00Z",
-  },
-];
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1";
 
-// Simulate API delay
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-export async function fetchClassDetail(classId: string): Promise<ClassDetail> {
-  await delay(800);
-
-  const classDetail: ClassDetail = {
-    id: classId,
-    title: "Matematika Dasar",
-    description:
-      "Kelas matematika untuk pemula yang mencakup operasi dasar, aljabar sederhana, dan geometri.",
-    coverImage:
-      "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=800&q=80",
-    teacherId: "teacher-1",
-    teacherName: "Budi Santoso",
-    studentCount: 25,
-    sections: [...DUMMY_SECTIONS],
-    createdAt: "2024-01-15T08:00:00Z",
-    updatedAt: "2024-01-17T08:00:00Z",
-  };
-
-  return classDetail;
+// Helper function to get auth token
+function getAuthToken(): string {
+  if (typeof window !== "undefined") {
+    return localStorage.getItem("auth_token") || "";
+  }
+  return "";
 }
 
+// Helper function for API calls
+async function apiCall<T>(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<T> {
+  const token = getAuthToken();
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+    ...(token && { Authorization: `Bearer ${token}` }),
+    ...options.headers,
+  };
+
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    ...options,
+    headers,
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({
+      message: "An error occurred",
+    }));
+    throw new Error(error.message || `HTTP error! status: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+// Fetch class by ID
+export async function fetchClass(classId: string): Promise<Class> {
+  try {
+    const response = await apiCall<ClassResponse>(
+      `/classes/${classId}`
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching class:", error);
+    throw error;
+  }
+}
+
+// Fetch all sections for a class
+export async function fetchSections(classId: string): Promise<Section[]> {
+  try {
+    const response = await apiCall<SectionsResponse>(
+      `/classes/${classId}/sections`
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching sections:", error);
+    throw error;
+  }
+}
+
+// Fetch all materials for a section
+export async function fetchMaterials(sectionId: number): Promise<Material[]> {
+  try {
+    const response = await apiCall<MaterialsResponse>(
+      `/classes/sections/${sectionId}/materials`
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching materials:", error);
+    throw error;
+  }
+}
+
+// Fetch class detail with sections and materials
+export async function fetchClassDetail(classId: string): Promise<ClassDetail> {
+  try {
+    // Fetch class info and sections in parallel
+    const [classInfo, sections] = await Promise.all([
+      fetchClass(classId),
+      fetchSections(classId)
+    ]);
+
+    // Fetch materials for each section
+    const sectionsWithMaterials = await Promise.all(
+      sections.map(async (section) => {
+        try {
+          const materials = await fetchMaterials(section.id);
+          return {
+            ...section,
+            Material: materials,
+          };
+        } catch (error) {
+          console.error(`Error fetching materials for section ${section.id}:`, error);
+          // Return section with empty materials on error
+          return section;
+        }
+      })
+    );
+
+    // Map API response to ClassDetail format
+    const classDetail: ClassDetail = {
+      id: classId,
+      title: classInfo.name,
+      description: classInfo.description,
+      coverImage: classInfo.image_path_relative,
+      teacherId: "teacher-1", // TODO: Get from API when available
+      teacherName: "Budi Santoso", // TODO: Get from API when available
+      studentCount: classInfo.students.length,
+      sections: sectionsWithMaterials,
+      createdAt: new Date().toISOString(), // TODO: Get from API when available
+      updatedAt: new Date().toISOString(), // TODO: Get from API when available
+    };
+
+    return classDetail;
+  } catch (error) {
+    console.error("Error fetching class detail:", error);
+    throw error;
+  }
+}
+
+// Create a new section
 export async function createSection(
   classId: string,
-  data: { title: string; description?: string }
+  data: CreateSectionInput
 ): Promise<Section> {
-  await delay(500);
-
-  const newSection: Section = {
-    id: `section-${Date.now()}`,
-    title: data.title,
-    description: data.description,
-    order: DUMMY_SECTIONS.length + 1,
-    materials: [],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
-
-  DUMMY_SECTIONS.push(newSection);
-  return newSection;
+  try {
+    const response = await apiCall<SectionResponse>(
+      `/classes/${classId}/sections`,
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error creating section:", error);
+    throw error;
+  }
 }
 
+// Update a section
 export async function updateSection(
-  sectionId: string,
-  data: { title: string; description?: string }
+  classId: string,
+  sectionId: number,
+  data: UpdateSectionInput
 ): Promise<Section> {
-  await delay(500);
-
-  const sectionIndex = DUMMY_SECTIONS.findIndex((s) => s.id === sectionId);
-  if (sectionIndex === -1) {
-    throw new Error("Section not found");
-  }
-
-  DUMMY_SECTIONS[sectionIndex] = {
-    ...DUMMY_SECTIONS[sectionIndex],
-    title: data.title,
-    description: data.description,
-    updatedAt: new Date().toISOString(),
-  };
-
-  return DUMMY_SECTIONS[sectionIndex];
-}
-
-export async function deleteSection(sectionId: string): Promise<void> {
-  await delay(500);
-
-  const sectionIndex = DUMMY_SECTIONS.findIndex((s) => s.id === sectionId);
-  if (sectionIndex === -1) {
-    throw new Error("Section not found");
-  }
-
-  DUMMY_SECTIONS.splice(sectionIndex, 1);
-}
-
-export async function createMaterial(
-  sectionId: string,
-  data: {
-    title: string;
-    description: string;
-    type: Material["type"];
-    content: string;
-    youtubeUrl?: string;
-  }
-): Promise<Material> {
-  await delay(500);
-
-  const section = DUMMY_SECTIONS.find((s) => s.id === sectionId);
-  if (!section) {
-    throw new Error("Section not found");
-  }
-
-  const newMaterial: Material = {
-    id: `material-${Date.now()}`,
-    title: data.title,
-    description: data.description,
-    type: data.type,
-    content: data.content,
-    youtubeUrl: data.youtubeUrl,
-    order: section.materials.length + 1,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
-
-  section.materials.push(newMaterial);
-  return newMaterial;
-}
-
-export async function updateMaterial(
-  materialId: string,
-  data: {
-    title: string;
-    description: string;
-    type: Material["type"];
-    content: string;
-    youtubeUrl?: string;
-  }
-): Promise<Material> {
-  await delay(500);
-
-  for (const section of DUMMY_SECTIONS) {
-    const materialIndex = section.materials.findIndex(
-      (m: Material) => m.id === materialId
+  try {
+    const response = await apiCall<SectionResponse>(
+      `/classes/${classId}/sections/${sectionId}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify(data),
+      }
     );
-    if (materialIndex !== -1) {
-      section.materials[materialIndex] = {
-        ...section.materials[materialIndex],
-        title: data.title,
-        description: data.description,
-        type: data.type,
-        content: data.content,
-        youtubeUrl: data.youtubeUrl,
-        updatedAt: new Date().toISOString(),
-      };
-      return section.materials[materialIndex];
-    }
+    return response.data;
+  } catch (error) {
+    console.error("Error updating section:", error);
+    throw error;
   }
-
-  throw new Error("Material not found");
 }
 
-export async function deleteMaterial(materialId: string): Promise<void> {
-  await delay(500);
-
-  for (const section of DUMMY_SECTIONS) {
-    const materialIndex = section.materials.findIndex(
-      (m: Material) => m.id === materialId
-    );
-    if (materialIndex !== -1) {
-      section.materials.splice(materialIndex, 1);
-      return;
-    }
-  }
-
-  throw new Error("Material not found");
-}
-
-export async function reorderSections(sectionIds: string[]): Promise<void> {
-  await delay(300);
-
-  // Update order based on new position
-  const reorderedSections = sectionIds.map((id, index) => {
-    const section = DUMMY_SECTIONS.find((s) => s.id === id);
-    if (!section) throw new Error(`Section ${id} not found`);
-    return { ...section, order: index + 1 };
-  });
-
-  // Replace array with reordered sections
-  DUMMY_SECTIONS.length = 0;
-  DUMMY_SECTIONS.push(...reorderedSections);
-}
-
-export async function reorderMaterials(
-  sectionId: string,
-  materialIds: string[]
+// Delete a section
+export async function deleteSection(
+  classId: string,
+  sectionId: number
 ): Promise<void> {
-  await delay(300);
+  try {
+    await apiCall<{ success: boolean; message: string }>(
+      `/classes/${classId}/sections/${sectionId}`,
+      {
+        method: "DELETE",
+      }
+    );
+  } catch (error) {
+    console.error("Error deleting section:", error);
+    throw error;
+  }
+}
 
-  const section = DUMMY_SECTIONS.find((s) => s.id === sectionId);
-  if (!section) throw new Error("Section not found");
+// Create a new material
+export async function createMaterial(
+  classId: string,
+  sectionId: number,
+  data: CreateMaterialInput
+): Promise<Material> {
+  try {
+    const response = await apiCall<MaterialResponse>(
+      `/classes/sections/${sectionId}/materials`,
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error creating material:", error);
+    throw error;
+  }
+}
 
-  // Update order based on new position
-  const reorderedMaterials = materialIds.map((id, index) => {
-    const material = section.materials.find((m: Material) => m.id === id);
-    if (!material) throw new Error(`Material ${id} not found`);
-    return { ...material, order: index + 1 };
-  });
+// Update a material
+export async function updateMaterial(
+  classId: string,
+  sectionId: number,
+  materialId: number,
+  data: UpdateMaterialInput
+): Promise<Material> {
+  try {
+    const response = await apiCall<MaterialResponse>(
+      `/classes/sections/${sectionId}/materials/${materialId}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify(data),
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error updating material:", error);
+    throw error;
+  }
+}
 
-  // Replace materials array with reordered materials
-  section.materials = reorderedMaterials;
+// Delete a material
+export async function deleteMaterial(
+  classId: string,
+  sectionId: number,
+  materialId: number
+): Promise<void> {
+  try {
+    await apiCall<{ success: boolean; message: string }>(
+      `/classes/sections/${sectionId}/materials/${materialId}`,
+      {
+        method: "DELETE",
+      }
+    );
+  } catch (error) {
+    console.error("Error deleting material:", error);
+    throw error;
+  }
+}
+
+// Reorder sections
+export async function reorderSections(
+  classId: string,
+  sectionOrders: { id: number; order: number }[],
+  originalOrders?: { id: number; order: number }[]
+): Promise<void> {
+  try {
+    // If original orders provided, only update sections that changed
+    if (originalOrders) {
+      const changedSections = sectionOrders.filter((newOrder) => {
+        const original = originalOrders.find((o) => o.id === newOrder.id);
+        return !original || original.order !== newOrder.order;
+      });
+
+      if (changedSections.length === 0) {
+        return; // No changes needed
+      }
+
+      // Update only changed sections
+      await Promise.all(
+        changedSections.map((item) =>
+          updateSection(classId, item.id, { order: item.order })
+        )
+      );
+    } else {
+      // Update all sections if no original orders provided
+      await Promise.all(
+        sectionOrders.map((item) =>
+          updateSection(classId, item.id, { order: item.order })
+        )
+      );
+    }
+  } catch (error) {
+    console.error("Error reordering sections:", error);
+    throw error;
+  }
+}
+
+// Reorder materials within a section
+export async function reorderMaterials(
+  classId: string,
+  sectionId: number,
+  materialOrders: { id: number; order: number }[],
+  originalOrders?: { id: number; order: number }[]
+): Promise<void> {
+  try {
+    // If original orders provided, only update materials that changed
+    if (originalOrders) {
+      const changedMaterials = materialOrders.filter((newOrder) => {
+        const original = originalOrders.find((o) => o.id === newOrder.id);
+        return !original || original.order !== newOrder.order;
+      });
+
+      if (changedMaterials.length === 0) {
+        return; // No changes needed
+      }
+
+      // Update only changed materials
+      await Promise.all(
+        changedMaterials.map((item) =>
+          apiCall(`/classes/sections/${sectionId}/materials/${item.id}`, {
+            method: "PATCH",
+            body: JSON.stringify({ order: item.order }),
+          })
+        )
+      );
+    } else {
+      // Update all materials if no original orders provided
+      await Promise.all(
+        materialOrders.map((item) =>
+          apiCall(`/classes/sections/${sectionId}/materials/${item.id}`, {
+            method: "PATCH",
+            body: JSON.stringify({ order: item.order }),
+          })
+        )
+      );
+    }
+  } catch (error) {
+    console.error("Error reordering materials:", error);
+    throw error;
+  }
 }

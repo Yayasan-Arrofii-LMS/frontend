@@ -3,15 +3,14 @@
 import React from "react";
 import { Class } from "@/types/class";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/optimized-dialog";
+import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 
 interface DeleteClassDialogProps {
@@ -30,13 +29,14 @@ export function DeleteClassDialog({
   isLoading,
 }: DeleteClassDialogProps) {
   if (!classData) return null;
+  if (!isOpen) return null;
 
   return (
-    <AlertDialog open={isOpen} onOpenChange={onClose}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Hapus Kelas?</AlertDialogTitle>
-          <AlertDialogDescription className="space-y-2">
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Hapus Kelas?</DialogTitle>
+          <DialogDescription className="space-y-2">
             <span className="block">
               Anda yakin ingin menghapus kelas{" "}
               <span className="font-semibold text-foreground">
@@ -48,14 +48,20 @@ export function DeleteClassDialog({
               Tindakan ini tidak dapat dibatalkan. Semua data yang terkait
               dengan kelas ini akan dihapus permanen.
             </span>
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={isLoading}>Batal</AlertDialogCancel>
-          <AlertDialogAction
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={onClose}
+            disabled={isLoading}
+          >
+            Batal
+          </Button>
+          <Button
+            variant="destructive"
             onClick={onDelete}
             disabled={isLoading}
-            className="bg-destructive hover:bg-destructive/90"
           >
             {isLoading ? (
               <>
@@ -65,9 +71,9 @@ export function DeleteClassDialog({
             ) : (
               "Hapus"
             )}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -119,7 +119,7 @@ export async function put<T = unknown>(
   data?: unknown
 ): Promise<ApiResponse<T>> {
   return authenticatedFetch<T>(endpoint, {
-    method: "PUT",
+    method: "PATCH",
     body: JSON.stringify(data),
   });
 }

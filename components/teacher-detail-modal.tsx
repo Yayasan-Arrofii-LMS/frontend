@@ -9,18 +9,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+  DialogDescription,
+} from "@/components/ui/optimized-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -205,14 +195,17 @@ export function TeacherDetailModal({
     }
   };
 
+  if (!isOpen) return null;
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-center">
-            {isEditing ? "Edit Guru" : "Detail Guru"}
-          </DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-center">
+              {isEditing ? "Edit Guru" : "Detail Guru"}
+            </DialogTitle>
+          </DialogHeader>
 
         <div className="space-y-6">
           {/* Profile and Information Layout */}
@@ -365,58 +358,18 @@ export function TeacherDetailModal({
             </>
           ) : (
             <>
-              <AlertDialog open={showDeleteAlert} onOpenChange={setShowDeleteAlert}>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    variant="destructive"
-                    disabled={isDeleting}
-                    onClick={handleDelete}
-                  >
-                    {isDeleting ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <Trash2 className="h-4 w-4 mr-2" />
-                    )}
-                    {isDeleting ? "Menghapus..." : "Hapus"}
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Konfirmasi Hapus Guru</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Apakah Anda yakin ingin menghapus data guru{" "}
-                      <span className="font-semibold">{currentTeacher.fullName}</span>?
-                      <br />
-                      <br />
-                      <span className="text-red-600 font-medium">
-                        Tindakan ini tidak dapat dibatalkan.
-                      </span>
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel disabled={isDeleting}>
-                      Batal
-                    </AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={confirmDelete}
-                      disabled={isDeleting}
-                      className="bg-red-600 text-white hover:bg-red-700"
-                    >
-                      {isDeleting ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Menghapus...
-                        </>
-                      ) : (
-                        <>
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Hapus
-                        </>
-                      )}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+              <Button
+                variant="destructive"
+                disabled={isDeleting}
+                onClick={handleDelete}
+              >
+                {isDeleting ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4 mr-2" />
+                )}
+                {isDeleting ? "Menghapus..." : "Hapus"}
+              </Button>
               <Button onClick={handleEdit} disabled={isDeleting}>
                 <Edit className="h-4 w-4 mr-2" />
                 Edit
@@ -426,5 +379,50 @@ export function TeacherDetailModal({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    {/* Delete Confirmation Dialog */}
+    <Dialog open={showDeleteAlert} onOpenChange={setShowDeleteAlert}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Konfirmasi Hapus Guru</DialogTitle>
+          <DialogDescription>
+            Apakah Anda yakin ingin menghapus data guru{" "}
+            <span className="font-semibold">{currentTeacher.fullName}</span>?
+            <br />
+            <br />
+            <span className="text-red-600 font-medium">
+              Tindakan ini tidak dapat dibatalkan.
+            </span>
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => setShowDeleteAlert(false)}
+            disabled={isDeleting}
+          >
+            Batal
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={confirmDelete}
+            disabled={isDeleting}
+          >
+            {isDeleting ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Menghapus...
+              </>
+            ) : (
+              <>
+                <Trash2 className="h-4 w-4 mr-2" />
+                Hapus
+              </>
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }

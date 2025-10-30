@@ -112,6 +112,12 @@ export function ClassDetailContent({ classId }: ClassDetailContentProps) {
 
       const newSections = arrayMove(sections, oldIndex, newIndex);
       
+      // Store original orders before update
+      const originalOrders = sections.map((s, index) => ({
+        id: s.id,
+        order: index + 1,
+      }));
+      
       // Update UI immediately
       setClassDetail({
         ...classDetail,
@@ -119,10 +125,14 @@ export function ClassDetailContent({ classId }: ClassDetailContentProps) {
       });
 
       try {
-        // Save to backend
-        await reorderSections(newSections.map((s) => s.id));
+        // Save to backend with new order (only changed sections will be updated)
+        const sectionOrders = newSections.map((s, index) => ({
+          id: s.id,
+          order: index + 1,
+        }));
+        await reorderSections(classId, sectionOrders, originalOrders);
         toast.success("Urutan section berhasil diubah");
-      } catch (error) {
+      } catch {
         // Revert on error
         toast.error("Gagal mengubah urutan section");
         loadClassDetail();
@@ -141,7 +151,7 @@ export function ClassDetailContent({ classId }: ClassDetailContentProps) {
   return (
     <>
       {/* Header */}
-      <div className="mb-6">
+      <div className="mb-6 overflow-hidden">
         <Button
           variant="ghost"
           size="sm"
@@ -152,17 +162,17 @@ export function ClassDetailContent({ classId }: ClassDetailContentProps) {
           Kembali
         </Button>
 
-        <div className="flex items-start gap-6">
+        <div className="flex items-start gap-6 min-w-0">
           <img
             src={classDetail.coverImage}
             alt={classDetail.title}
-            className="w-32 h-32 object-cover rounded-lg"
+            className="w-32 h-32 object-cover rounded-lg flex-shrink-0"
           />
-          <div className="flex-1">
-            <h1 className="text-3xl font-bold mb-2">{classDetail.title}</h1>
-            <p className="text-muted-foreground mb-4">{classDetail.description}</p>
-            <div className="flex gap-4 text-sm text-muted-foreground">
-              <span>Guru: {classDetail.teacherName}</span>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-3xl font-bold mb-2 break-all line-clamp-1">{classDetail.title}</h1>
+            <p className="text-muted-foreground mb-4 break-all line-clamp-2">{classDetail.description}</p>
+            <div className="flex gap-4 text-sm text-muted-foreground flex-wrap">
+              <span className="break-all">Guru: {classDetail.teacherName}</span>
               <span>•</span>
               <span>{classDetail.studentCount} Siswa</span>
               <span>•</span>
@@ -215,6 +225,7 @@ export function ClassDetailContent({ classId }: ClassDetailContentProps) {
                   key={section.id}
                   section={section}
                   sectionNumber={index + 1}
+                  classId={classId}
                   onUpdate={handleSectionUpdated}
                   onDelete={handleSectionDeleted}
                 />
@@ -223,19 +234,19 @@ export function ClassDetailContent({ classId }: ClassDetailContentProps) {
           </SortableContext>
           <DragOverlay>
             {activeSection ? (
-              <Card className="shadow-lg">
-                <CardContent className="p-6">
+              <Card className="shadow-lg w-full max-w-2xl overflow-hidden">
+                <CardContent className="p-6 overflow-hidden">
                   <div className="flex items-start gap-2">
                     <div className="text-sm font-medium text-muted-foreground">
                       Section {classDetail.sections.findIndex((s) => s.id === activeSection.id) + 1}
                     </div>
                   </div>
-                  <h3 className="text-xl font-semibold mb-1">{activeSection.title}</h3>
+                  <h3 className="text-xl font-semibold mb-1 break-all line-clamp-1">{activeSection.title}</h3>
                   {activeSection.description && (
-                    <p className="text-sm text-muted-foreground">{activeSection.description}</p>
+                    <p className="text-sm text-muted-foreground break-all line-clamp-2">{activeSection.description}</p>
                   )}
                   <div className="mt-3 text-sm text-muted-foreground">
-                    {activeSection.materials.length} Materi
+                    {activeSection.Material.length} Materi
                   </div>
                 </CardContent>
               </Card>

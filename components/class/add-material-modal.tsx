@@ -8,19 +8,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/components/ui/optimized-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { MaterialType } from "@/types/section";
 import { createMaterial } from "@/lib/api/sections";
 import { toast } from "sonner";
 
@@ -28,20 +20,20 @@ interface AddMaterialModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAdd: () => void;
-  sectionId: string;
+  classId: string;
+  sectionId: number;
 }
 
 export function AddMaterialModal({
   isOpen,
   onClose,
   onAdd,
+  classId,
   sectionId,
 }: AddMaterialModalProps) {
   const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [type, setType] = useState<MaterialType>("text");
   const [content, setContent] = useState("");
-  const [youtubeUrl, setYoutubeUrl] = useState("");
+  const [xp, setXp] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -52,29 +44,33 @@ export function AddMaterialModal({
       return;
     }
 
-    if (!description.trim()) {
-      toast.error("Deskripsi materi wajib diisi");
+    if (title.trim().length > 255) {
+      toast.error("Judul materi maksimal 255 karakter");
       return;
     }
 
-    if (!content.trim() && type !== "text") {
-      toast.error("Konten/URL materi wajib diisi");
+    if (!content.trim()) {
+      toast.error("Konten materi wajib diisi");
+      return;
+    }
+
+    const xpValue = xp ? parseInt(xp) : undefined;
+    if (xp && (isNaN(xpValue!) || xpValue! < 0)) {
+      toast.error("XP harus berupa angka positif");
       return;
     }
 
     setIsSubmitting(true);
     try {
-      await createMaterial(sectionId, {
+      await createMaterial(classId, sectionId, {
         title: title.trim(),
-        description: description.trim(),
-        type,
         content: content.trim(),
-        youtubeUrl: youtubeUrl.trim() || undefined,
+        xp: xpValue,
       });
       toast.success("Materi berhasil ditambahkan");
       onAdd();
       handleClose();
-    } catch (error) {
+    } catch {
       toast.error("Gagal menambahkan materi");
     } finally {
       setIsSubmitting(false);
@@ -84,13 +80,13 @@ export function AddMaterialModal({
   const handleClose = () => {
     if (!isSubmitting) {
       setTitle("");
-      setDescription("");
-      setType("text");
       setContent("");
-      setYoutubeUrl("");
+      setXp("");
       onClose();
     }
   };
+
+  if (!isOpen) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -109,96 +105,52 @@ export function AddMaterialModal({
               </Label>
               <Input
                 id="material-title"
-                placeholder="Contoh: Video Pengenalan"
+                placeholder="Contoh: Pengenalan React Hooks"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 disabled={isSubmitting}
                 autoFocus
+                maxLength={255}
               />
+              <p className="text-xs text-muted-foreground">
+                Maksimal 255 karakter
+              </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="material-description">
-                Deskripsi <span className="text-destructive">*</span>
+              <Label htmlFor="material-content">
+                Konten Materi <span className="text-destructive">*</span>
               </Label>
               <Textarea
-                id="material-description"
-                placeholder="Deskripsi singkat tentang materi ini..."
-                value={description}
+                id="material-content"
+                placeholder="Tulis konten materi pembelajaran di sini... Bisa berupa penjelasan, link video, link dokumen, dll."
+                value={content}
                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                  setDescription(e.target.value)
+                  setContent(e.target.value)
                 }
                 disabled={isSubmitting}
-                rows={3}
+                rows={8}
               />
+              <p className="text-xs text-muted-foreground">
+                Konten bisa berupa teks, link YouTube, link gambar, link PDF, dll.
+              </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="material-type">
-                Tipe Materi <span className="text-destructive">*</span>
-              </Label>
-              <Select
-                value={type}
-                onValueChange={(value) => setType(value as MaterialType)}
+              <Label htmlFor="material-xp">XP Reward (Opsional)</Label>
+              <Input
+                id="material-xp"
+                type="number"
+                min="0"
+                placeholder="Contoh: 10"
+                value={xp}
+                onChange={(e) => setXp(e.target.value)}
                 disabled={isSubmitting}
-              >
-                <SelectTrigger id="material-type">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="text">Teks</SelectItem>
-                  <SelectItem value="video">Video</SelectItem>
-                  <SelectItem value="image">Gambar</SelectItem>
-                  <SelectItem value="document">Dokumen</SelectItem>
-                </SelectContent>
-              </Select>
+              />
+              <p className="text-xs text-muted-foreground">
+                XP yang didapat siswa setelah menyelesaikan materi ini
+              </p>
             </div>
-
-            {type === "text" ? (
-              <div className="space-y-2">
-                <Label htmlFor="material-content">Konten Teks</Label>
-                <Textarea
-                  id="material-content"
-                  placeholder="Tulis konten materi di sini..."
-                  value={content}
-                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                    setContent(e.target.value)
-                  }
-                  disabled={isSubmitting}
-                  rows={6}
-                />
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <Label htmlFor="material-content">
-                  URL {type === "video" ? "Video" : type === "image" ? "Gambar" : "Dokumen"}{" "}
-                  <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="material-content"
-                  placeholder={`https://example.com/${type === "video" ? "video" : type === "image" ? "image" : "document"}.${type === "video" ? "mp4" : type === "image" ? "jpg" : "pdf"}`}
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  disabled={isSubmitting}
-                />
-              </div>
-            )}
-
-            {type === "video" && (
-              <div className="space-y-2">
-                <Label htmlFor="youtube-url">Link YouTube (Opsional)</Label>
-                <Input
-                  id="youtube-url"
-                  placeholder="https://www.youtube.com/watch?v=..."
-                  value={youtubeUrl}
-                  onChange={(e) => setYoutubeUrl(e.target.value)}
-                  disabled={isSubmitting}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Jika materi ini adalah video YouTube, masukkan linknya di sini
-                </p>
-              </div>
-            )}
           </div>
           <DialogFooter>
             <Button
