@@ -40,39 +40,39 @@ const data = {
   },
   navMain: [
     {
-      title: "Dashboard",
+      title: "Dasbor",
       url: "/dashboard",
       icon: IconDashboard,
     },
     {
-      title: "Teacher",
+      title: "Guru",
       url: "/teacher",
       icon: IconListDetails,
     },
     {
-      title: "Class",
+      title: "Kelas",
       url: "/class",
       icon: IconChartBar,
     },
     {
-      title: "Team",
+      title: "Tim",
       url: "#",
       icon: IconUsers,
     },
   ],
   navClouds: [
     {
-      title: "Capture",
+      title: "Tangkapan",
       icon: IconCamera,
       isActive: true,
       url: "#",
       items: [
         {
-          title: "Active Proposals",
+          title: "Proposal Aktif",
           url: "#",
         },
         {
-          title: "Archived",
+          title: "Arsip",
           url: "#",
         },
       ],
@@ -83,26 +83,26 @@ const data = {
       url: "#",
       items: [
         {
-          title: "Active Proposals",
+          title: "Proposal Aktif",
           url: "#",
         },
         {
-          title: "Archived",
+          title: "Arsip",
           url: "#",
         },
       ],
     },
     {
-      title: "Prompts",
+      title: "Prompt",
       icon: IconFileAi,
       url: "#",
       items: [
         {
-          title: "Active Proposals",
+          title: "Proposal Aktif",
           url: "#",
         },
         {
-          title: "Archived",
+          title: "Arsip",
           url: "#",
         },
       ],
@@ -110,34 +110,34 @@ const data = {
   ],
   navSecondary: [
     {
-      title: "Settings",
+      title: "Pengaturan",
       url: "#",
       icon: IconSettings,
     },
     {
-      title: "Get Help",
+      title: "Bantuan",
       url: "#",
       icon: IconHelp,
     },
     {
-      title: "Search",
+      title: "Cari",
       url: "#",
       icon: IconSearch,
     },
   ],
   documents: [
     {
-      name: "Data Library",
+      name: "Perpustakaan Data",
       url: "#",
       icon: IconDatabase,
     },
     {
-      name: "Reports",
+      name: "Laporan",
       url: "#",
       icon: IconReport,
     },
     {
-      name: "Word Assistant",
+      name: "Asisten Kata",
       url: "#",
       icon: IconFileWord,
     },
@@ -164,8 +164,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavDocuments items={data.documents} />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
+        {/* <NavDocuments items={data.documents} /> */}
+        {/* <NavSecondary items={data.navSecondary} className="mt-auto" /> */}
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={data.user} />

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { Class } from "@/types/class";
 import { ClassGrid } from "@/components/class-grid";
 import { AddClassModal } from "@/components/add-class-modal";
@@ -11,6 +12,7 @@ import { ErrorState } from "@/components/error-state";
 import { useClasses } from "@/hooks/use-classes";
 
 export function ClassManagementContent() {
+  const router = useRouter();
   const {
     classes,
     meta,
@@ -28,6 +30,10 @@ export function ClassManagementContent() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  const handleViewClass = useCallback((classData: Class) => {
+    router.push(`/class/${classData.id}`);
+  }, [router]);
 
   const handleAddClass = useCallback(() => {
     setIsAddModalOpen(true);
@@ -88,6 +94,7 @@ export function ClassManagementContent() {
           onEdit={handleEditClass}
           onDelete={handleDeleteClassClick}
           onAddClass={handleAddClass}
+          onView={handleViewClass}
           meta={meta || undefined}
           onPageChange={handlePageChange}
           onSearchChange={handleSearchChange}

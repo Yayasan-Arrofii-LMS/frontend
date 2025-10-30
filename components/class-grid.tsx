@@ -34,6 +34,7 @@ interface ClassGridProps {
   onEdit: (classData: Class) => void;
   onDelete: (classData: Class) => void;
   onAddClass: () => void;
+  onView?: (classData: Class) => void;
   meta?: {
     itemCount: number;
     totalItems: number;
@@ -49,6 +50,7 @@ interface ClassGridProps {
 export function ClassGrid({
   data,
   onEdit,
+  onView,
   onDelete,
   onAddClass,
   meta,
@@ -155,7 +157,8 @@ export function ClassGrid({
             {data.map((classItem) => (
               <Card
                 key={classItem.id}
-                className="overflow-hidden hover:shadow-lg transition-shadow group"
+                className="overflow-hidden hover:shadow-lg transition-shadow group cursor-pointer"
+                onClick={() => onView?.(classItem)}
               >
                 {/* Cover Image */}
                 <div className="relative h-48 overflow-hidden bg-muted">
@@ -173,17 +176,26 @@ export function ClassGrid({
                         variant="secondary"
                         size="icon"
                         className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => e.stopPropagation()}
                       >
                         <MoreVertical className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => onEdit(classItem)}>
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEdit(classItem);
+                        }}
+                      >
                         <Pencil className="mr-2 h-4 w-4" />
                         Edit
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => onDelete(classItem)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDelete(classItem);
+                        }}
                         className="text-destructive focus:text-destructive"
                       >
                         <Trash2 className="mr-2 h-4 w-4" />
