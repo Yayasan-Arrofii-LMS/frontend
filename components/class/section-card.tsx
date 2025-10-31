@@ -22,6 +22,7 @@ import { MoreVertical, Plus, Pencil, Trash2, FileText, GripVertical } from "luci
 import { EditSectionModal } from "@/components/class/edit-section-modal";
 import { AddMaterialModal } from "@/components/class/add-material-modal";
 import { EditMaterialModal } from "@/components/class/edit-material-modal";
+import { AddQuizModal } from "@/components/class/add-quiz-modal";
 import { deleteSection, deleteMaterial, reorderMaterials } from "@/lib/api/sections";
 import { toast } from "sonner";
 import { useSortable } from "@dnd-kit/sortable";
@@ -145,6 +146,7 @@ export function SectionCard({
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isAddMaterialOpen, setIsAddMaterialOpen] = useState(false);
+  const [isAddQuizOpen, setIsAddQuizOpen] = useState(false);
   const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
   const [deletingMaterialId, setDeletingMaterialId] = useState<number | null>(null);
   const [isDeletingMaterial, setIsDeletingMaterial] = useState(false);
@@ -316,10 +318,16 @@ export function SectionCard({
               <p className="text-sm text-muted-foreground mb-4">
                 Belum ada materi di section ini
               </p>
-              <Button size="sm" onClick={() => setIsAddMaterialOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Tambah Materi
-              </Button>
+              <div className="flex gap-2 justify-center">
+                <Button size="sm" onClick={() => setIsAddMaterialOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Tambah Materi
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setIsAddQuizOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Tambah Quiz
+                </Button>
+              </div>
             </div>
           ) : (
             <>
@@ -368,15 +376,26 @@ export function SectionCard({
                   ) : null}
                 </DragOverlay>
               </DndContext>
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full"
-                onClick={() => setIsAddMaterialOpen(true)}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Tambah Materi
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => setIsAddMaterialOpen(true)}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Tambah Materi
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => setIsAddQuizOpen(true)}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Tambah Quiz
+                </Button>
+              </div>
             </>
           )}
         </CardContent>
@@ -426,6 +445,19 @@ export function SectionCard({
         isOpen={isAddMaterialOpen}
         onClose={() => setIsAddMaterialOpen(false)}
         onAdd={onUpdate}
+        classId={classId}
+        sectionId={section.id}
+      />
+
+      {/* Add Quiz Modal */}
+      <AddQuizModal
+        isOpen={isAddQuizOpen}
+        onClose={() => setIsAddQuizOpen(false)}
+        onAdd={(quiz) => {
+          console.log("Quiz ditambahkan (dummy):", quiz);
+          // TODO: Implement quiz storage and display
+          onUpdate();
+        }}
         classId={classId}
         sectionId={section.id}
       />
