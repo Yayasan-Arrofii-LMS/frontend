@@ -455,7 +455,6 @@ export function SectionCard({
         onClose={() => setIsAddQuizOpen(false)}
         onAdd={(quiz) => {
           console.log("Quiz ditambahkan (dummy):", quiz);
-          // TODO: Implement quiz storage and display
           onUpdate();
         }}
         classId={classId}

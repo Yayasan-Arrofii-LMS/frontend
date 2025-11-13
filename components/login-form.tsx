@@ -64,7 +64,17 @@ export function LoginForm({
       if (response.success && response.data?.token) {
         toast.success(response.message || "Login successful!");
         setAuthToken(response.data.token);
-        router.push("/dashboard");
+        
+        // Redirect based on role
+        const role = response.data.role?.toLowerCase();
+        
+        if (role === "admin") {
+          router.push("/dashboard");
+        } else if (role === "teacher") {
+          router.push("/class");
+        } else {
+          router.push("/home");
+        }
       } else {
         toast.error(response.message || "Login failed");
       }

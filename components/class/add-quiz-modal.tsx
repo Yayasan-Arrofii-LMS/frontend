@@ -33,10 +33,16 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Plus, Trash2 } from "lucide-react";
 
+interface QuizPayload {
+  title: string;
+  questions: Question[];
+  createdAt: string;
+}
+
 interface AddQuizModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (quiz?: any) => void; // dummy callback
+  onAdd: (quiz?: QuizPayload) => void;
   classId: string;
   sectionId: number;
 }

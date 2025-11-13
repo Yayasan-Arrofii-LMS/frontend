@@ -19,6 +19,7 @@ export interface RegisterData {
 
 export interface LoginData {
   token: string;
+  role?: string;
 }
 
 export interface VerifyOTPData {
@@ -154,6 +155,9 @@ export function setAuthToken(token: string) {
     document.cookie = `auth_token=${token}; path=/; max-age=${
       60 * 60 * 24 * 7
     }`; // 7 days
+    
+    // Dispatch event to notify components
+    window.dispatchEvent(new Event("auth-changed"));
   }
 }
 
@@ -169,6 +173,9 @@ export function removeAuthToken() {
     localStorage.removeItem("auth_token");
     // Also remove from cookie
     document.cookie = "auth_token=; path=/; max-age=0";
+    
+    // Dispatch event to notify components
+    window.dispatchEvent(new Event("auth-changed"));
   }
 }
 

@@ -251,8 +251,9 @@ export function ChartAreaInteractive({ data }: ChartAreaInteractiveProps) {
                 tickLine={false}
                 axisLine={false}
                 tickMargin={8}
-                minTickGap={32}
+                minTickGap={0}
                 fontSize={12}
+                interval="preserveStartEnd"
               />
               <ChartTooltip
                 cursor={false}
@@ -298,8 +299,9 @@ export function ChartAreaInteractive({ data }: ChartAreaInteractiveProps) {
                 tickLine={false}
                 axisLine={false}
                 tickMargin={8}
-                minTickGap={32}
+                minTickGap={0}
                 fontSize={12}
+                interval="preserveStartEnd"
               />
               <ChartTooltip
                 cursor={false}

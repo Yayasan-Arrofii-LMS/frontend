@@ -31,6 +31,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import Link from "next/link";
+import { GraduationCap } from "lucide-react";
 
 const data = {
   user: {
@@ -53,11 +55,6 @@ const data = {
       title: "Kelas",
       url: "/class",
       icon: IconChartBar,
-    },
-    {
-      title: "Tim",
-      url: "#",
-      icon: IconUsers,
     },
   ],
   navClouds: [
@@ -154,18 +151,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               asChild
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
-              <a href="#">
-                <IconInnerShadowTop className="!size-5" />
+              <Link href="/home">
+                <GraduationCap className="h-6 w-6 text-primary" />
                 <span className="text-base font-semibold">Sekolah Alam</span>
-              </a>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavDocuments items={data.documents} />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={data.user} />

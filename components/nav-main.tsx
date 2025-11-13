@@ -28,7 +28,7 @@ export function NavMain({
     <SidebarGroup>
       <SidebarGroupContent className="flex flex-col gap-2">
         {/* Quick Create */}
-        <SidebarMenu>
+        {/* <SidebarMenu>
           <SidebarMenuItem className="flex items-center gap-2">
             <SidebarMenuButton
               tooltip="Quick Create"
@@ -46,7 +46,7 @@ export function NavMain({
               <span className="sr-only">Inbox</span>
             </Button>
           </SidebarMenuItem>
-        </SidebarMenu>
+        </SidebarMenu> */}
 
         {/* Navigation Items */}
         <SidebarMenu>
