@@ -4,6 +4,7 @@ import {
   ClassResponse,
   Section,
   Material,
+  Quiz,
   SectionsResponse,
   SectionResponse,
   MaterialResponse,
@@ -14,7 +15,8 @@ import {
   UpdateMaterialInput,
 } from "@/types/section";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1";
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1";
 
 // Helper function to get auth token
 function getAuthToken(): string {
@@ -54,9 +56,7 @@ async function apiCall<T>(
 // Fetch class by ID
 export async function fetchClass(classId: string): Promise<Class> {
   try {
-    const response = await apiCall<ClassResponse>(
-      `/classes/${classId}`
-    );
+    const response = await apiCall<ClassResponse>(`/classes/${classId}`);
     return response.data;
   } catch (error) {
     console.error("Error fetching class:", error);
@@ -96,7 +96,7 @@ export async function fetchClassDetail(classId: string): Promise<ClassDetail> {
     // Fetch class info and sections in parallel
     const [classInfo, sections] = await Promise.all([
       fetchClass(classId),
-      fetchSections(classId)
+      fetchSections(classId),
     ]);
 
     // Fetch materials for each section
@@ -109,7 +109,10 @@ export async function fetchClassDetail(classId: string): Promise<ClassDetail> {
             Material: materials,
           };
         } catch (error) {
-          console.error(`Error fetching materials for section ${section.id}:`, error);
+          console.error(
+            `Error fetching materials for section ${section.id}:`,
+            error
+          );
           // Return section with empty materials on error
           return section;
         }

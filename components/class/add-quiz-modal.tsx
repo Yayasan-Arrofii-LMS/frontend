@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { createQuiz, createQuestion } from "@/lib/api/quizzes";
 import {
   DndContext,
   closestCenter,
@@ -33,175 +34,137 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Plus, Trash2 } from "lucide-react";
 
-interface QuizPayload {
-  title: string;
-  questions: Question[];
-  createdAt: string;
-}
-
 interface AddQuizModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (quiz?: QuizPayload) => void;
+  onAdd: () => void;
   classId: string;
   sectionId: number;
 }
 
-type Question = {
-  id: string;
-  text: string;
-  options: string[];
-  correct?: number | null;
-};
-
-function makeEmptyQuestion(idSuffix = ""): Question {
-  return {
-    id: `q_${Date.now()}_${Math.random().toString(36).slice(2, 8)}${idSuffix}`,
-    text: "",
-    options: ["", "", "", ""],
-    correct: null,
-  };
-}
-
-export function AddQuizModal({ isOpen, onClose, onAdd }: AddQuizModalProps) {
+export function AddQuizModal({
+  isOpen,
+  onClose,
+  onAdd,
+  classId,
+  sectionId,
+}: AddQuizModalProps) {
   const [title, setTitle] = useState("");
-  const [questions, setQuestions] = useState<Question[]>([makeEmptyQuestion()]);
+  const [description, setDescription] = useState("");
+  const [maxAttempts, setMaxAttempts] = useState("3");
+  const [timeLimit, setTimeLimit] = useState("60");
+  const [openAt, setOpenAt] = useState("");
+  const [closeAt, setCloseAt] = useState("");
+  const [passingGrade, setPassingGrade] = useState("70");
+  const [xp, setXp] = useState("10");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-
-  const addQuestion = () => {
-    setQuestions((s) => [...s, makeEmptyQuestion()]);
-  };
-
-  const removeQuestion = (index: number) => {
-    // Prevent removing if only 1 question
-    if (questions.length <= 1) {
-      toast.error("Minimal harus ada 1 pertanyaan");
-      return;
-    }
-    setQuestions((s) => s.filter((_, i) => i !== index));
-  };
-
-  const updateQuestion = (index: number, patch: Partial<Question>) => {
-    setQuestions((s) => s.map((q, i) => (i === index ? { ...q, ...patch } : q)));
-  };
-
-  const addOption = (index: number) => {
-    const q = questions[index];
-    if (q.options.length >= 6) {
-      toast.error("Maksimal 6 opsi jawaban");
-      return;
-    }
-    updateQuestion(index, { options: [...q.options, ""] });
-  };
-
-  const removeOption = (qIndex: number, optIndex: number) => {
-    const q = questions[qIndex];
-    if (q.options.length <= 4) {
-      toast.error("Minimal 4 opsi jawaban");
-      return;
-    }
-    const newOptions = q.options.filter((_, i) => i !== optIndex);
-    const newCorrect = q.correct === optIndex 
-      ? null 
-      : (q.correct !== null && q.correct !== undefined && q.correct > optIndex 
-          ? q.correct - 1 
-          : q.correct);
-    updateQuestion(qIndex, { options: newOptions, correct: newCorrect });
-  };
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over) return;
-
-    if (active.id !== over.id) {
-      setQuestions((items) => {
-        const oldIndex = items.findIndex((q) => q.id === active.id);
-        const newIndex = items.findIndex((q) => q.id === over.id);
-        return arrayMove(items, oldIndex, newIndex);
-      });
-    }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Basic validation
+
+    // Validation
     if (!title.trim()) {
       toast.error("Judul quiz wajib diisi");
       return;
     }
-    if (questions.length === 0) {
-      toast.error("Tambahkan minimal 1 pertanyaan");
+
+    if (!description.trim()) {
+      toast.error("Deskripsi quiz wajib diisi");
       return;
     }
-    for (let i = 0; i < questions.length; i++) {
-      const q = questions[i];
-      if (!q.text.trim()) {
-        toast.error(`Pertanyaan ke-${i + 1} kosong`);
-        return;
-      }
-      const filledOptions = q.options.filter((o) => o.trim() !== "");
-      if (filledOptions.length < 2) {
-        toast.error(`Pertanyaan ke-${i + 1} harus punya minimal 2 opsi yang terisi`);
-        return;
-      }
-      if (q.correct === null || q.correct === undefined) {
-        toast.error(`Tandai jawaban benar untuk pertanyaan ke-${i + 1}`);
-        return;
-      }
-      if (!q.options[q.correct]?.trim()) {
-        toast.error(`Jawaban benar untuk pertanyaan ke-${i + 1} tidak boleh kosong`);
-        return;
-      }
+
+    const maxAttemptsNum = parseInt(maxAttempts);
+    if (isNaN(maxAttemptsNum) || maxAttemptsNum < 1) {
+      toast.error("Max attempts minimal 1");
+      return;
+    }
+
+    const timeLimitNum = parseInt(timeLimit);
+    if (isNaN(timeLimitNum) || timeLimitNum < 1) {
+      toast.error("Time limit minimal 1 menit");
+      return;
+    }
+
+    if (!openAt) {
+      toast.error("Tanggal buka quiz wajib diisi");
+      return;
+    }
+
+    if (!closeAt) {
+      toast.error("Tanggal tutup quiz wajib diisi");
+      return;
+    }
+
+    if (new Date(closeAt) <= new Date(openAt)) {
+      toast.error("Tanggal tutup harus setelah tanggal buka");
+      return;
+    }
+
+    const passingGradeNum = parseInt(passingGrade);
+    if (
+      isNaN(passingGradeNum) ||
+      passingGradeNum < 0 ||
+      passingGradeNum > 100
+    ) {
+      toast.error("Passing grade harus antara 0-100");
+      return;
+    }
+
+    const xpNum = parseInt(xp);
+    if (isNaN(xpNum) || xpNum < 0) {
+      toast.error("XP harus berupa angka positif");
+      return;
     }
 
     setIsSubmitting(true);
-    // Dummy save (no API). Pass the quiz object to onAdd for now.
-    const quizPayload = {
-      title: title.trim(),
-      questions,
-      createdAt: new Date().toISOString(),
-    };
+    try {
+      await createQuiz(sectionId, {
+        title: title.trim(),
+        description: description.trim(),
+        max_attempts: maxAttemptsNum,
+        time_limit: timeLimitNum,
+        open_at: new Date(openAt).toISOString(),
+        close_at: new Date(closeAt).toISOString(),
+        passing_grade: passingGradeNum,
+        xp: xpNum,
+      });
 
-    setTimeout(() => {
-      setIsSubmitting(false);
-      toast.success("Quiz berhasil ditambahkan (dummy)");
-      onAdd?.(quizPayload);
+      toast.success("Quiz berhasil ditambahkan");
+      onAdd();
       handleClose();
-    }, 500);
+    } catch (error) {
+      toast.error("Gagal menambahkan quiz");
+      console.error(error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleClose = () => {
     if (!isSubmitting) {
       setTitle("");
-      setQuestions([makeEmptyQuestion()]);
+      setDescription("");
+      setMaxAttempts("3");
+      setTimeLimit("60");
+      setOpenAt("");
+      setCloseAt("");
+      setPassingGrade("70");
+      setXp("10");
       onClose();
     }
   };
 
   if (!isOpen) return null;
 
-  const questionIds = questions.map((q) => q.id);
-
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-w-2xl">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Tambah Quiz Baru</DialogTitle>
             <DialogDescription>
-              Buat quiz pilihan ganda untuk section ini. Kamu bisa menambah
-              pertanyaan, memilih jawaban benar, dan mengurutkan soal dengan drag & drop.
+              Buat quiz baru untuk section ini. Anda bisa menambah pertanyaan
+              setelah quiz dibuat.
             </DialogDescription>
           </DialogHeader>
 
@@ -220,42 +183,105 @@ export function AddQuizModal({ isOpen, onClose, onAdd }: AddQuizModalProps) {
               />
             </div>
 
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
-              <SortableContext items={questionIds} strategy={verticalListSortingStrategy}>
-                <div className="space-y-3">
-                  {questions.map((q, idx) => (
-                    <QuestionItem
-                      key={q.id}
-                      question={q}
-                      index={idx}
-                      questionsLength={questions.length}
-                      onUpdate={(patch) => updateQuestion(idx, patch)}
-                      onRemove={() => removeQuestion(idx)}
-                      onAddOption={() => addOption(idx)}
-                      onRemoveOption={(optIndex) => removeOption(idx, optIndex)}
-                      disabled={isSubmitting}
-                    />
-                  ))}
-                </div>
-              </SortableContext>
-            </DndContext>
-
-            <div className="flex gap-2">
-              <Button type="button" onClick={addQuestion} disabled={isSubmitting}>
-                Tambah Pertanyaan
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setQuestions([makeEmptyQuestion()])}
+            <div className="space-y-2">
+              <Label htmlFor="quiz-description">
+                Deskripsi <span className="text-destructive">*</span>
+              </Label>
+              <Textarea
+                id="quiz-description"
+                placeholder="Jelaskan tentang quiz ini..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
                 disabled={isSubmitting}
-              >
-                Reset
-              </Button>
+                rows={3}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="max-attempts">
+                  Max Attempts <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="max-attempts"
+                  type="number"
+                  min="1"
+                  value={maxAttempts}
+                  onChange={(e) => setMaxAttempts(e.target.value)}
+                  disabled={isSubmitting}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="time-limit">
+                  Waktu (menit) <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="time-limit"
+                  type="number"
+                  min="1"
+                  value={timeLimit}
+                  onChange={(e) => setTimeLimit(e.target.value)}
+                  disabled={isSubmitting}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="open-at">
+                  Dibuka pada <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="open-at"
+                  type="datetime-local"
+                  value={openAt}
+                  onChange={(e) => setOpenAt(e.target.value)}
+                  disabled={isSubmitting}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="close-at">
+                  Ditutup pada <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="close-at"
+                  type="datetime-local"
+                  value={closeAt}
+                  onChange={(e) => setCloseAt(e.target.value)}
+                  disabled={isSubmitting}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="passing-grade">
+                  Passing Grade (%) <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="passing-grade"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={passingGrade}
+                  onChange={(e) => setPassingGrade(e.target.value)}
+                  disabled={isSubmitting}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="xp">XP Reward</Label>
+                <Input
+                  id="xp"
+                  type="number"
+                  min="0"
+                  value={xp}
+                  onChange={(e) => setXp(e.target.value)}
+                  disabled={isSubmitting}
+                />
+              </div>
             </div>
           </div>
 
@@ -275,144 +301,6 @@ export function AddQuizModal({ isOpen, onClose, onAdd }: AddQuizModalProps) {
         </form>
       </DialogContent>
     </Dialog>
-  );
-}
-
-interface QuestionItemProps {
-  question: Question;
-  index: number;
-  questionsLength: number;
-  onUpdate: (patch: Partial<Question>) => void;
-  onRemove: () => void;
-  onAddOption: () => void;
-  onRemoveOption: (optIndex: number) => void;
-  disabled: boolean;
-}
-
-function QuestionItem({
-  question,
-  index,
-  questionsLength,
-  onUpdate,
-  onRemove,
-  onAddOption,
-  onRemoveOption,
-  disabled,
-}: QuestionItemProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: question.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={`border rounded-md p-4 bg-card ${isDragging ? "opacity-50" : ""}`}
-    >
-      <div className="flex items-start gap-3">
-        <div
-          {...attributes}
-          {...listeners}
-          className="cursor-grab active:cursor-grabbing mt-1 flex-shrink-0"
-        >
-          <GripVertical className="h-5 w-5 text-muted-foreground" />
-        </div>
-        <div className="flex-1 space-y-3">
-          <div className="flex items-center justify-between gap-2">
-            <Label className="mb-0 font-semibold">Pertanyaan {index + 1}</Label>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={onRemove}
-              disabled={disabled || questionsLength <= 1}
-              className="text-destructive hover:text-destructive"
-            >
-              <Trash2 className="h-4 w-4 mr-1" />
-              Hapus
-            </Button>
-          </div>
-
-          <Textarea
-            placeholder="Tulis pertanyaan..."
-            value={question.text}
-            onChange={(e) => onUpdate({ text: e.target.value })}
-            disabled={disabled}
-            rows={3}
-          />
-
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <Label className="text-sm">Opsi Jawaban (4-6 opsi)</Label>
-              {question.options.length < 6 && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={onAddOption}
-                  disabled={disabled}
-                >
-                  <Plus className="h-3 w-3 mr-1" />
-                  Tambah Opsi
-                </Button>
-              )}
-            </div>
-            <div className="space-y-2">
-              {question.options.map((opt, oi) => (
-                <div key={oi} className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name={`correct_${question.id}`}
-                    checked={question.correct === oi}
-                    onChange={() => onUpdate({ correct: oi })}
-                    disabled={disabled}
-                    className="flex-shrink-0"
-                  />
-                  <Input
-                    placeholder={`Opsi ${String.fromCharCode(65 + oi)}`}
-                    value={opt}
-                    onChange={(e) =>
-                      onUpdate({
-                        options: question.options.map((x, i) =>
-                          i === oi ? e.target.value : x
-                        ),
-                      })
-                    }
-                    disabled={disabled}
-                    className="flex-1"
-                  />
-                  {question.options.length > 4 && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => onRemoveOption(oi)}
-                      disabled={disabled}
-                      className="flex-shrink-0"
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  )}
-                </div>
-              ))}
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              Klik radio button untuk menandai jawaban yang benar
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
   );
 }
 

@@ -18,12 +18,23 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/optimized-dialog";
-import { MoreVertical, Plus, Pencil, Trash2, FileText, GripVertical } from "lucide-react";
+import {
+  MoreVertical,
+  Plus,
+  Pencil,
+  Trash2,
+  FileText,
+  GripVertical,
+} from "lucide-react";
 import { EditSectionModal } from "@/components/class/edit-section-modal";
 import { AddMaterialModal } from "@/components/class/add-material-modal";
 import { EditMaterialModal } from "@/components/class/edit-material-modal";
 import { AddQuizModal } from "@/components/class/add-quiz-modal";
-import { deleteSection, deleteMaterial, reorderMaterials } from "@/lib/api/sections";
+import {
+  deleteSection,
+  deleteMaterial,
+  reorderMaterials,
+} from "@/lib/api/sections";
 import { toast } from "sonner";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -95,10 +106,14 @@ const MaterialItem = memo(function MaterialItem({
           >
             <GripVertical className="h-4 w-4 text-muted-foreground" />
           </div>
-          <div className="mt-0.5 flex-shrink-0"><FileText className="h-4 w-4" /></div>
+          <div className="mt-0.5 flex-shrink-0">
+            <FileText className="h-4 w-4" />
+          </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1 min-w-0">
-              <h4 className="font-medium flex-1 min-w-0 break-all line-clamp-1">{material.title}</h4>
+              <h4 className="font-medium flex-1 min-w-0 break-all line-clamp-1">
+                {material.title}
+              </h4>
               {material.xp && (
                 <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded flex-shrink-0 whitespace-nowrap">
                   {material.xp} XP
@@ -148,7 +163,9 @@ export function SectionCard({
   const [isAddMaterialOpen, setIsAddMaterialOpen] = useState(false);
   const [isAddQuizOpen, setIsAddQuizOpen] = useState(false);
   const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
-  const [deletingMaterialId, setDeletingMaterialId] = useState<number | null>(null);
+  const [deletingMaterialId, setDeletingMaterialId] = useState<number | null>(
+    null
+  );
   const [isDeletingMaterial, setIsDeletingMaterial] = useState(false);
   const [localMaterials, setLocalMaterials] = useState(section.Material);
   const [activeMaterial, setActiveMaterial] = useState<Material | null>(null);
@@ -167,10 +184,13 @@ export function SectionCard({
     setLocalMaterials(section.Material);
   }, [section.Material]);
 
-  const style = useMemo(() => ({
-    transform: CSS.Transform.toString(transform),
-    transition,
-  }), [transform, transition]);
+  const style = useMemo(
+    () => ({
+      transform: CSS.Transform.toString(transform),
+      transition,
+    }),
+    [transform, transition]
+  );
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -196,73 +216,90 @@ export function SectionCard({
     }
   }, [classId, section.id, onDelete]);
 
-  const handleDeleteMaterial = useCallback(async (materialId: number) => {
-    setIsDeletingMaterial(true);
-    try {
-      await deleteMaterial(classId, section.id, materialId);
-      toast.success("Materi berhasil dihapus");
-      onUpdate();
-      setDeletingMaterialId(null);
-    } catch {
-      toast.error("Gagal menghapus materi");
-    } finally {
-      setIsDeletingMaterial(false);
-    }
-  }, [classId, section.id, onUpdate]);
-
-  const handleMaterialDragStart = useCallback((event: DragStartEvent) => {
-    const { active } = event;
-    const material = localMaterials.find((m) => m.id === active.id);
-    if (material) {
-      setActiveMaterial(material);
-    }
-  }, [localMaterials]);
-
-  const handleMaterialDragEnd = useCallback(async (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    setActiveMaterial(null);
-
-    if (!over) return;
-
-    if (active.id !== over.id) {
-      const oldIndex = localMaterials.findIndex((m) => m.id === active.id);
-      const newIndex = localMaterials.findIndex((m) => m.id === over.id);
-
-      const newMaterials = arrayMove(localMaterials, oldIndex, newIndex);
-      
-      // Store original orders before update
-      const originalOrders = localMaterials.map((m, index) => ({
-        id: m.id,
-        order: index + 1,
-      }));
-      
-      // Update UI immediately
-      setLocalMaterials(newMaterials);
-
+  const handleDeleteMaterial = useCallback(
+    async (materialId: number) => {
+      setIsDeletingMaterial(true);
       try {
-        // Save to backend with new order (only changed materials will be updated)
-        const materialOrders = newMaterials.map((m, index) => ({
+        await deleteMaterial(classId, section.id, materialId);
+        toast.success("Materi berhasil dihapus");
+        onUpdate();
+        setDeletingMaterialId(null);
+      } catch {
+        toast.error("Gagal menghapus materi");
+      } finally {
+        setIsDeletingMaterial(false);
+      }
+    },
+    [classId, section.id, onUpdate]
+  );
+
+  const handleMaterialDragStart = useCallback(
+    (event: DragStartEvent) => {
+      const { active } = event;
+      const material = localMaterials.find((m) => m.id === active.id);
+      if (material) {
+        setActiveMaterial(material);
+      }
+    },
+    [localMaterials]
+  );
+
+  const handleMaterialDragEnd = useCallback(
+    async (event: DragEndEvent) => {
+      const { active, over } = event;
+
+      setActiveMaterial(null);
+
+      if (!over) return;
+
+      if (active.id !== over.id) {
+        const oldIndex = localMaterials.findIndex((m) => m.id === active.id);
+        const newIndex = localMaterials.findIndex((m) => m.id === over.id);
+
+        const newMaterials = arrayMove(localMaterials, oldIndex, newIndex);
+
+        // Store original orders before update
+        const originalOrders = localMaterials.map((m, index) => ({
           id: m.id,
           order: index + 1,
         }));
-        await reorderMaterials(classId, section.id, materialOrders, originalOrders);
-        toast.success("Urutan materi berhasil diubah");
-        // Don't call onUpdate() to avoid re-fetching and skeleton loading
-      } catch {
-        // Revert on error
-        toast.error("Gagal mengubah urutan materi");
-        setLocalMaterials(section.Material);
-      }
-    }
-  }, [localMaterials, classId, section.id, section.Material]);
 
-  const materialIds = useMemo(() => localMaterials.map((m) => m.id), [localMaterials]);
+        // Update UI immediately
+        setLocalMaterials(newMaterials);
+
+        try {
+          // Save to backend with new order (only changed materials will be updated)
+          const materialOrders = newMaterials.map((m, index) => ({
+            id: m.id,
+            order: index + 1,
+          }));
+          await reorderMaterials(
+            classId,
+            section.id,
+            materialOrders,
+            originalOrders
+          );
+          toast.success("Urutan materi berhasil diubah");
+          // Don't call onUpdate() to avoid re-fetching and skeleton loading
+        } catch {
+          // Revert on error
+          toast.error("Gagal mengubah urutan materi");
+          setLocalMaterials(section.Material);
+        }
+      }
+    },
+    [localMaterials, classId, section.id, section.Material]
+  );
+
+  const materialIds = useMemo(
+    () => localMaterials.map((m) => m.id),
+    [localMaterials]
+  );
 
   return (
     <>
-      <Card 
-        ref={setNodeRef} 
+      <Card
+        ref={setNodeRef}
         style={style}
         className={isDragging ? "opacity-30" : "opacity-100"}
       >
@@ -282,9 +319,13 @@ export function SectionCard({
                     Section {sectionNumber}
                   </span>
                 </div>
-                <h3 className="text-xl font-semibold mb-1 break-all line-clamp-1">{section.title}</h3>
+                <h3 className="text-xl font-semibold mb-1 break-all line-clamp-1">
+                  {section.title}
+                </h3>
                 {section.description && (
-                  <p className="text-sm text-muted-foreground break-all line-clamp-2">{section.description}</p>
+                  <p className="text-sm text-muted-foreground break-all line-clamp-2">
+                    {section.description}
+                  </p>
                 )}
               </div>
             </div>
@@ -323,7 +364,11 @@ export function SectionCard({
                   <Plus className="h-4 w-4 mr-2" />
                   Tambah Materi
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => setIsAddQuizOpen(true)}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setIsAddQuizOpen(true)}
+                >
                   <Plus className="h-4 w-4 mr-2" />
                   Tambah Quiz
                 </Button>
@@ -357,10 +402,14 @@ export function SectionCard({
                     <div className="border rounded-lg p-4 bg-background shadow-lg w-full max-w-2xl overflow-hidden">
                       <div className="flex items-start gap-3 min-w-0">
                         <GripVertical className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                        <div className="mt-0.5 flex-shrink-0"><FileText className="h-4 w-4" /></div>
+                        <div className="mt-0.5 flex-shrink-0">
+                          <FileText className="h-4 w-4" />
+                        </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1 min-w-0">
-                            <h4 className="font-medium flex-1 min-w-0 break-all line-clamp-1">{activeMaterial.title}</h4>
+                            <h4 className="font-medium flex-1 min-w-0 break-all line-clamp-1">
+                              {activeMaterial.title}
+                            </h4>
                             {activeMaterial.xp && (
                               <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded flex-shrink-0 whitespace-nowrap">
                                 {activeMaterial.xp} XP
@@ -416,8 +465,8 @@ export function SectionCard({
           <DialogHeader>
             <DialogTitle>Hapus Section?</DialogTitle>
             <DialogDescription>
-              Apakah Anda yakin ingin menghapus section &quot;{section.title}&quot;? 
-              Semua materi di dalam section ini juga akan dihapus. 
+              Apakah Anda yakin ingin menghapus section &quot;{section.title}
+              &quot;? Semua materi di dalam section ini juga akan dihapus.
               Tindakan ini tidak dapat dibatalkan.
             </DialogDescription>
           </DialogHeader>
@@ -453,10 +502,7 @@ export function SectionCard({
       <AddQuizModal
         isOpen={isAddQuizOpen}
         onClose={() => setIsAddQuizOpen(false)}
-        onAdd={(quiz) => {
-          console.log("Quiz ditambahkan (dummy):", quiz);
-          onUpdate();
-        }}
+        onAdd={onUpdate}
         classId={classId}
         sectionId={section.id}
       />
@@ -482,8 +528,8 @@ export function SectionCard({
           <DialogHeader>
             <DialogTitle>Hapus Materi?</DialogTitle>
             <DialogDescription>
-              Apakah Anda yakin ingin menghapus materi ini? 
-              Tindakan ini tidak dapat dibatalkan.
+              Apakah Anda yakin ingin menghapus materi ini? Tindakan ini tidak
+              dapat dibatalkan.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -496,7 +542,9 @@ export function SectionCard({
             </Button>
             <Button
               variant="destructive"
-              onClick={() => deletingMaterialId && handleDeleteMaterial(deletingMaterialId)}
+              onClick={() =>
+                deletingMaterialId && handleDeleteMaterial(deletingMaterialId)
+              }
               disabled={isDeletingMaterial}
             >
               {isDeletingMaterial ? "Menghapus..." : "Hapus"}

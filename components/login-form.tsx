@@ -64,10 +64,10 @@ export function LoginForm({
       if (response.success && response.data?.token) {
         toast.success(response.message || "Login successful!");
         setAuthToken(response.data.token);
-        
+
         // Redirect based on role
         const role = response.data.role?.toLowerCase();
-        
+
         if (role === "admin") {
           router.push("/dashboard");
         } else if (role === "teacher") {

@@ -1,15 +1,25 @@
-import { AppSidebar } from '@/components/app-sidebar';
-import { SiteHeader } from '@/components/site-header';
-import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
-import React from 'react';
+import { AppSidebar } from "@/components/app-sidebar";
+import { SiteHeader } from "@/components/site-header";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { verifyAdminRole } from "@/lib/server/auth";
+import { notFound } from "next/navigation";
+import React from "react";
 
-export default function DashboardLayout({
-    children,
+export default async function DashboardLayout({
+  children,
 }: {
-    children: React.ReactNode;
+  children: React.ReactNode;
 }) {
-    return (
-        <SidebarProvider
+  // Server-side role verification
+  const userRole = await verifyAdminRole();
+
+  // If user is not an admin, return 404
+  if (!userRole) {
+    notFound();
+  }
+
+  return (
+    <SidebarProvider
       style={
         {
           "--sidebar-width": "calc(var(--spacing) * 72)",
@@ -23,5 +33,5 @@ export default function DashboardLayout({
         {children}
       </SidebarInset>
     </SidebarProvider>
-    );
+  );
 }

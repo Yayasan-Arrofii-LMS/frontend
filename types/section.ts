@@ -1,3 +1,72 @@
+// === Quiz Types ===
+
+// Answer from API
+export interface Answer {
+  id: number;
+  answer: string;
+  is_correct: boolean;
+  questionId: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Question from API
+export interface Question {
+  id: number;
+  question: string;
+  type: "MultipleChoice" | "TrueFalse" | "Essay";
+  points: number;
+  quizId: number;
+  createdAt: string;
+  updatedAt: string;
+  Answer: Answer[];
+}
+
+// Quiz from API
+export interface Quiz {
+  id: number;
+  title: string;
+  description: string;
+  max_attempts: number;
+  time_limit: number;
+  open_at: string;
+  close_at: string;
+  passing_grade: number;
+  xp: number;
+  sectionId: number;
+  createdAt: string;
+  updatedAt: string;
+  Question: Question[];
+}
+
+// Student Answer from API
+export interface StudentAnswer {
+  id: number;
+  attemptId: number;
+  questionId: number;
+  answer?: string;
+  filePath?: string;
+  createdAt: string;
+  updatedAt: string;
+  StudentAnswer_SelectedAnswer: { answerId: number }[];
+}
+
+// Quiz Attempt from API
+export interface QuizAttempt {
+  id: number;
+  studentId: number;
+  quizId: number;
+  started_at: string;
+  submitted_at?: string;
+  score?: number;
+  status: "in_progress" | "submitted" | "graded";
+  createdAt: string;
+  updatedAt: string;
+  StudentAnswer: StudentAnswer[];
+}
+
+// === Material Types ===
+
 // Material File from API
 export interface MaterialFile {
   id: number;
@@ -29,7 +98,7 @@ export interface Section {
   order: number;
   Material: Material[];
   Assignment: unknown[]; // For future use
-  Quiz: unknown[]; // For future use
+  Quiz: Quiz[];
 }
 
 // API Response types
@@ -74,12 +143,120 @@ export interface CreateMaterialInput {
   title: string;
   content: string;
   xp?: number;
+  order?: number;
 }
 
 export interface UpdateMaterialInput {
   title?: string;
   content?: string;
   xp?: number;
+  order?: number;
+}
+
+// === Quiz Input Types ===
+
+// Quiz Create/Update
+export interface CreateQuizInput {
+  title: string;
+  description: string;
+  max_attempts: number;
+  time_limit: number;
+  open_at: string;
+  close_at: string;
+  passing_grade: number;
+  xp?: number;
+}
+
+export interface UpdateQuizInput {
+  title?: string;
+  description?: string;
+  max_attempts?: number;
+  time_limit?: number;
+  open_at?: string;
+  close_at?: string;
+  passing_grade?: number;
+  xp?: number;
+}
+
+// Question Create/Update
+export interface CreateAnswerInput {
+  answer: string;
+  is_correct: boolean;
+}
+
+export interface CreateQuestionInput {
+  question: string;
+  type: "MultipleChoice" | "TrueFalse" | "Essay";
+  points: number;
+  answers?: CreateAnswerInput[];
+}
+
+export interface UpdateQuestionInput {
+  question?: string;
+  type?: "MultipleChoice" | "TrueFalse" | "Essay";
+  points?: number;
+  answers?: CreateAnswerInput[];
+}
+
+// Student Quiz Attempt
+export interface StartQuizAttemptInput {
+  quizId: number;
+}
+
+export interface SaveAnswerInput {
+  attemptId: number;
+  questionId: number;
+  answer?: string;
+  filePath?: string;
+  selectedAnswerIds?: number[];
+}
+
+export interface SubmitQuizInput {
+  attemptId: number;
+}
+
+// === Quiz API Response Types ===
+
+export interface QuizResponse {
+  success: boolean;
+  message: string;
+  data: Quiz;
+}
+
+export interface QuizzesResponse {
+  success: boolean;
+  message: string;
+  data: Quiz[];
+}
+
+export interface QuestionResponse {
+  success: boolean;
+  message: string;
+  data: Question;
+}
+
+export interface QuestionsResponse {
+  success: boolean;
+  message: string;
+  data: Question[];
+}
+
+export interface QuizAttemptResponse {
+  success: boolean;
+  message: string;
+  data: QuizAttempt;
+}
+
+export interface QuizAttemptsResponse {
+  success: boolean;
+  message: string;
+  data: QuizAttempt[];
+}
+
+export interface StudentAnswerResponse {
+  success: boolean;
+  message: string;
+  data: StudentAnswer;
 }
 
 // Class from API
