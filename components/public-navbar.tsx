@@ -102,7 +102,7 @@ export function PublicNavbar() {
                       </div>
                     </div>
                     <DropdownMenuSeparator />
-                    {user.role === "admin" && (
+                    {user.role?.toLowerCase() === "admin" && (
                       <>
                         <DropdownMenuItem asChild>
                           <Link href="/dashboard">Dashboard</Link>
@@ -110,7 +110,7 @@ export function PublicNavbar() {
                         <DropdownMenuSeparator />
                       </>
                     )}
-                    {user.role === "teacher" && (
+                    {user.role?.toLowerCase() === "teacher" && (
                       <>
                         <DropdownMenuItem asChild>
                           <Link href="/class">My Classes</Link>

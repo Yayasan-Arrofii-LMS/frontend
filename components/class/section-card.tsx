@@ -62,6 +62,12 @@ interface SectionCardProps {
   classId: string;
   onUpdate: () => void;
   onDelete: () => void;
+  triggerModalOpen?: {
+    type: "addMaterial" | "editMaterial" | "addQuiz";
+    sectionId: number;
+    materialId?: number;
+  } | null;
+  onModalOpened?: () => void;
 }
 
 interface MaterialItemProps {
@@ -156,6 +162,8 @@ export function SectionCard({
   classId,
   onUpdate,
   onDelete,
+  triggerModalOpen,
+  onModalOpened,
 }: SectionCardProps) {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -183,6 +191,23 @@ export function SectionCard({
   useEffect(() => {
     setLocalMaterials(section.Material);
   }, [section.Material]);
+
+  // Handle trigger modal open from URL params
+  useEffect(() => {
+    if (triggerModalOpen) {
+      if (triggerModalOpen.type === "addMaterial") {
+        setIsAddMaterialOpen(true);
+      } else if (triggerModalOpen.type === "addQuiz") {
+        setIsAddQuizOpen(true);
+      } else if (triggerModalOpen.type === "editMaterial" && triggerModalOpen.materialId) {
+        const material = section.Material.find(m => m.id === triggerModalOpen.materialId);
+        if (material) {
+          setEditingMaterial(material);
+        }
+      }
+      onModalOpened?.();
+    }
+  }, [triggerModalOpen, section.Material, onModalOpened]);
 
   const style = useMemo(
     () => ({

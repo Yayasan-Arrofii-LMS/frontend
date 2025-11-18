@@ -20,6 +20,9 @@ export interface RegisterData {
 export interface LoginData {
   token: string;
   role?: string;
+  username?: string;
+  email?: string;
+  name?: string;
 }
 
 export interface VerifyOTPData {
@@ -148,9 +151,20 @@ export async function resetPassword(data: {
 }
 
 // Token management utilities
-export function setAuthToken(token: string) {
+export function setAuthToken(token: string, userInfo?: {
+  username?: string;
+  email?: string;
+  name?: string;
+  role?: string;
+}) {
   if (typeof window !== "undefined") {
     localStorage.setItem("auth_token", token);
+    
+    // Store user info if provided
+    if (userInfo) {
+      localStorage.setItem("user_info", JSON.stringify(userInfo));
+    }
+    
     // Also set in cookie for middleware
     document.cookie = `auth_token=${token}; path=/; max-age=${
       60 * 60 * 24 * 7
@@ -168,9 +182,29 @@ export function getAuthToken(): string | null {
   return null;
 }
 
+export function getUserInfo(): {
+  username?: string;
+  email?: string;
+  name?: string;
+  role?: string;
+} | null {
+  if (typeof window !== "undefined") {
+    const userInfo = localStorage.getItem("user_info");
+    if (userInfo) {
+      try {
+        return JSON.parse(userInfo);
+      } catch {
+        return null;
+      }
+    }
+  }
+  return null;
+}
+
 export function removeAuthToken() {
   if (typeof window !== "undefined") {
     localStorage.removeItem("auth_token");
+    localStorage.removeItem("user_info");
     // Also remove from cookie
     document.cookie = "auth_token=; path=/; max-age=0";
 

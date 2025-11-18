@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { ClassDetail } from "@/types/section";
 import { fetchClassDetail, reorderSections } from "@/lib/api/sections";
 import { ArrowLeft, Plus } from "lucide-react";
@@ -37,11 +38,17 @@ interface ClassDetailContentProps {
 
 export function ClassDetailContent({ classId }: ClassDetailContentProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [classDetail, setClassDetail] = useState<ClassDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAddSectionOpen, setIsAddSectionOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<Section | null>(null);
+  const [triggerModalOpen, setTriggerModalOpen] = useState<{
+    type: "addMaterial" | "editMaterial" | "addQuiz";
+    sectionId: number;
+    materialId?: number;
+  } | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -58,6 +65,36 @@ export function ClassDetailContent({ classId }: ClassDetailContentProps) {
     loadClassDetail();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [classId]);
+
+  useEffect(() => {
+    // Check URL params to trigger modal open
+    const openAddMaterial = searchParams.get("openAddMaterial");
+    const openEditMaterial = searchParams.get("openEditMaterial");
+    const openAddQuiz = searchParams.get("openAddQuiz");
+    const sectionIdParam = searchParams.get("sectionId");
+    
+    if (openAddMaterial && sectionIdParam) {
+      setTriggerModalOpen({
+        type: "addMaterial",
+        sectionId: parseInt(sectionIdParam),
+      });
+      // Clean URL
+      router.replace(`/class/${classId}`);
+    } else if (openEditMaterial && sectionIdParam) {
+      setTriggerModalOpen({
+        type: "editMaterial",
+        sectionId: parseInt(sectionIdParam),
+        materialId: parseInt(openEditMaterial),
+      });
+      router.replace(`/class/${classId}`);
+    } else if (openAddQuiz && sectionIdParam) {
+      setTriggerModalOpen({
+        type: "addQuiz",
+        sectionId: parseInt(sectionIdParam),
+      });
+      router.replace(`/class/${classId}`);
+    }
+  }, [searchParams, classId, router]);
 
   const loadClassDetail = async () => {
     try {
@@ -155,7 +192,7 @@ export function ClassDetailContent({ classId }: ClassDetailContentProps) {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => router.back()}
+          onClick={() => router.push("/class")}
           className="mb-4"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
@@ -228,6 +265,12 @@ export function ClassDetailContent({ classId }: ClassDetailContentProps) {
                   classId={classId}
                   onUpdate={handleSectionUpdated}
                   onDelete={handleSectionDeleted}
+                  triggerModalOpen={
+                    triggerModalOpen?.sectionId === section.id
+                      ? triggerModalOpen
+                      : null
+                  }
+                  onModalOpened={() => setTriggerModalOpen(null)}
                 />
               ))}
             </div>

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +16,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { createQuiz, createQuestion } from "@/lib/api/quizzes";
+import { Maximize2 } from "lucide-react";
+import { useFullscreenPreference } from "@/hooks/use-fullscreen-preference";
 import {
   DndContext,
   closestCenter,
@@ -49,6 +52,8 @@ export function AddQuizModal({
   classId,
   sectionId,
 }: AddQuizModalProps) {
+  const router = useRouter();
+  const { preference, setPreference } = useFullscreenPreference();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [maxAttempts, setMaxAttempts] = useState("3");
@@ -58,6 +63,19 @@ export function AddQuizModal({
   const [passingGrade, setPassingGrade] = useState("70");
   const [xp, setXp] = useState("10");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && preference === "fullscreen") {
+      onClose();
+      router.push(`/class/${classId}/quiz/add?sectionId=${sectionId}`);
+    }
+  }, [isOpen, preference, classId, sectionId, onClose, router]);
+
+  const handleExpand = () => {
+    setPreference("fullscreen");
+    onClose();
+    router.push(`/class/${classId}/quiz/add?sectionId=${sectionId}`);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -161,11 +179,26 @@ export function AddQuizModal({
       <DialogContent className="max-w-2xl">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Tambah Quiz Baru</DialogTitle>
-            <DialogDescription>
-              Buat quiz baru untuk section ini. Anda bisa menambah pertanyaan
-              setelah quiz dibuat.
-            </DialogDescription>
+            <div className="flex items-start justify-between gap-4">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={handleExpand}
+                disabled={isSubmitting}
+                title="Buka fullscreen"
+                className="shrink-0"
+              >
+                <Maximize2 className="h-4 w-4" />
+              </Button>
+              <div className="flex-1">
+                <DialogTitle>Tambah Quiz Baru</DialogTitle>
+                <DialogDescription>
+                  Buat quiz baru untuk section ini. Anda bisa menambah pertanyaan
+                  setelah quiz dibuat.
+                </DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
 
           <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto px-1">

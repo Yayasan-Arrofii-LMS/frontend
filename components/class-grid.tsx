@@ -157,7 +157,7 @@ export function ClassGrid({
             {data.map((classItem) => (
               <Card
                 key={classItem.id}
-                className="overflow-hidden hover:shadow-lg transition-shadow group cursor-pointer"
+                className="overflow-hidden hover:shadow-lg transition-shadow group cursor-pointer p-0"
                 onClick={() => onView?.(classItem)}
               >
                 {/* Cover Image */}

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getAuthToken, removeAuthToken } from "@/lib/api/auth";
+import { getAuthToken, removeAuthToken, getUserInfo } from "@/lib/api/auth";
 
 export interface User {
   id: string;
@@ -45,22 +45,51 @@ export function useAuth() {
 
     setIsAuthenticated(true);
     
-    // Fetch user profile
+    // Get user info from localStorage first
+    const userInfo = getUserInfo();
+    
+    // Fetch user profile from API for latest role info
     try {
       const response = await fetch("/api/auth/profile");
       if (response.ok) {
         const result = await response.json();
         if (result.success && result.data) {
-          setUser(result.data);
+          // Merge localStorage user info with API response
+          setUser({
+            id: result.data.id || "1",
+            name: userInfo?.name || result.data.name || "User",
+            email: userInfo?.email || result.data.email || "",
+            username: userInfo?.username || result.data.username || "",
+            role: result.data.role || userInfo?.role || "Student",
+            profilePicture: result.data.avatar || result.data.profilePicture || null,
+          });
         }
       } else {
-        // If profile API fails, still show authenticated state
-        // but without user details
-        console.warn("Failed to fetch profile, but token exists");
+        // If profile API fails, use localStorage data
+        if (userInfo) {
+          setUser({
+            id: "1",
+            name: userInfo.name || "User",
+            email: userInfo.email || "",
+            username: userInfo.username || "",
+            role: userInfo.role || "Student",
+            profilePicture: null,
+          });
+        }
       }
     } catch (error) {
       console.error("Failed to fetch user profile:", error);
-      // Still show authenticated if token exists
+      // Use localStorage data as fallback
+      if (userInfo) {
+        setUser({
+          id: "1",
+          name: userInfo.name || "User",
+          email: userInfo.email || "",
+          username: userInfo.username || "",
+          role: userInfo.role || "Student",
+          profilePicture: null,
+        });
+      }
     } finally {
       setIsLoading(false);
     }

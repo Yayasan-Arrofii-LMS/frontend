@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +16,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { createMaterial } from "@/lib/api/sections";
 import { toast } from "sonner";
+import { Maximize2 } from "lucide-react";
+import { useFullscreenPreference } from "@/hooks/use-fullscreen-preference";
 
 interface AddMaterialModalProps {
   isOpen: boolean;
@@ -31,10 +34,25 @@ export function AddMaterialModal({
   classId,
   sectionId,
 }: AddMaterialModalProps) {
+  const router = useRouter();
+  const { preference, setPreference } = useFullscreenPreference();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [xp, setXp] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && preference === "fullscreen") {
+      onClose();
+      router.push(`/class/${classId}/material/add?sectionId=${sectionId}`);
+    }
+  }, [isOpen, preference, classId, sectionId, onClose, router]);
+
+  const handleExpand = () => {
+    setPreference("fullscreen");
+    onClose();
+    router.push(`/class/${classId}/material/add?sectionId=${sectionId}`);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,10 +111,25 @@ export function AddMaterialModal({
       <DialogContent className="max-w-2xl">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Tambah Materi Baru</DialogTitle>
-            <DialogDescription>
-              Tambahkan materi pembelajaran ke section ini
-            </DialogDescription>
+            <div className="flex items-start justify-between gap-4">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={handleExpand}
+                disabled={isSubmitting}
+                title="Buka fullscreen"
+                className="shrink-0"
+              >
+                <Maximize2 className="h-4 w-4" />
+              </Button>
+              <div className="flex-1">
+                <DialogTitle>Tambah Materi Baru</DialogTitle>
+                <DialogDescription>
+                  Tambahkan materi pembelajaran ke section ini
+                </DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
           <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto px-1">
             <div className="space-y-2">

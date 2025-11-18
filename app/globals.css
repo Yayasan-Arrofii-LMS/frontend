@@ -116,11 +116,37 @@
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground font-sans;
-  }
+  
+  /* Smooth theme transition with intermediate steps */
   html {
     font-family: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
+  }
+  
+  html,
+  body {
+    transition: background-color 0.45s cubic-bezier(0.4, 0, 0.2, 1), 
+                color 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  body * {
+    transition: background-color 0.35s cubic-bezier(0.4, 0, 0.2, 1), 
+                border-color 0.35s cubic-bezier(0.4, 0, 0.2, 1), 
+                color 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .theme-transition,
+  .theme-transition * {
+    transition: background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+                color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+                border-color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+                fill 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+                stroke 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  body {
+    @apply bg-background text-foreground font-sans;
   }
 }
 
@@ -257,4 +283,14 @@ body {
 label.required::after {
   content: " *";
   color: var(--color-destructive);
+}
+
+/* Animation delays for theme toggle */
+@layer utilities {
+  .delay-75 {
+    animation-delay: 75ms;
+  }
+  .delay-100 {
+    animation-delay: 100ms;
+  }
 }

@@ -41,8 +41,8 @@ export function AddSectionModal({
       return;
     }
 
-    if (title.trim().length < 10) {
-      toast.error("Judul section minimal 10 karakter");
+    if (title.trim().length < 2) {
+      toast.error("Judul section minimal 2 karakter");
       return;
     }
 

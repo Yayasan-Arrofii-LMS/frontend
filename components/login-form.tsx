@@ -63,7 +63,14 @@ export function LoginForm({
 
       if (response.success && response.data?.token) {
         toast.success(response.message || "Login successful!");
-        setAuthToken(response.data.token);
+        
+        // Store token and user info
+        setAuthToken(response.data.token, {
+          username: response.data.username,
+          email: response.data.email,
+          name: response.data.name,
+          role: response.data.role,
+        });
 
         // Redirect based on role
         const role = response.data.role?.toLowerCase();

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   Dialog,
   DialogContent,
@@ -16,6 +17,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Material } from "@/types/section";
 import { updateMaterial } from "@/lib/api/sections";
 import { toast } from "sonner";
+import { Maximize2 } from "lucide-react";
+import { useFullscreenPreference } from "@/hooks/use-fullscreen-preference";
 
 interface EditMaterialModalProps {
   isOpen: boolean;
@@ -34,6 +37,8 @@ export function EditMaterialModal({
   sectionId,
   material,
 }: EditMaterialModalProps) {
+  const router = useRouter();
+  const { preference, setPreference } = useFullscreenPreference();
   const [title, setTitle] = useState(material.title);
   const [content, setContent] = useState(material.content);
   const [xp, setXp] = useState(material.xp?.toString() || "");
@@ -44,6 +49,33 @@ export function EditMaterialModal({
     setContent(material.content);
     setXp(material.xp?.toString() || "");
   }, [material]);
+
+  useEffect(() => {
+    if (isOpen && preference === "fullscreen") {
+      onClose();
+      const params = new URLSearchParams({
+        sectionId: sectionId.toString(),
+        materialId: material.id.toString(),
+        title: encodeURIComponent(material.title),
+        content: encodeURIComponent(material.content),
+        ...(material.xp && { xp: material.xp.toString() }),
+      });
+      router.push(`/class/${classId}/material/edit?${params}`);
+    }
+  }, [isOpen, preference, classId, sectionId, material, onClose, router]);
+
+  const handleExpand = () => {
+    setPreference("fullscreen");
+    onClose();
+    const params = new URLSearchParams({
+      sectionId: sectionId.toString(),
+      materialId: material.id.toString(),
+      title: encodeURIComponent(material.title),
+      content: encodeURIComponent(material.content),
+      ...(material.xp && { xp: material.xp.toString() }),
+    });
+    router.push(`/class/${classId}/material/edit?${params}`);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,10 +125,25 @@ export function EditMaterialModal({
       <DialogContent className="max-w-2xl">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Edit Materi</DialogTitle>
-            <DialogDescription>
-              Perbarui informasi materi pembelajaran
-            </DialogDescription>
+            <div className="flex items-start justify-between gap-4">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={handleExpand}
+                disabled={isSubmitting}
+                title="Buka fullscreen"
+                className="shrink-0"
+              >
+                <Maximize2 className="h-4 w-4" />
+              </Button>
+              <div className="flex-1">
+                <DialogTitle>Edit Materi</DialogTitle>
+                <DialogDescription>
+                  Perbarui informasi materi pembelajaran
+                </DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
           <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto px-1">
             <div className="space-y-2">
