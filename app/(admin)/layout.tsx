@@ -5,6 +5,9 @@ import { verifyAdminRole } from "@/lib/server/auth";
 import { notFound } from "next/navigation";
 import React from "react";
 
+// Force dynamic rendering for admin routes (requires authentication)
+export const dynamic = 'force-dynamic';
+
 export default async function DashboardLayout({
   children,
 }: {

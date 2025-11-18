@@ -4,11 +4,9 @@ import { usePathname } from "next/navigation"
 import { useMemo } from "react"
 
 const pageTitles: Record<string, string> = {
-  "/dashboard": "Dashboard",
-  "/teacher": "Teacher",
-  "/course": "Course",
-  "/projects": "Projects",
-  "/team": "Team",
+  "/dashboard": "Dasbor",
+  "/teacher": "Guru",
+  "/class": "Kelas",
 }
 
 export function DynamicHeaderTitle() {

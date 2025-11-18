@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { verifyRole } from "@/lib/api/auth";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-
 export async function GET(request: NextRequest) {
   try {
     // Get token from cookies or Authorization header

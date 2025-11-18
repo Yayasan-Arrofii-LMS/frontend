@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef } from "react";
+import Image from "next/image";
 import { Class } from "@/types/class";
 import { createClass } from "@/lib/api/classes";
 import {
@@ -184,10 +185,12 @@ export function AddClassModal({ isOpen, onClose, onAdd }: AddClassModalProps) {
               </Label>
               {coverImagePreview ? (
                 <div className="relative w-full h-48 rounded-lg overflow-hidden border-2 border-border">
-                  <img
+                  <Image
                     src={coverImagePreview}
                     alt="Cover preview"
-                    className="w-full h-full object-cover"
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, 50vw"
                   />
                   <button
                     type="button"

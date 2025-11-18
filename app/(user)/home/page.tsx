@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -39,7 +40,7 @@ const DUMMY_CLASSES = [
 
 export default function HomePage() {
   const currentYear = new Date().getFullYear();
-  const { user, isLoading, isAuthenticated } = useAuth();
+  const { isLoading, isAuthenticated } = useAuth();
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -106,11 +107,13 @@ export default function HomePage() {
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
             {DUMMY_CLASSES.map((classItem) => (
               <Card key={classItem.id} className="overflow-hidden transition-shadow hover:shadow-lg">
-                <div className="aspect-video w-full overflow-hidden bg-muted">
-                  <img
+                <div className="aspect-video w-full overflow-hidden bg-muted relative">
+                  <Image
                     src={classItem.image}
                     alt={classItem.title}
-                    className="h-full w-full object-cover"
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   />
                 </div>
                 <CardHeader>

@@ -1,4 +1,4 @@
-import { ClassDetailContent } from "@/components/class/class-detail-content";
+import { ClassDetailContainer, PageContainer } from "../../_components";
 
 export default async function ClassDetailPage({
   params,
@@ -8,8 +8,8 @@ export default async function ClassDetailPage({
   const { id } = await params;
   
   return (
-    <div className="container mx-auto py-8 px-4 md:px-6">
-      <ClassDetailContent classId={id} />
-    </div>
+    <PageContainer>
+      <ClassDetailContainer classId={id} />
+    </PageContainer>
   );
 }

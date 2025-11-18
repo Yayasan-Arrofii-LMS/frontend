@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -109,11 +110,13 @@ export default function ClassesPage() {
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filteredClasses.map((classItem) => (
             <Card key={classItem.id} className="overflow-hidden transition-shadow hover:shadow-lg">
-              <div className="aspect-video w-full overflow-hidden bg-muted">
-                <img
+              <div className="aspect-video w-full overflow-hidden bg-muted relative">
+                <Image
                   src={classItem.image}
                   alt={classItem.title}
-                  className="h-full w-full object-cover"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 />
               </div>
               <CardHeader>

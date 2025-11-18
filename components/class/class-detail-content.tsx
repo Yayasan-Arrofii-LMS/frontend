@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import NextImage from "next/image";
 import { useSearchParams } from "next/navigation";
 import { ClassDetail } from "@/types/section";
 import { fetchClassDetail, reorderSections } from "@/lib/api/sections";
@@ -200,11 +201,15 @@ export function ClassDetailContent({ classId }: ClassDetailContentProps) {
         </Button>
 
         <div className="flex items-start gap-6 min-w-0">
-          <img
-            src={classDetail.coverImage}
-            alt={classDetail.title}
-            className="w-32 h-32 object-cover rounded-lg flex-shrink-0"
-          />
+          <div className="relative w-32 h-32 flex-shrink-0 rounded-lg overflow-hidden">
+            <NextImage
+              src={classDetail.coverImage}
+              alt={classDetail.title}
+              fill
+              className="object-cover"
+              sizes="128px"
+            />
+          </div>
           <div className="flex-1 min-w-0">
             <h1 className="text-3xl font-bold mb-2 break-all line-clamp-1">{classDetail.title}</h1>
             <p className="text-muted-foreground mb-4 break-all line-clamp-2">{classDetail.description}</p>

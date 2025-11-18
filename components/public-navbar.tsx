@@ -19,7 +19,7 @@ import { toast } from "sonner";
 
 export function PublicNavbar() {
   const pathname = usePathname();
-  const { user, logout, isLoading, isAuthenticated } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
   const router = useRouter();
 
   const handleLogout = async () => {
