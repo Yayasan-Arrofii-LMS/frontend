@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, memo, useCallback } from "react";
-import { Section, Material } from "@/types/section";
+import { Section, Material, QuizSummary, Quiz } from "@/types/section";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,16 +25,21 @@ import {
   Trash2,
   FileText,
   GripVertical,
+  Clock,
+  ClipboardList,
 } from "lucide-react";
 import { EditSectionModal } from "@/components/class/edit-section-modal";
 import { AddMaterialModal } from "@/components/class/add-material-modal";
 import { EditMaterialModal } from "@/components/class/edit-material-modal";
 import { AddQuizModal } from "@/components/class/add-quiz-modal";
+import { EditQuizModal } from "@/components/class/edit-quiz-modal";
+import { ManageQuestionsModal } from "@/components/class/manage-questions-modal-v2";
 import {
   deleteSection,
   deleteMaterial,
   reorderMaterials,
 } from "@/lib/api/sections";
+import { deleteQuiz, fetchQuiz } from "@/lib/api/quizzes";
 import { toast } from "sonner";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -75,6 +80,89 @@ interface MaterialItemProps {
   onEdit: (material: Material) => void;
   onDelete: (materialId: number) => void;
 }
+
+interface QuizItemProps {
+  quiz: QuizSummary;
+  onEdit: (quizId: number) => void;
+  onDelete: (quizId: number) => void;
+  onManageQuestions: (quizId: number, quizTitle: string) => void;
+}
+
+const QuizItem = memo(function QuizItem({
+  quiz,
+  onEdit,
+  onDelete,
+  onManageQuestions,
+}: QuizItemProps) {
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  return (
+    <div className="border rounded-lg p-4 bg-card hover:bg-accent/50 transition-colors">
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 flex-shrink-0">
+          <ClipboardList className="h-4 w-4 text-primary" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <h4 className="font-medium">{quiz.title}</h4>
+          </div>
+          <p className="text-sm text-muted-foreground mb-2">
+            {quiz.description}
+          </p>
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              <span>Buka: {formatDate(quiz.open_at)}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              <span>Tutup: {formatDate(quiz.close_at)}</span>
+            </div>
+          </div>
+          <div className="mt-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onManageQuestions(quiz.id, quiz.title)}
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              Kelola Pertanyaan
+            </Button>
+          </div>
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => onEdit(quiz.id)}>
+              <Pencil className="mr-2 h-4 w-4" />
+              Edit Quiz
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => onDelete(quiz.id)}
+              className="text-destructive"
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Hapus Quiz
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </div>
+  );
+});
 
 const MaterialItem = memo(function MaterialItem({
   material,
@@ -178,6 +266,17 @@ export function SectionCard({
   const [localMaterials, setLocalMaterials] = useState(section.Material);
   const [activeMaterial, setActiveMaterial] = useState<Material | null>(null);
 
+  // Quiz states
+  const [isEditQuizOpen, setIsEditQuizOpen] = useState(false);
+  const [editingQuiz, setEditingQuiz] = useState<Quiz | null>(null);
+  const [deletingQuizId, setDeletingQuizId] = useState<number | null>(null);
+  const [isDeletingQuiz, setIsDeletingQuiz] = useState(false);
+  const [isManageQuestionsOpen, setIsManageQuestionsOpen] = useState(false);
+  const [selectedQuizForQuestions, setSelectedQuizForQuestions] = useState<{
+    quizId: number;
+    quizTitle: string;
+  } | null>(null);
+
   const {
     attributes,
     listeners,
@@ -199,8 +298,13 @@ export function SectionCard({
         setIsAddMaterialOpen(true);
       } else if (triggerModalOpen.type === "addQuiz") {
         setIsAddQuizOpen(true);
-      } else if (triggerModalOpen.type === "editMaterial" && triggerModalOpen.materialId) {
-        const material = section.Material.find(m => m.id === triggerModalOpen.materialId);
+      } else if (
+        triggerModalOpen.type === "editMaterial" &&
+        triggerModalOpen.materialId
+      ) {
+        const material = section.Material.find(
+          (m) => m.id === triggerModalOpen.materialId
+        );
         if (material) {
           setEditingMaterial(material);
         }
@@ -256,6 +360,46 @@ export function SectionCard({
       }
     },
     [classId, section.id, onUpdate]
+  );
+
+  const handleEditQuiz = useCallback(
+    async (quizId: number) => {
+      try {
+        // Fetch full quiz data
+        const quizData = await fetchQuiz(section.id, quizId);
+        setEditingQuiz(quizData);
+        setIsEditQuizOpen(true);
+      } catch (error) {
+        toast.error("Gagal memuat data quiz");
+        console.error("Error fetching quiz:", error);
+      }
+    },
+    [section.id]
+  );
+
+  const handleDeleteQuiz = useCallback(
+    async (quizId: number) => {
+      setIsDeletingQuiz(true);
+      try {
+        await deleteQuiz(section.id, quizId);
+        toast.success("Quiz berhasil dihapus");
+        onUpdate();
+        setDeletingQuizId(null);
+      } catch {
+        toast.error("Gagal menghapus quiz");
+      } finally {
+        setIsDeletingQuiz(false);
+      }
+    },
+    [section.id, onUpdate]
+  );
+
+  const handleManageQuestions = useCallback(
+    (quizId: number, quizTitle: string) => {
+      setSelectedQuizForQuestions({ quizId, quizTitle });
+      setIsManageQuestionsOpen(true);
+    },
+    []
   );
 
   const handleMaterialDragStart = useCallback(
@@ -377,12 +521,12 @@ export function SectionCard({
           </div>
         </CardHeader>
         <CardContent className="space-y-4 overflow-hidden">
-          {/* Materials List */}
-          {section.Material.length === 0 ? (
+          {/* Materials and Quizzes List */}
+          {section.Material.length === 0 && section.Quiz.length === 0 ? (
             <div className="border-2 border-dashed rounded-lg p-8 text-center">
               <Plus className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
               <p className="text-sm text-muted-foreground mb-4">
-                Belum ada materi di section ini
+                Belum ada materi atau quiz di section ini
               </p>
               <div className="flex gap-2 justify-center">
                 <Button size="sm" onClick={() => setIsAddMaterialOpen(true)}>
@@ -401,55 +545,82 @@ export function SectionCard({
             </div>
           ) : (
             <>
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragStart={handleMaterialDragStart}
-                onDragEnd={handleMaterialDragEnd}
-              >
-                <SortableContext
-                  items={materialIds}
-                  strategy={verticalListSortingStrategy}
+              {/* Materials List with Drag and Drop */}
+              {section.Material.length > 0 && (
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragStart={handleMaterialDragStart}
+                  onDragEnd={handleMaterialDragEnd}
                 >
-                  <div className="space-y-3">
-                    {localMaterials.map((material) => (
-                      <MaterialItem
-                        key={material.id}
-                        material={material}
-                        onEdit={setEditingMaterial}
-                        onDelete={setDeletingMaterialId}
-                      />
-                    ))}
-                  </div>
-                </SortableContext>
-                <DragOverlay>
-                  {activeMaterial ? (
-                    <div className="border rounded-lg p-4 bg-background shadow-lg w-full max-w-2xl overflow-hidden">
-                      <div className="flex items-start gap-3 min-w-0">
-                        <GripVertical className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                        <div className="mt-0.5 flex-shrink-0">
-                          <FileText className="h-4 w-4" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1 min-w-0">
-                            <h4 className="font-medium flex-1 min-w-0 break-all line-clamp-1">
-                              {activeMaterial.title}
-                            </h4>
-                            {activeMaterial.xp && (
-                              <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded flex-shrink-0 whitespace-nowrap">
-                                {activeMaterial.xp} XP
-                              </span>
-                            )}
+                  <SortableContext
+                    items={materialIds}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className="space-y-3">
+                      {localMaterials.map((material) => (
+                        <MaterialItem
+                          key={material.id}
+                          material={material}
+                          onEdit={setEditingMaterial}
+                          onDelete={setDeletingMaterialId}
+                        />
+                      ))}
+                    </div>
+                  </SortableContext>
+                  <DragOverlay>
+                    {activeMaterial ? (
+                      <div className="border rounded-lg p-4 bg-background shadow-lg w-full max-w-2xl overflow-hidden">
+                        <div className="flex items-start gap-3 min-w-0">
+                          <GripVertical className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                          <div className="mt-0.5 flex-shrink-0">
+                            <FileText className="h-4 w-4" />
                           </div>
-                          <p className="text-sm text-muted-foreground break-all line-clamp-2">
-                            {activeMaterial.content}
-                          </p>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1 min-w-0">
+                              <h4 className="font-medium flex-1 min-w-0 break-all line-clamp-1">
+                                {activeMaterial.title}
+                              </h4>
+                              {activeMaterial.xp && (
+                                <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded flex-shrink-0 whitespace-nowrap">
+                                  {activeMaterial.xp} XP
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground break-all line-clamp-2">
+                              {activeMaterial.content}
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ) : null}
-                </DragOverlay>
-              </DndContext>
+                    ) : null}
+                  </DragOverlay>
+                </DndContext>
+              )}
+
+              {/* Quizzes List */}
+              {section.Quiz.length > 0 && (
+                <div
+                  className={`space-y-3 ${
+                    section.Material.length > 0 ? "mt-3" : ""
+                  }`}
+                >
+                  <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                    <ClipboardList className="h-4 w-4" />
+                    <span>Quiz</span>
+                  </div>
+                  {section.Quiz.map((quiz) => (
+                    <QuizItem
+                      key={quiz.id}
+                      quiz={quiz}
+                      onEdit={handleEditQuiz}
+                      onDelete={setDeletingQuizId}
+                      onManageQuestions={handleManageQuestions}
+                    />
+                  ))}
+                </div>
+              )}
+
               <div className="flex gap-2">
                 <Button
                   variant="outline"
@@ -577,6 +748,65 @@ export function SectionCard({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Quiz Modal */}
+      <EditQuizModal
+        isOpen={isEditQuizOpen}
+        onClose={() => {
+          setIsEditQuizOpen(false);
+          setEditingQuiz(null);
+        }}
+        onUpdate={onUpdate}
+        classId={classId}
+        sectionId={section.id}
+        quiz={editingQuiz}
+      />
+
+      {/* Delete Quiz Dialog */}
+      <Dialog
+        open={deletingQuizId !== null}
+        onOpenChange={(open) => !open && setDeletingQuizId(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Hapus Quiz?</DialogTitle>
+            <DialogDescription>
+              Apakah Anda yakin ingin menghapus quiz ini? Semua pertanyaan dan
+              data terkait akan dihapus. Tindakan ini tidak dapat dibatalkan.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeletingQuizId(null)}
+              disabled={isDeletingQuiz}
+            >
+              Batal
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => deletingQuizId && handleDeleteQuiz(deletingQuizId)}
+              disabled={isDeletingQuiz}
+            >
+              {isDeletingQuiz ? "Menghapus..." : "Hapus"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manage Questions Modal */}
+      {selectedQuizForQuestions && (
+        <ManageQuestionsModal
+          isOpen={isManageQuestionsOpen}
+          onClose={() => {
+            setIsManageQuestionsOpen(false);
+            setSelectedQuizForQuestions(null);
+          }}
+          sectionId={section.id}
+          quizId={selectedQuizForQuestions.quizId}
+          quizTitle={selectedQuizForQuestions.quizTitle}
+        />
+      )}
     </>
   );
 }

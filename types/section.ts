@@ -22,7 +22,16 @@ export interface Question {
   Answer: Answer[];
 }
 
-// Quiz from API
+// Quiz Summary (used in Section list)
+export interface QuizSummary {
+  id: number;
+  title: string;
+  description: string;
+  close_at: string;
+  open_at: string;
+}
+
+// Quiz from API (full details)
 export interface Quiz {
   id: number;
   title: string;
@@ -36,7 +45,7 @@ export interface Quiz {
   sectionId: number;
   createdAt: string;
   updatedAt: string;
-  Question: Question[];
+  Question?: Question[];
 }
 
 // Student Answer from API
@@ -95,10 +104,11 @@ export interface Section {
   id: number;
   title: string;
   description: string | null;
+  video_link?: string;
   order: number;
   Material: Material[];
   Assignment: unknown[]; // For future use
-  Quiz: Quiz[];
+  Quiz: QuizSummary[];
 }
 
 // API Response types

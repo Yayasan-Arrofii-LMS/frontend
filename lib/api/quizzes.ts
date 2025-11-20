@@ -42,15 +42,27 @@ async function apiCall<T>(
     ...options.headers,
   };
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  const url = `${API_BASE_URL}${endpoint}`;
+  console.log(`API Call: ${options.method || "GET"} ${url}`);
+
+  const response = await fetch(url, {
     ...options,
     headers,
   });
 
+  console.log(`Response status: ${response.status}`);
+
   if (!response.ok) {
-    const error = await response.json().catch(() => ({
-      message: "An error occurred",
-    }));
+    const errorText = await response.text();
+    console.error("API Error response:", errorText);
+
+    let error;
+    try {
+      error = JSON.parse(errorText);
+    } catch {
+      error = { message: errorText || "An error occurred" };
+    }
+
     throw new Error(error.message || `HTTP error! status: ${response.status}`);
   }
 
@@ -125,13 +137,20 @@ export async function updateQuiz(
   data: UpdateQuizInput
 ): Promise<Quiz> {
   try {
+    console.log(
+      `Calling PATCH /classes/sections/${sectionId}/quizzes/${quizId}`
+    );
+    console.log("Update data:", data);
+
     const response = await apiCall<QuizResponse>(
       `/classes/sections/${sectionId}/quizzes/${quizId}`,
       {
-        method: "PATCH",
+        method: "PUT", // Changed from PATCH to PUT
         body: JSON.stringify(data),
       }
     );
+
+    console.log("Update quiz response:", response);
     return response.data;
   } catch (error) {
     console.error("Error updating quiz:", error);
@@ -165,16 +184,16 @@ export async function deleteQuiz(
 
 /**
  * Fetch all questions for a quiz
+ * Questions are included in the quiz response
  */
 export async function fetchQuestions(
   sectionId: number,
   quizId: number
 ): Promise<Question[]> {
   try {
-    const response = await apiCall<QuestionsResponse>(
-      `/classes/sections/${sectionId}/quizzes/${quizId}/questions`
-    );
-    return response.data;
+    // Fetch the quiz which includes questions
+    const quiz = await fetchQuiz(sectionId, quizId);
+    return quiz.Question || [];
   } catch (error) {
     console.error("Error fetching questions:", error);
     throw error;
@@ -235,7 +254,7 @@ export async function updateQuestion(
     const response = await apiCall<QuestionResponse>(
       `/classes/sections/${sectionId}/quizzes/questions/${questionId}`,
       {
-        method: "PATCH",
+        method: "PUT", // Changed from PATCH to PUT
         body: JSON.stringify(data),
       }
     );
