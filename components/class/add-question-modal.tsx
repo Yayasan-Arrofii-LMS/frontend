@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { createQuestion } from "@/lib/api/quizzes";
+import { CreateQuestionInput } from "@/types/section";
 import { Maximize2, Plus, Trash2 } from "lucide-react";
 import { useFullscreenPreference } from "@/hooks/use-fullscreen-preference";
 
@@ -141,7 +142,7 @@ export function AddQuestionModal({
     setIsSubmitting(true);
 
     try {
-      const questionData: any = {
+      const questionData: Partial<CreateQuestionInput> = {
         question: question.trim(),
         type,
         points: pointsValue,
@@ -157,7 +158,7 @@ export function AddQuestionModal({
           }));
       }
 
-      await createQuestion(sectionId, quizId, questionData);
+      await createQuestion(sectionId, quizId, questionData as CreateQuestionInput);
 
       toast.success("Pertanyaan berhasil ditambahkan");
       onAdd();
@@ -230,7 +231,7 @@ export function AddQuestionModal({
                 </Label>
                 <Select
                   value={type}
-                  onValueChange={(value: any) => setType(value)}
+                  onValueChange={(value: string) => setType(value as "MultipleChoice" | "TrueFalse" | "Essay")}
                   disabled={isSubmitting}
                 >
                   <SelectTrigger>

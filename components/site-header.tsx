@@ -1,7 +1,7 @@
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ModeToggle } from "./mode-toggle";
-import { DynamicHeaderTitle } from "./DynamicHeaderTitle";
+import { DynamicHeaderTitle } from "./dynamic-header-title";
 
 export function SiteHeader() {
   return (

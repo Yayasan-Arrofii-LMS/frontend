@@ -25,7 +25,7 @@ import { toast } from "sonner";
 import { updateQuestion } from "@/lib/api/quizzes";
 import { Maximize2, Plus, Trash2 } from "lucide-react";
 import { useFullscreenPreference } from "@/hooks/use-fullscreen-preference";
-import { Question } from "@/types/section";
+import { Question, UpdateQuestionInput } from "@/types/section";
 
 interface EditQuestionModalProps {
   isOpen: boolean;
@@ -159,7 +159,7 @@ export function EditQuestionModal({
     setIsSubmitting(true);
 
     try {
-      const questionData: any = {
+      const questionData: Partial<UpdateQuestionInput> = {
         question: question.trim(),
         type,
         points: pointsValue,
@@ -175,7 +175,7 @@ export function EditQuestionModal({
           }));
       }
 
-      await updateQuestion(sectionId, initialQuestion.id, questionData);
+      await updateQuestion(sectionId, initialQuestion.id, questionData as UpdateQuestionInput);
 
       toast.success("Pertanyaan berhasil diperbarui");
       onUpdate();
@@ -250,7 +250,7 @@ export function EditQuestionModal({
                 </Label>
                 <Select
                   value={type}
-                  onValueChange={(value: any) => setType(value)}
+                  onValueChange={(value: string) => setType(value as "MultipleChoice" | "TrueFalse" | "Essay")}
                   disabled={isSubmitting}
                 >
                   <SelectTrigger>

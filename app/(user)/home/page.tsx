@@ -4,43 +4,38 @@ import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowRight, BookOpen, Users, GraduationCap, Clock, User } from "lucide-react";
+import { ArrowRight, BookOpen, Users, GraduationCap } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-
-// Dummy classes data
-const DUMMY_CLASSES = [
-  {
-    id: "1",
-    title: "Introduction to React",
-    description: "Learn the fundamentals of React including components, props, and state management.",
-    teacher: "Dr. Sarah Johnson",
-    students: 45,
-    duration: "8 weeks",
-    image: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&h=250&fit=crop",
-  },
-  {
-    id: "2",
-    title: "Advanced JavaScript",
-    description: "Master advanced JavaScript concepts like closures, async/await, and design patterns.",
-    teacher: "Prof. Michael Chen",
-    students: 32,
-    duration: "10 weeks",
-    image: "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=400&h=250&fit=crop",
-  },
-  {
-    id: "3",
-    title: "Web Design Fundamentals",
-    description: "Create beautiful and responsive web designs using modern CSS and design principles.",
-    teacher: "Emily Rodriguez",
-    students: 58,
-    duration: "6 weeks",
-    image: "https://images.unsplash.com/photo-1561070791-2526d30994b5?w=400&h=250&fit=crop",
-  },
-];
+import { useEffect, useState } from "react";
+import { fetchPublicClasses } from "@/lib/api/classes";
+import { Class } from "@/types/class";
+import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 
 export default function HomePage() {
   const currentYear = new Date().getFullYear();
   const { isLoading, isAuthenticated } = useAuth();
+  const [classes, setClasses] = useState<Class[]>([]);
+  const [isLoadingClasses, setIsLoadingClasses] = useState(true);
+
+  useEffect(() => {
+    async function loadClasses() {
+      try {
+        setIsLoadingClasses(true);
+        const { classes: publicClasses } = await fetchPublicClasses(1);
+        // Show first 8 classes for featured section
+        setClasses(publicClasses.slice(0, 8));
+      } catch (error) {
+        console.error("Failed to load classes:", error);
+        toast.error("Gagal memuat kelas");
+        setClasses([]);
+      } finally {
+        setIsLoadingClasses(false);
+      }
+    }
+
+    loadClasses();
+  }, []);
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -80,12 +75,6 @@ export default function HomePage() {
 
           {isAuthenticated && (
             <div className="flex flex-col gap-4 sm:flex-row sm:justify-center">
-              {/* <Button size="lg" asChild>
-                <Link href={user?.role === "admin" ? "/dashboard" : user?.role === "teacher" ? "/class" : "/home"}>
-                  Go to Dashboard
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button> */}
               <Button size="lg" variant="outline" asChild>
                 <Link href="/classes">Browse Classes</Link>
               </Button>
@@ -104,43 +93,67 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
-            {DUMMY_CLASSES.map((classItem) => (
-              <Card key={classItem.id} className="overflow-hidden transition-shadow hover:shadow-lg">
-                <div className="aspect-video w-full overflow-hidden bg-muted relative">
-                  <Image
-                    src={classItem.image}
-                    alt={classItem.title}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  />
-                </div>
-                <CardHeader>
-                  <CardTitle className="line-clamp-1">{classItem.title}</CardTitle>
-                  <CardDescription className="line-clamp-2">
-                    {classItem.description}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <User className="h-4 w-4" />
-                    <span>{classItem.teacher}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4" />
-                      <span>{classItem.students} students</span>
+          {isLoadingClasses ? (
+            <div className="mb-8 overflow-x-auto">
+              <div className="flex gap-6 pb-4" style={{ width: 'max-content' }}>
+                {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                  <Card key={i} className="overflow-hidden w-[320px] flex-shrink-0">
+                    <Skeleton className="aspect-video w-full" />
+                    <CardHeader>
+                      <Skeleton className="h-6 w-3/4" />
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-2/3" />
+                    </CardHeader>
+                    <CardContent>
+                      <Skeleton className="h-4 w-full" />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          ) : classes.length > 0 ? (
+            <div className="mb-8 overflow-x-auto">
+              <div className="flex gap-6 pb-4" style={{ width: 'max-content' }}>
+                {classes.map((classItem) => (
+                  <Card key={classItem.id} className="overflow-hidden transition-shadow hover:shadow-lg w-[320px] flex-shrink-0">
+                    <div className="aspect-video w-full overflow-hidden bg-muted relative">
+                      <Image
+                        src={classItem.coverImage || "/placeholder.svg"}
+                        alt={classItem.title}
+                        fill
+                        className="object-cover"
+                        sizes="320px"
+                      />
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4" />
-                      <span>{classItem.duration}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                    <CardHeader>
+                      <CardTitle className="line-clamp-1">{classItem.title}</CardTitle>
+                      <CardDescription className="line-clamp-2">
+                        {classItem.description}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      {classItem.teacherName && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Users className="h-4 w-4" />
+                          <span>{classItem.teacherName}</span>
+                        </div>
+                      )}
+                      {classItem.studentCount !== undefined && classItem.studentCount > 0 && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Users className="h-4 w-4" />
+                          <span>{classItem.studentCount} students</span>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">Tidak ada kelas tersedia</p>
+            </div>
+          )}
 
           <div className="text-center">
             <Button variant="outline" size="lg" asChild>

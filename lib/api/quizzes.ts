@@ -193,7 +193,19 @@ export async function fetchQuestions(
   try {
     // Fetch the quiz which includes questions
     const quiz = await fetchQuiz(sectionId, quizId);
-    return quiz.Question || [];
+    console.log("Fetched quiz with questions:", quiz);
+    
+    // Backend uses snake_case (quiz_question), frontend expects PascalCase (Question)
+    const questions = quiz.Question || quiz.quiz_question || [];
+    console.log("Questions array:", questions);
+    
+    // Normalize answer field names
+    const normalizedQuestions = questions.map(q => ({
+      ...q,
+      Answer: q.Answer || q.quiz_answer || []
+    }));
+    
+    return normalizedQuestions;
   } catch (error) {
     console.error("Error fetching questions:", error);
     throw error;
@@ -270,12 +282,11 @@ export async function updateQuestion(
  */
 export async function deleteQuestion(
   sectionId: number,
-  quizId: number,
   questionId: number
 ): Promise<void> {
   try {
     await apiCall<{ success: boolean; message: string }>(
-      `/classes/sections/${sectionId}/quizzes/${quizId}/questions/${questionId}`,
+      `/classes/sections/${sectionId}/quizzes/questions/${questionId}`,
       {
         method: "DELETE",
       }

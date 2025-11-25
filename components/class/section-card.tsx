@@ -33,7 +33,7 @@ import { AddMaterialModal } from "@/components/class/add-material-modal";
 import { EditMaterialModal } from "@/components/class/edit-material-modal";
 import { AddQuizModal } from "@/components/class/add-quiz-modal";
 import { EditQuizModal } from "@/components/class/edit-quiz-modal";
-import { ManageQuestionsModal } from "@/components/class/manage-questions-modal-v2";
+import { ManageQuestionsModal } from "@/components/class/manage-questions-modal";
 import {
   deleteSection,
   deleteMaterial,

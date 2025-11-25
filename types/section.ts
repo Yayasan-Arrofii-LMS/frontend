@@ -20,6 +20,7 @@ export interface Question {
   createdAt: string;
   updatedAt: string;
   Answer: Answer[];
+  quiz_answer?: Answer[]; // Backend uses snake_case
 }
 
 // Quiz Summary (used in Section list)
@@ -46,6 +47,7 @@ export interface Quiz {
   createdAt: string;
   updatedAt: string;
   Question?: Question[];
+  quiz_question?: Question[]; // Backend uses snake_case
 }
 
 // Student Answer from API

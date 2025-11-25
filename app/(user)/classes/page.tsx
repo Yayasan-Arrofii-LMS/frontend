@@ -4,80 +4,44 @@ import Image from "next/image";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Clock, User, Users, Search } from "lucide-react";
-import { useState } from "react";
-
-// Dummy classes data (expanded)
-const ALL_CLASSES = [
-  {
-    id: "1",
-    title: "Introduction to React",
-    description: "Learn the fundamentals of React including components, props, and state management.",
-    teacher: "Dr. Sarah Johnson",
-    students: 45,
-    duration: "8 weeks",
-    level: "Beginner",
-    image: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400&h=250&fit=crop",
-  },
-  {
-    id: "2",
-    title: "Advanced JavaScript",
-    description: "Master advanced JavaScript concepts like closures, async/await, and design patterns.",
-    teacher: "Prof. Michael Chen",
-    students: 32,
-    duration: "10 weeks",
-    level: "Advanced",
-    image: "https://images.unsplash.com/photo-1579468118864-1b9ea3c0db4a?w=400&h=250&fit=crop",
-  },
-  {
-    id: "3",
-    title: "Web Design Fundamentals",
-    description: "Create beautiful and responsive web designs using modern CSS and design principles.",
-    teacher: "Emily Rodriguez",
-    students: 58,
-    duration: "6 weeks",
-    level: "Beginner",
-    image: "https://images.unsplash.com/photo-1561070791-2526d30994b5?w=400&h=250&fit=crop",
-  },
-  {
-    id: "4",
-    title: "Python for Data Science",
-    description: "Learn Python programming with a focus on data analysis and visualization.",
-    teacher: "Dr. James Wilson",
-    students: 67,
-    duration: "12 weeks",
-    level: "Intermediate",
-    image: "https://images.unsplash.com/photo-1526379095098-d400fd0bf935?w=400&h=250&fit=crop",
-  },
-  {
-    id: "5",
-    title: "Mobile App Development",
-    description: "Build cross-platform mobile applications using React Native.",
-    teacher: "Lisa Anderson",
-    students: 41,
-    duration: "10 weeks",
-    level: "Intermediate",
-    image: "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=400&h=250&fit=crop",
-  },
-  {
-    id: "6",
-    title: "Database Design",
-    description: "Master database design principles and SQL queries for modern applications.",
-    teacher: "Prof. David Lee",
-    students: 39,
-    duration: "8 weeks",
-    level: "Intermediate",
-    image: "https://images.unsplash.com/photo-1544383835-bda2bc66a55d?w=400&h=250&fit=crop",
-  },
-];
+import { Users, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState, useEffect } from "react";
+import { fetchPublicClasses } from "@/lib/api/classes";
+import { Class } from "@/types/class";
+import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 
 export default function ClassesPage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [classes, setClasses] = useState<Class[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
 
-  const filteredClasses = ALL_CLASSES.filter((classItem) =>
+  useEffect(() => {
+    async function loadClasses() {
+      try {
+        setIsLoading(true);
+        const { classes: publicClasses, meta } = await fetchPublicClasses(currentPage);
+        setClasses(publicClasses);
+        setTotalPages(meta.totalPages);
+        setTotalItems(meta.totalItems);
+      } catch (error) {
+        console.error("Failed to load classes:", error);
+        toast.error("Gagal memuat kelas");
+        setClasses([]);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadClasses();
+  }, [currentPage]);
+
+  const filteredClasses = classes.filter((classItem) =>
     classItem.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    classItem.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    classItem.teacher.toLowerCase().includes(searchQuery.toLowerCase())
+    classItem.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -102,9 +66,29 @@ export default function ClassesPage() {
         </div>
       </div>
 
-      {filteredClasses.length === 0 ? (
+      {isLoading ? (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <Card key={i} className="overflow-hidden">
+              <Skeleton className="aspect-video w-full" />
+              <CardHeader>
+                <Skeleton className="h-6 w-3/4" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-2/3" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-4 w-full mb-2" />
+                <Skeleton className="h-4 w-full mb-2" />
+                <Skeleton className="h-10 w-full" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : filteredClasses.length === 0 ? (
         <div className="py-16 text-center">
-          <p className="text-lg text-muted-foreground">No classes found</p>
+          <p className="text-lg text-muted-foreground">
+            {searchQuery ? "No classes found matching your search" : "No classes available"}
+          </p>
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -112,7 +96,7 @@ export default function ClassesPage() {
             <Card key={classItem.id} className="overflow-hidden transition-shadow hover:shadow-lg">
               <div className="aspect-video w-full overflow-hidden bg-muted relative">
                 <Image
-                  src={classItem.image}
+                  src={classItem.coverImage || "/placeholder.svg"}
                   alt={classItem.title}
                   fill
                   className="object-cover"
@@ -120,37 +104,87 @@ export default function ClassesPage() {
                 />
               </div>
               <CardHeader>
-                <div className="mb-2 flex items-center gap-2">
-                  <span className="text-xs font-medium text-primary">
-                    {classItem.level}
-                  </span>
-                </div>
                 <CardTitle className="line-clamp-1">{classItem.title}</CardTitle>
                 <CardDescription className="line-clamp-2">
                   {classItem.description}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <User className="h-4 w-4" />
-                  <span>{classItem.teacher}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm text-muted-foreground">
-                  <div className="flex items-center gap-2">
+                {classItem.teacherName && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Users className="h-4 w-4" />
-                    <span>{classItem.students} students</span>
+                    <span>{classItem.teacherName}</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4" />
-                    <span>{classItem.duration}</span>
+                )}
+                {classItem.studentCount !== undefined && classItem.studentCount > 0 && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Users className="h-4 w-4" />
+                    <span>{classItem.studentCount} students</span>
                   </div>
-                </div>
+                )}
                 <Button className="w-full" variant="outline">
                   View Details
                 </Button>
               </CardContent>
             </Card>
           ))}
+        </div>
+      )}
+
+      {!isLoading && filteredClasses.length > 0 && !searchQuery && (
+        <div className="mt-8 flex items-center justify-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+            disabled={currentPage === 1}
+          >
+            <ChevronLeft className="h-4 w-4 mr-1" />
+            Previous
+          </Button>
+          
+          <div className="flex items-center gap-2">
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              let pageNum;
+              if (totalPages <= 5) {
+                pageNum = i + 1;
+              } else if (currentPage <= 3) {
+                pageNum = i + 1;
+              } else if (currentPage >= totalPages - 2) {
+                pageNum = totalPages - 4 + i;
+              } else {
+                pageNum = currentPage - 2 + i;
+              }
+
+              return (
+                <Button
+                  key={pageNum}
+                  variant={currentPage === pageNum ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setCurrentPage(pageNum)}
+                  className="min-w-[40px]"
+                >
+                  {pageNum}
+                </Button>
+              );
+            })}
+          </div>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+            disabled={currentPage === totalPages}
+          >
+            Next
+            <ChevronRight className="h-4 w-4 ml-1" />
+          </Button>
+        </div>
+      )}
+
+      {!isLoading && totalItems > 0 && !searchQuery && (
+        <div className="mt-4 text-center text-sm text-muted-foreground">
+          Showing page {currentPage} of {totalPages} ({totalItems} total classes)
         </div>
       )}
     </div>

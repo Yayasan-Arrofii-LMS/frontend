@@ -305,3 +305,68 @@ export async function getClassById(id: string): Promise<Class> {
     throw handleApiError(error);
   }
 }
+
+/**
+ * Fetch public classes (no authentication required)
+ * Used for home page and public viewing
+ */
+export async function fetchPublicClasses(
+  page: number = 1
+): Promise<{
+  classes: Class[];
+  meta: {
+    totalItems: number;
+    itemsPerPage: number;
+    totalPages: number;
+    currentPage: number;
+  };
+}> {
+  try {
+    const url = new URL(`${BASE_URL}/public/classes`);
+    url.searchParams.append("page", page.toString());
+
+    const response = await fetch(url.toString(), {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+    });
+
+    const responseData = await response.json();
+
+    // Check if request failed
+    if (!response.ok || !responseData.success) {
+      throw new ApiError(
+        responseData.message || `Failed to fetch public classes (${response.status})`,
+        response.status
+      );
+    }
+
+    // Transform API response to frontend format
+    const classes: Class[] = responseData.data.classes.map((apiClass: {
+      id: number;
+      name: string;
+      description: string;
+      image_path: string;
+      image_path_relative: string;
+    }) => ({
+      id: apiClass.id.toString(),
+      title: apiClass.name,
+      description: apiClass.description,
+      coverImage: apiClass.image_path_relative,
+      teacherId: "",
+      teacherName: "",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      studentCount: 0,
+    }));
+
+    return {
+      classes,
+      meta: responseData.data.meta,
+    };
+  } catch (error) {
+    throw handleApiError(error);
+  }
+}
