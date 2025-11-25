@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +11,18 @@ import { fetchPublicClasses } from "@/lib/api/classes";
 import { Class } from "@/types/class";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/use-auth";
+import { useRouter } from "next/navigation";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function ClassesPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -18,6 +31,11 @@ export default function ClassesPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
+  const [showLoginDialog, setShowLoginDialog] = useState(false);
+  const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
+  
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
     async function loadClasses() {
@@ -43,6 +61,26 @@ export default function ClassesPage() {
     classItem.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     classItem.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handleClassClick = (classId: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    
+    if (authLoading) {
+      return;
+    }
+
+    if (!isAuthenticated) {
+      setSelectedClassId(classId);
+      setShowLoginDialog(true);
+    } else {
+      router.push(`/classes/${classId}`);
+    }
+  };
+
+  const handleLoginRedirect = () => {
+    setShowLoginDialog(false);
+    router.push("/login");
+  };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -93,40 +131,43 @@ export default function ClassesPage() {
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filteredClasses.map((classItem) => (
-            <Card key={classItem.id} className="overflow-hidden transition-shadow hover:shadow-lg">
-              <div className="aspect-video w-full overflow-hidden bg-muted relative">
-                <Image
-                  src={classItem.coverImage || "/placeholder.svg"}
-                  alt={classItem.title}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                />
-              </div>
-              <CardHeader>
-                <CardTitle className="line-clamp-1">{classItem.title}</CardTitle>
-                <CardDescription className="line-clamp-2">
-                  {classItem.description}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {classItem.teacherName && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Users className="h-4 w-4" />
-                    <span>{classItem.teacherName}</span>
-                  </div>
-                )}
-                {classItem.studentCount !== undefined && classItem.studentCount > 0 && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Users className="h-4 w-4" />
-                    <span>{classItem.studentCount} students</span>
-                  </div>
-                )}
-                <Button className="w-full" variant="outline">
-                  View Details
-                </Button>
-              </CardContent>
-            </Card>
+            <div
+              key={classItem.id}
+              onClick={(e) => handleClassClick(classItem.id, e)}
+              className="cursor-pointer"
+            >
+              <Card className="overflow-hidden transition-shadow hover:shadow-lg h-full">
+                <div className="aspect-video w-full overflow-hidden bg-muted relative">
+                  <Image
+                    src={classItem.coverImage || "/placeholder.svg"}
+                    alt={classItem.title}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  />
+                </div>
+                <CardHeader>
+                  <CardTitle className="line-clamp-1">{classItem.title}</CardTitle>
+                  <CardDescription className="line-clamp-2">
+                    {classItem.description}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {classItem.teacherName && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Users className="h-4 w-4" />
+                      <span>{classItem.teacherName}</span>
+                    </div>
+                  )}
+                  {classItem.studentCount !== undefined && classItem.studentCount > 0 && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Users className="h-4 w-4" />
+                      <span>{classItem.studentCount} students</span>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           ))}
         </div>
       )}
@@ -187,6 +228,24 @@ export default function ClassesPage() {
           Showing page {currentPage} of {totalPages} ({totalItems} total classes)
         </div>
       )}
+
+      <AlertDialog open={showLoginDialog} onOpenChange={setShowLoginDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Login Required</AlertDialogTitle>
+            <AlertDialogDescription>
+              Anda harus login terlebih dahulu untuk melihat detail kelas.
+              Silakan login atau buat akun baru untuk melanjutkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleLoginRedirect}>
+              Login
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

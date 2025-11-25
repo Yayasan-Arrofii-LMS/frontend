@@ -115,37 +115,39 @@ export default function HomePage() {
             <div className="mb-8 overflow-x-auto">
               <div className="flex gap-6 pb-4" style={{ width: 'max-content' }}>
                 {classes.map((classItem) => (
-                  <Card key={classItem.id} className="overflow-hidden transition-shadow hover:shadow-lg w-[320px] flex-shrink-0">
-                    <div className="aspect-video w-full overflow-hidden bg-muted relative">
-                      <Image
-                        src={classItem.coverImage || "/placeholder.svg"}
-                        alt={classItem.title}
-                        fill
-                        className="object-cover"
-                        sizes="320px"
-                      />
-                    </div>
-                    <CardHeader>
-                      <CardTitle className="line-clamp-1">{classItem.title}</CardTitle>
-                      <CardDescription className="line-clamp-2">
-                        {classItem.description}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                      {classItem.teacherName && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Users className="h-4 w-4" />
-                          <span>{classItem.teacherName}</span>
-                        </div>
-                      )}
-                      {classItem.studentCount !== undefined && classItem.studentCount > 0 && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Users className="h-4 w-4" />
-                          <span>{classItem.studentCount} students</span>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
+                  <Link key={classItem.id} href={`/classes/${classItem.id}`}>
+                    <Card className="overflow-hidden transition-shadow hover:shadow-lg w-[320px] flex-shrink-0">
+                      <div className="aspect-video w-full overflow-hidden bg-muted relative">
+                        <Image
+                          src={classItem.coverImage || "/placeholder.svg"}
+                          alt={classItem.title}
+                          fill
+                          className="object-cover"
+                          sizes="320px"
+                        />
+                      </div>
+                      <CardHeader>
+                        <CardTitle className="line-clamp-1">{classItem.title}</CardTitle>
+                        <CardDescription className="line-clamp-2">
+                          {classItem.description}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        {classItem.teacherName && (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Users className="h-4 w-4" />
+                            <span>{classItem.teacherName}</span>
+                          </div>
+                        )}
+                        {classItem.studentCount !== undefined && classItem.studentCount > 0 && (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Users className="h-4 w-4" />
+                            <span>{classItem.studentCount} students</span>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </Link>
                 ))}
               </div>
             </div>

@@ -370,3 +370,188 @@ export async function fetchPublicClasses(
     throw handleApiError(error);
   }
 }
+
+/**
+ * Fetch public class detail by ID (no authentication required)
+ */
+export async function fetchPublicClassDetail(classId: string): Promise<{
+  class: Class;
+  sections: Array<{
+    id: number;
+    name: string;
+    description: string;
+    order: number;
+    materials: Array<{
+      id: number;
+      title: string;
+      type: string;
+    }>;
+    quizzes: Array<{
+      id: number;
+      title: string;
+      totalQuestions: number;
+    }>;
+  }>;
+}> {
+  try {
+    const response = await fetch(`${BASE_URL}/public/classes/${classId}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+    });
+
+    const responseData = await response.json();
+
+    if (!response.ok || !responseData.success) {
+      throw new ApiError(
+        responseData.message || `Failed to fetch class detail (${response.status})`,
+        response.status
+      );
+    }
+
+    // API returns data directly, not data.class
+    const apiClass = responseData.data;
+    const classData: Class = {
+      id: apiClass.id.toString(),
+      title: apiClass.name,
+      description: apiClass.description,
+      coverImage: apiClass.image_path_relative || apiClass.image_path,
+      teacherId: "",
+      teacherName: "",
+      createdAt: apiClass.createdAt || new Date().toISOString(),
+      updatedAt: apiClass.updatedAt || new Date().toISOString(),
+      studentCount: 0,
+    };
+
+    // Transform sections from API format
+    const sections = (apiClass.sections || []).map((section: {
+      id: number;
+      title: string;
+      description: string | null;
+      order: number;
+      Material: Array<{ id: number; title: string; type?: string }>;
+      Quiz: Array<{ id: number; title: string; totalQuestions?: number }>;
+    }) => ({
+      id: section.id,
+      name: section.title,
+      description: section.description || "",
+      order: section.order,
+      materials: (section.Material || []).map((material) => ({
+        id: material.id,
+        title: material.title,
+        type: material.type || "document",
+      })),
+      quizzes: (section.Quiz || []).map((quiz) => ({
+        id: quiz.id,
+        title: quiz.title,
+        totalQuestions: quiz.totalQuestions || 0,
+      })),
+    }));
+
+    return {
+      class: classData,
+      sections,
+    };
+  } catch (error) {
+    throw handleApiError(error);
+  }
+}
+
+/**
+ * Fetch class detail for authenticated students
+ * Uses /students/classes/:classId endpoint
+ */
+export async function fetchStudentClassDetail(classId: string): Promise<{
+  class: Class;
+  sections: Array<{
+    id: number;
+    name: string;
+    description: string;
+    order: number;
+    materials: Array<{
+      id: number;
+      title: string;
+      type: string;
+    }>;
+    quizzes: Array<{
+      id: number;
+      title: string;
+      totalQuestions: number;
+    }>;
+  }>;
+  isEnrolled: boolean;
+}> {
+  try {
+    const token = await getToken();
+    
+    if (!token) {
+      throw new ApiError("Authentication required", 401);
+    }
+
+    const response = await fetch(`${BASE_URL}/students/classes/${classId}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+    });
+
+    const responseData = await response.json();
+
+    if (!response.ok || !responseData.success) {
+      throw new ApiError(
+        responseData.message || `Failed to fetch class detail (${response.status})`,
+        response.status
+      );
+    }
+
+    const apiClass = responseData.data;
+    const classData: Class = {
+      id: apiClass.id.toString(),
+      title: apiClass.name,
+      description: apiClass.description,
+      coverImage: apiClass.image_path_relative || apiClass.image_path,
+      teacherId: "",
+      teacherName: "",
+      createdAt: apiClass.createdAt || new Date().toISOString(),
+      updatedAt: apiClass.updatedAt || new Date().toISOString(),
+      studentCount: 0,
+    };
+
+    // Transform sections from API format
+    const sections = (apiClass.sections || []).map((section: {
+      id: number;
+      title: string;
+      description: string | null;
+      order: number;
+      Material: Array<{ id: number; title: string; type?: string }>;
+      Quiz: Array<{ id: number; title: string; totalQuestions?: number }>;
+    }) => ({
+      id: section.id,
+      name: section.title,
+      description: section.description || "",
+      order: section.order,
+      materials: (section.Material || []).map((material) => ({
+        id: material.id,
+        title: material.title,
+        type: material.type || "document",
+      })),
+      quizzes: (section.Quiz || []).map((quiz) => ({
+        id: quiz.id,
+        title: quiz.title,
+        totalQuestions: quiz.totalQuestions || 0,
+      })),
+    }));
+
+    return {
+      class: classData,
+      sections,
+      isEnrolled: apiClass.isEnrolled || false,
+    };
+  } catch (error) {
+    throw handleApiError(error);
+  }
+}

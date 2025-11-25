@@ -36,6 +36,7 @@ export function PublicNavbar() {
   const navLinks = [
     { href: "/home", label: "Home" },
     { href: "/classes", label: "Classes" },
+    ...(isAuthenticated ? [{ href: "/my-classes", label: "My Classes" }] : []),
     { href: "/about", label: "About Us" },
   ];
 
@@ -113,7 +114,7 @@ export function PublicNavbar() {
                     {user.role?.toLowerCase() === "teacher" && (
                       <>
                         <DropdownMenuItem asChild>
-                          <Link href="/class">My Classes</Link>
+                          <Link href="/teacher/my-courses">My Courses</Link>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                       </>

@@ -27,6 +27,7 @@ interface EditMaterialModalProps {
   classId: string;
   sectionId: number;
   material: Material;
+  basePath?: string;
 }
 
 export function EditMaterialModal({
@@ -36,6 +37,7 @@ export function EditMaterialModal({
   classId,
   sectionId,
   material,
+  basePath = "/course",
 }: EditMaterialModalProps) {
   const router = useRouter();
   const { preference, setPreference } = useFullscreenPreference();
@@ -60,9 +62,9 @@ export function EditMaterialModal({
         content: encodeURIComponent(material.content),
         ...(material.xp && { xp: material.xp.toString() }),
       });
-      router.push(`/class/${classId}/material/edit?${params}`);
+      router.push(`${basePath}/${classId}/material/edit?${params}`);
     }
-  }, [isOpen, preference, classId, sectionId, material, onClose, router]);
+  }, [isOpen, preference, classId, sectionId, material, basePath, onClose, router]);
 
   const handleExpand = () => {
     setPreference("fullscreen");
@@ -74,7 +76,7 @@ export function EditMaterialModal({
       content: encodeURIComponent(material.content),
       ...(material.xp && { xp: material.xp.toString() }),
     });
-    router.push(`/class/${classId}/material/edit?${params}`);
+    router.push(`${basePath}/${classId}/material/edit?${params}`);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { verifyRole } from "@/lib/api/auth";
+import { getProfile } from "@/lib/api/profile";
 
 export async function GET(request: NextRequest) {
   try {
@@ -23,33 +23,33 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Verify role and get user info from backend
+    // Fetch user profile from backend
     try {
-      const roleResult = await verifyRole(token);
+      const profileData = await getProfile(token);
       
-      if (roleResult.success && roleResult.data) {
-        // Return user profile with role from backend
-        return NextResponse.json({
-          success: true,
-          message: "Profile fetched successfully",
-          data: {
-            role: roleResult.data.role,
-            // Other fields will be added when backend profile endpoint is ready
-          },
-        });
-      }
+      // Return user profile with all data from backend
+      return NextResponse.json({
+        success: true,
+        message: "Profile fetched successfully",
+        data: {
+          id: profileData.id,
+          name: profileData.name,
+          email: profileData.email,
+          username: profileData.username,
+          role: profileData.role,
+          profilePicture: profileData.profileImage,
+          avatar: profileData.profileImage,
+          createdAt: profileData.createdAt,
+          updatedAt: profileData.updatedAt,
+        },
+      });
     } catch (error) {
-      console.error("Error verifying role:", error);
+      console.error("Error fetching profile:", error);
+      return NextResponse.json(
+        { success: false, message: "Failed to fetch profile", data: null },
+        { status: 500 }
+      );
     }
-
-    // Fallback: return minimal profile if role verification fails
-    return NextResponse.json({
-      success: true,
-      message: "Profile fetched successfully",
-      data: {
-        role: "Student", // Default role
-      },
-    });
   } catch (error) {
     console.error("Profile fetch error:", error);
     return NextResponse.json(

@@ -65,6 +65,7 @@ interface SectionCardProps {
   section: Section;
   sectionNumber: number;
   classId: string;
+  basePath?: string;
   onUpdate: () => void;
   onDelete: () => void;
   triggerModalOpen?: {
@@ -248,6 +249,7 @@ export function SectionCard({
   section,
   sectionNumber,
   classId,
+  basePath = "/course",
   onUpdate,
   onDelete,
   triggerModalOpen,
@@ -692,6 +694,7 @@ export function SectionCard({
         onAdd={onUpdate}
         classId={classId}
         sectionId={section.id}
+        basePath={basePath}
       />
 
       {/* Add Quiz Modal */}
@@ -701,6 +704,7 @@ export function SectionCard({
         onAdd={onUpdate}
         classId={classId}
         sectionId={section.id}
+        basePath={basePath}
       />
 
       {/* Edit Material Modal */}
@@ -712,6 +716,7 @@ export function SectionCard({
           classId={classId}
           sectionId={section.id}
           material={editingMaterial}
+          basePath={basePath}
         />
       )}
 

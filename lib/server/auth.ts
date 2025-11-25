@@ -52,7 +52,13 @@ export async function verifyUserRole(
 
     const result = await verifyRole(token);
 
-    if (result.success && allowedRoles.includes(result.data.role)) {
+    // Case-insensitive role comparison
+    const userRole = result.data.role;
+    const hasRole = allowedRoles.some(
+      (role) => role.toLowerCase() === userRole.toLowerCase()
+    );
+
+    if (result.success && hasRole) {
       return result.data.role;
     }
 

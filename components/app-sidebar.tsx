@@ -29,13 +29,9 @@ import {
 } from "@/components/ui/sidebar";
 import Link from "next/link";
 import { GraduationCap } from "lucide-react";
+import { ProfileData } from "@/lib/api/profile";
 
 const data = {
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
   navMain: [
     {
       title: "Dasbor",
@@ -49,7 +45,7 @@ const data = {
     },
     {
       title: "Kelas",
-      url: "/class",
+      url: "/course",
       icon: IconChartBar,
     },
   ],
@@ -137,7 +133,23 @@ const data = {
   ],
 };
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
+  user?: ProfileData | null;
+}
+
+export function AppSidebar({ user, ...props }: AppSidebarProps) {
+  const userData = user
+    ? {
+        name: user.name,
+        email: user.email,
+        avatar: user.profileImage,
+      }
+    : {
+        name: "User",
+        email: "user@example.com",
+        avatar: "/avatars/default.jpg",
+      };
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -159,7 +171,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavMain items={data.navMain} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={userData} />
       </SidebarFooter>
     </Sidebar>
   );

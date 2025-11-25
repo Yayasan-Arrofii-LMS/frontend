@@ -25,6 +25,7 @@ interface AddMaterialModalProps {
   onAdd: () => void;
   classId: string;
   sectionId: number;
+  basePath?: string;
 }
 
 export function AddMaterialModal({
@@ -33,6 +34,7 @@ export function AddMaterialModal({
   onAdd,
   classId,
   sectionId,
+  basePath = "/course",
 }: AddMaterialModalProps) {
   const router = useRouter();
   const { preference, setPreference } = useFullscreenPreference();
@@ -44,14 +46,14 @@ export function AddMaterialModal({
   useEffect(() => {
     if (isOpen && preference === "fullscreen") {
       onClose();
-      router.push(`/class/${classId}/material/add?sectionId=${sectionId}`);
+      router.push(`${basePath}/${classId}/material/add?sectionId=${sectionId}`);
     }
-  }, [isOpen, preference, classId, sectionId, onClose, router]);
+  }, [isOpen, preference, classId, sectionId, basePath, onClose, router]);
 
   const handleExpand = () => {
     setPreference("fullscreen");
     onClose();
-    router.push(`/class/${classId}/material/add?sectionId=${sectionId}`);
+    router.push(`${basePath}/${classId}/material/add?sectionId=${sectionId}`);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

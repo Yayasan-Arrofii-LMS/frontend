@@ -40,6 +40,7 @@ interface AddQuizModalProps {
   onAdd: () => void;
   classId: string;
   sectionId: number;
+  basePath?: string;
 }
 
 const CHOICE_LABELS = ["A", "B", "C", "D", "E"];
@@ -50,6 +51,7 @@ export function AddQuizModal({
   onAdd,
   classId,
   sectionId,
+  basePath = "/course",
 }: AddQuizModalProps) {
   const router = useRouter();
   const { preference, setPreference } = useFullscreenPreference();
@@ -155,14 +157,14 @@ export function AddQuizModal({
   useEffect(() => {
     if (isOpen && preference === "fullscreen") {
       onClose();
-      router.push(`/class/${classId}/quiz/add?sectionId=${sectionId}`);
+      router.push(`${basePath}/${classId}/quiz/add?sectionId=${sectionId}`);
     }
-  }, [isOpen, preference, classId, sectionId, onClose, router]);
+  }, [isOpen, preference, classId, sectionId, basePath, onClose, router]);
 
   const handleExpand = () => {
     setPreference("fullscreen");
     onClose();
-    router.push(`/class/${classId}/quiz/add?sectionId=${sectionId}`);
+    router.push(`${basePath}/${classId}/quiz/add?sectionId=${sectionId}`);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

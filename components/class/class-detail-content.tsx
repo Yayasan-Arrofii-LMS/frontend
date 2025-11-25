@@ -35,9 +35,10 @@ import { Section } from "@/types/section";
 
 interface ClassDetailContentProps {
   classId: string;
+  basePath?: string;
 }
 
-export function ClassDetailContent({ classId }: ClassDetailContentProps) {
+export function ClassDetailContent({ classId, basePath = "/course" }: ClassDetailContentProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [classDetail, setClassDetail] = useState<ClassDetail | null>(null);
@@ -80,22 +81,22 @@ export function ClassDetailContent({ classId }: ClassDetailContentProps) {
         sectionId: parseInt(sectionIdParam),
       });
       // Clean URL
-      router.replace(`/class/${classId}`);
+      router.replace(`${basePath}/${classId}`);
     } else if (openEditMaterial && sectionIdParam) {
       setTriggerModalOpen({
         type: "editMaterial",
         sectionId: parseInt(sectionIdParam),
         materialId: parseInt(openEditMaterial),
       });
-      router.replace(`/class/${classId}`);
+      router.replace(`${basePath}/${classId}`);
     } else if (openAddQuiz && sectionIdParam) {
       setTriggerModalOpen({
         type: "addQuiz",
         sectionId: parseInt(sectionIdParam),
       });
-      router.replace(`/class/${classId}`);
+      router.replace(`${basePath}/${classId}`);
     }
-  }, [searchParams, classId, router]);
+  }, [searchParams, classId, basePath, router]);
 
   const loadClassDetail = async () => {
     try {
@@ -193,7 +194,7 @@ export function ClassDetailContent({ classId }: ClassDetailContentProps) {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => router.push("/class")}
+          onClick={() => router.push(basePath)}
           className="mb-4"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
@@ -268,6 +269,7 @@ export function ClassDetailContent({ classId }: ClassDetailContentProps) {
                   section={section}
                   sectionNumber={index + 1}
                   classId={classId}
+                  basePath={basePath}
                   onUpdate={handleSectionUpdated}
                   onDelete={handleSectionDeleted}
                   triggerModalOpen={

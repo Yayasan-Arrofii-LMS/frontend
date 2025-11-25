@@ -11,7 +11,11 @@ import { ClassGridSkeleton } from "@/components/class-grid-skeleton";
 import { ErrorState } from "@/components/error-state";
 import { useClasses } from "@/hooks/use-classes";
 
-export function ClassManagementContent() {
+interface ClassManagementContentProps {
+  basePath?: string;
+}
+
+export function ClassManagementContent({ basePath = "/course" }: ClassManagementContentProps) {
   const router = useRouter();
   const {
     classes,
@@ -32,8 +36,8 @@ export function ClassManagementContent() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const handleViewClass = useCallback((classData: Class) => {
-    router.push(`/class/${classData.id}`);
-  }, [router]);
+    router.push(`${basePath}/${classData.id}`);
+  }, [router, basePath]);
 
   const handleAddClass = useCallback(() => {
     setIsAddModalOpen(true);

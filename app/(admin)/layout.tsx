@@ -2,6 +2,8 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { SiteHeader } from "@/components/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { verifyAdminRole } from "@/lib/server/auth";
+import { getProfile } from "@/lib/api/profile";
+import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import React from "react";
 
@@ -21,6 +23,20 @@ export default async function DashboardLayout({
     notFound();
   }
 
+  // Get auth token from cookies
+  const cookieStore = await cookies();
+  const token = cookieStore.get("auth_token")?.value;
+
+  // Fetch user profile
+  let userProfile = null;
+  if (token) {
+    try {
+      userProfile = await getProfile(token);
+    } catch (error) {
+      console.error("Failed to fetch profile:", error);
+    }
+  }
+
   return (
     <SidebarProvider
       style={
@@ -30,9 +46,9 @@ export default async function DashboardLayout({
         } as React.CSSProperties
       }
     >
-      <AppSidebar variant="inset" />
+      <AppSidebar variant="inset" user={userProfile} />
       <SidebarInset>
-        <SiteHeader />
+        <SiteHeader user={userProfile} />
         {children}
       </SidebarInset>
     </SidebarProvider>
