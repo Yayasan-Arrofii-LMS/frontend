@@ -50,30 +50,79 @@ export interface Quiz {
   quiz_question?: Question[]; // Backend uses snake_case
 }
 
-// Student Answer from API
-export interface StudentAnswer {
+// Multiple Choice Answer from API
+export interface MultipleChoiceAnswer {
   id: number;
-  attemptId: number;
-  questionId: number;
-  answer?: string;
-  filePath?: string;
+  answer: string;
+  is_correct: boolean;
   createdAt: string;
   updatedAt: string;
-  StudentAnswer_SelectedAnswer: { answerId: number }[];
+  questionId: number;
+}
+
+// Attempt Multiple Answer (selected answers)
+export interface AttemptMultipleAnswer {
+  id: number;
+  createdAt: string;
+  updatedAt: string;
+  attempt_answerId: number;
+  answerId: number;
+  quiz_answer: MultipleChoiceAnswer;
+}
+
+// Student Answer from API (attempt_answer)
+export interface AttemptAnswer {
+  id: number;
+  path: string | null;
+  answer: string;
+  createdAt: string;
+  updatedAt: string;
+  attemptId: number;
+  questionId: number;
+  quiz_question: Question;
+  attemp_multiple_answer: AttemptMultipleAnswer[];
 }
 
 // Quiz Attempt from API
 export interface QuizAttempt {
   id: number;
-  studentId: number;
-  quizId: number;
+  score: number | null;
   started_at: string;
-  submitted_at?: string;
-  score?: number;
-  status: "in_progress" | "submitted" | "graded";
+  submitted_at: string | null;
+  is_graded: boolean;
   createdAt: string;
   updatedAt: string;
-  StudentAnswer: StudentAnswer[];
+  userId: string;
+  quizId: number;
+  quiz?: Quiz;
+  attemp_answer: AttemptAnswer[];
+}
+
+// Saved Answer Format (for getSavedAnswers)
+export interface SavedAnswerQuestion {
+  id: number;
+  question: string;
+  type: "MultipleChoice" | "TrueFalse" | "Essay";
+  points: number;
+  answers: {
+    id: number;
+    answer: string;
+  }[];
+  savedAnswer: {
+    answer: string;
+    selectedAnswerIds: number[];
+  } | null;
+}
+
+// Get Saved Answers Response
+export interface SavedAnswersData {
+  attemptId: number;
+  quizId: number;
+  quizTitle: string;
+  timeLimit: number;
+  startedAt: string;
+  submittedAt: string | null;
+  questions: SavedAnswerQuestion[];
 }
 
 // === Material Types ===
@@ -219,7 +268,6 @@ export interface SaveAnswerInput {
   attemptId: number;
   questionId: number;
   answer?: string;
-  filePath?: string;
   selectedAnswerIds?: number[];
 }
 
@@ -263,12 +311,24 @@ export interface QuizAttemptsResponse {
   success: boolean;
   message: string;
   data: QuizAttempt[];
+  meta?: {
+    totalItems: number;
+    itemsPerPage: number;
+    totalPages: number;
+    currentPage: number;
+  };
 }
 
-export interface StudentAnswerResponse {
+export interface SaveAnswerResponse {
   success: boolean;
   message: string;
-  data: StudentAnswer;
+  data: AttemptAnswer;
+}
+
+export interface SavedAnswersResponse {
+  success: boolean;
+  message: string;
+  data: SavedAnswersData;
 }
 
 // Class from API

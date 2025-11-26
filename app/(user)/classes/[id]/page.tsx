@@ -4,7 +4,13 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -15,13 +21,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { 
-  ArrowLeft, 
-  BookOpen, 
-  FileText, 
-  Lock, 
+import {
+  ArrowLeft,
+  BookOpen,
+  FileText,
+  Lock,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
 } from "lucide-react";
 import { fetchStudentClassDetail } from "@/lib/api/classes";
 import { enrollClass, unenrollClass } from "@/lib/api/enrollment";
@@ -58,6 +64,55 @@ export default function ClassDetailPage() {
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
+  const [showQuizDialog, setShowQuizDialog] = useState(false);
+  const [selectedQuiz, setSelectedQuiz] = useState<{
+    id: number;
+    title: string;
+    sectionId: number;
+    totalQuestions: number;
+    maxAttempts?: number;
+    attemptCount?: number;
+  } | null>(null);
+  const [quizAttempts, setQuizAttempts] = useState<
+    Record<number, { count: number; maxAttempts: number }>
+  >({});
+
+  const handleQuizClick = async (quiz: any, sectionId: number) => {
+    try {
+      // Fetch quiz attempts to check if max attempts reached
+      const { getMyAttempts } = await import("@/lib/api/quizzes");
+      const { attempts } = await getMyAttempts(sectionId, quiz.id);
+      const submittedAttempts = attempts.filter((a: any) => a.submitted_at);
+
+      console.log("Quiz max_attempts:", quiz.max_attempts);
+      console.log("Submitted attempts count:", submittedAttempts.length);
+      console.log("All attempts:", attempts);
+
+      // Use quiz data from sections (already includes max_attempts)
+      if (
+        quiz.max_attempts > 0 &&
+        submittedAttempts.length >= quiz.max_attempts
+      ) {
+        toast.error(
+          `Anda telah mencapai batas maksimal ${quiz.max_attempts} percobaan untuk kuis ini`
+        );
+        return;
+      }
+
+      setSelectedQuiz({
+        id: quiz.id,
+        title: quiz.title,
+        sectionId: sectionId,
+        totalQuestions: quiz.quiz_question?.length || 0,
+        maxAttempts: quiz.max_attempts,
+        attemptCount: submittedAttempts.length,
+      });
+      setShowQuizDialog(true);
+    } catch (error) {
+      console.error("Failed to check quiz attempts:", error);
+      toast.error("Gagal memuat informasi kuis");
+    }
+  };
 
   useEffect(() => {
     // Show login dialog if not authenticated
@@ -68,13 +123,43 @@ export default function ClassDetailPage() {
     async function loadClassDetail() {
       try {
         setIsLoading(true);
-        
+
         if (isAuthenticated) {
           // Authenticated: use student endpoint with enrollment status
           const data = await fetchStudentClassDetail(classId);
           setClassData(data.class);
           setSections(data.sections);
           setIsEnrolled(data.isEnrolled);
+
+          // Fetch attempts for all quizzes
+          if (data.isEnrolled) {
+            const { getMyAttempts } = await import("@/lib/api/quizzes");
+            const attemptsData: Record<
+              number,
+              { count: number; maxAttempts: number }
+            > = {};
+
+            for (const section of data.sections) {
+              for (const quiz of section.quizzes) {
+                try {
+                  const { attempts } = await getMyAttempts(section.id, quiz.id);
+                  const submittedCount = attempts.filter(
+                    (a: any) => a.submitted_at
+                  ).length;
+                  attemptsData[quiz.id] = {
+                    count: submittedCount,
+                    maxAttempts: quiz.max_attempts || 0,
+                  };
+                } catch (error) {
+                  console.error(
+                    `Failed to fetch attempts for quiz ${quiz.id}:`,
+                    error
+                  );
+                }
+              }
+            }
+            setQuizAttempts(attemptsData);
+          }
         } else {
           // Not authenticated: show login dialog
           setShowLoginDialog(true);
@@ -104,9 +189,44 @@ export default function ClassDetailPage() {
       await enrollClass(parseInt(classId));
       setIsEnrolled(true);
       toast.success("Berhasil mendaftar ke kelas");
+
+      // Reload class data after enrollment
+      const data = await fetchStudentClassDetail(classId);
+      setClassData(data.class);
+      setSections(data.sections);
+
+      // Reload quiz attempts
+      const { getMyAttempts } = await import("@/lib/api/quizzes");
+      const attemptsData: Record<
+        number,
+        { count: number; maxAttempts: number }
+      > = {};
+
+      for (const section of data.sections) {
+        for (const quiz of section.quizzes) {
+          try {
+            const { attempts } = await getMyAttempts(section.id, quiz.id);
+            const submittedCount = attempts.filter(
+              (a: any) => a.submitted_at
+            ).length;
+            attemptsData[quiz.id] = {
+              count: submittedCount,
+              maxAttempts: quiz.max_attempts || 0,
+            };
+          } catch (error) {
+            console.error(
+              `Failed to fetch attempts for quiz ${quiz.id}:`,
+              error
+            );
+          }
+        }
+      }
+      setQuizAttempts(attemptsData);
     } catch (error) {
       console.error("Failed to enroll:", error);
-      toast.error(error instanceof Error ? error.message : "Gagal mendaftar ke kelas");
+      toast.error(
+        error instanceof Error ? error.message : "Gagal mendaftar ke kelas"
+      );
     } finally {
       setIsEnrolling(false);
     }
@@ -118,9 +238,16 @@ export default function ClassDetailPage() {
       await unenrollClass(parseInt(classId));
       setIsEnrolled(false);
       toast.success("Berhasil keluar dari kelas");
+
+      // Reload class data after unenrollment
+      const data = await fetchStudentClassDetail(classId);
+      setClassData(data.class);
+      setSections(data.sections);
     } catch (error) {
       console.error("Failed to unenroll:", error);
-      toast.error(error instanceof Error ? error.message : "Gagal keluar dari kelas");
+      toast.error(
+        error instanceof Error ? error.message : "Gagal keluar dari kelas"
+      );
     } finally {
       setIsEnrolling(false);
     }
@@ -168,17 +295,26 @@ export default function ClassDetailPage() {
           <DialogHeader>
             <DialogTitle>Login Required</DialogTitle>
             <DialogDescription>
-              You need to login first to view class details and enroll in courses.
+              You need to login first to view class details and enroll in
+              courses.
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-3 mt-4">
             <Button onClick={() => router.push("/login")} className="w-full">
               Login
             </Button>
-            <Button onClick={() => router.push("/register")} variant="outline" className="w-full">
+            <Button
+              onClick={() => router.push("/register")}
+              variant="outline"
+              className="w-full"
+            >
               Create Account
             </Button>
-            <Button onClick={() => router.push("/classes")} variant="ghost" className="w-full">
+            <Button
+              onClick={() => router.push("/classes")}
+              variant="ghost"
+              className="w-full"
+            >
               Back to Classes
             </Button>
           </div>
@@ -251,6 +387,17 @@ export default function ClassDetailPage() {
                             {section.materials.map((material) => (
                               <div
                                 key={material.id}
+                                onClick={() => {
+                                  if (isEnrolled) {
+                                    router.push(
+                                      `/classes/${classId}/materials/${material.id}`
+                                    );
+                                  } else {
+                                    toast.error(
+                                      "Silakan enroll terlebih dahulu"
+                                    );
+                                  }
+                                }}
                                 className={`flex items-center gap-3 p-3 rounded-lg border ${
                                   isEnrolled
                                     ? "hover:bg-accent cursor-pointer"
@@ -278,27 +425,74 @@ export default function ClassDetailPage() {
                         <div>
                           <h4 className="font-semibold mb-2 text-sm">Kuis</h4>
                           <div className="space-y-2">
-                            {section.quizzes.map((quiz) => (
-                              <div
-                                key={quiz.id}
-                                className={`flex items-center gap-3 p-3 rounded-lg border ${
-                                  isEnrolled
-                                    ? "hover:bg-accent cursor-pointer"
-                                    : "bg-muted/50 cursor-not-allowed"
-                                }`}
-                              >
-                                <BookOpen className="h-4 w-4 text-muted-foreground" />
-                                <span className="flex-1 text-sm">
-                                  {quiz.title}
-                                </span>
-                                <Badge variant="outline" className="text-xs">
-                                  {quiz.totalQuestions} pertanyaan
-                                </Badge>
-                                {!isEnrolled && (
-                                  <Lock className="h-3 w-3 text-muted-foreground" />
-                                )}
-                              </div>
-                            ))}
+                            {section.quizzes.map((quiz) => {
+                              const attempts = quizAttempts[quiz.id];
+                              const isMaxAttemptsReached =
+                                attempts &&
+                                attempts.maxAttempts > 0 &&
+                                attempts.count >= attempts.maxAttempts;
+                              const canClick =
+                                isEnrolled && !isMaxAttemptsReached;
+
+                              return (
+                                <div
+                                  key={quiz.id}
+                                  onClick={() => {
+                                    if (!isEnrolled) {
+                                      toast.error(
+                                        "Silakan enroll terlebih dahulu"
+                                      );
+                                      return;
+                                    }
+                                    if (isMaxAttemptsReached) {
+                                      toast.error(
+                                        `Anda telah mencapai batas maksimal ${attempts.maxAttempts} percobaan untuk kuis ini`
+                                      );
+                                      return;
+                                    }
+                                    handleQuizClick(quiz, section.id);
+                                  }}
+                                  className={`flex items-center gap-3 p-3 rounded-lg border ${
+                                    canClick
+                                      ? "hover:bg-accent cursor-pointer"
+                                      : "bg-muted/50 cursor-not-allowed opacity-60"
+                                  }`}
+                                >
+                                  <BookOpen
+                                    className={`h-4 w-4 ${
+                                      isMaxAttemptsReached
+                                        ? "text-destructive"
+                                        : "text-muted-foreground"
+                                    }`}
+                                  />
+                                  <span className="flex-1 text-sm">
+                                    {quiz.title}
+                                  </span>
+                                  <div className="flex items-center gap-2">
+                                    {quiz.totalQuestions >= 0 && (
+                                      <Badge
+                                        variant="outline"
+                                        className="text-xs"
+                                      >
+                                        {quiz.totalQuestions} pertanyaan
+                                      </Badge>
+                                    )}
+                                    {isMaxAttemptsReached && (
+                                      <Badge
+                                        variant="destructive"
+                                        className="text-xs"
+                                      >
+                                        {attempts.count}/{attempts.maxAttempts}{" "}
+                                        percobaan
+                                      </Badge>
+                                    )}
+                                    {!isEnrolled && (
+                                      <Lock className="h-3 w-3 text-muted-foreground" />
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       )}
@@ -428,6 +622,86 @@ export default function ClassDetailPage() {
           </Card>
         </div>
       </div>
+
+      {/* Quiz Start Confirmation Dialog */}
+      <Dialog open={showQuizDialog} onOpenChange={setShowQuizDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Mulai Kuis?</DialogTitle>
+            <DialogDescription>
+              Pastikan Anda siap sebelum memulai kuis ini
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <h4 className="font-semibold mb-2">{selectedQuiz?.title}</h4>
+            </div>
+            {(selectedQuiz?.totalQuestions &&
+              selectedQuiz.totalQuestions > 0) ||
+            (selectedQuiz?.maxAttempts && selectedQuiz.maxAttempts > 0) ? (
+              <div className="grid grid-cols-2 gap-4">
+                {selectedQuiz?.totalQuestions &&
+                  selectedQuiz.totalQuestions > 0 && (
+                    <div className="p-4 border rounded-lg">
+                      <p className="text-sm text-muted-foreground mb-1">
+                        Jumlah Soal
+                      </p>
+                      <p className="text-2xl font-bold">
+                        {selectedQuiz.totalQuestions}
+                      </p>
+                    </div>
+                  )}
+                {selectedQuiz?.maxAttempts && selectedQuiz.maxAttempts > 0 && (
+                  <div className="p-4 border rounded-lg">
+                    <p className="text-sm text-muted-foreground mb-1">
+                      Percobaan
+                    </p>
+                    <p className="text-2xl font-bold">
+                      {(selectedQuiz.attemptCount || 0) + 1}/
+                      {selectedQuiz.maxAttempts}
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : null}
+            <div className="space-y-2 text-sm text-muted-foreground">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                <p>Waktu mulai dihitung setelah Anda klik "Mulai Kuis"</p>
+              </div>
+              <div className="flex items-start gap-2">
+                <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                <p>Progress akan tersimpan dan dapat dilanjutkan nanti</p>
+              </div>
+              <div className="flex items-start gap-2">
+                <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                <p>Pastikan koneksi internet Anda stabil</p>
+              </div>
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setShowQuizDialog(false)}
+              className="flex-1"
+            >
+              Batal
+            </Button>
+            <Button
+              onClick={() => {
+                if (selectedQuiz) {
+                  router.push(
+                    `/classes/${classId}/quizzes/${selectedQuiz.id}?sectionId=${selectedQuiz.sectionId}`
+                  );
+                }
+              }}
+              className="flex-1"
+            >
+              Mulai Kuis
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

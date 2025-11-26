@@ -31,7 +31,7 @@ export async function fetchClasses(
 }> {
   try {
     const token = await getToken();
-    
+
     if (!token) {
       throw new ApiError("Authentication required", 401);
     }
@@ -63,23 +63,25 @@ export async function fetchClasses(
     }
 
     // Transform API response to frontend format
-    const classes: Class[] = data.data.map((apiClass: {
-      id: number;
-      name: string;
-      description: string;
-      image_path: string;
-      image_path_relative: string;
-    }) => ({
-      id: apiClass.id.toString(),
-      title: apiClass.name,
-      description: apiClass.description,
-      coverImage: apiClass.image_path_relative,
-      teacherId: "teacher-1", // TODO: Get from API when available
-      teacherName: "Unknown Teacher", // TODO: Get from API when available
-      createdAt: new Date().toISOString(), // TODO: Get from API when available
-      updatedAt: new Date().toISOString(), // TODO: Get from API when available
-      studentCount: 0, // TODO: Get from API when available
-    }));
+    const classes: Class[] = data.data.map(
+      (apiClass: {
+        id: number;
+        name: string;
+        description: string;
+        image_path: string;
+        image_path_relative: string;
+      }) => ({
+        id: apiClass.id.toString(),
+        title: apiClass.name,
+        description: apiClass.description,
+        coverImage: apiClass.image_path_relative,
+        teacherId: "teacher-1", // TODO: Get from API when available
+        teacherName: "Unknown Teacher", // TODO: Get from API when available
+        createdAt: new Date().toISOString(), // TODO: Get from API when available
+        updatedAt: new Date().toISOString(), // TODO: Get from API when available
+        studentCount: 0, // TODO: Get from API when available
+      })
+    );
 
     return {
       classes,
@@ -99,7 +101,7 @@ export async function fetchClasses(
 export async function createClass(data: CreateClassRequest): Promise<Class> {
   try {
     const token = await getToken();
-    
+
     if (!token) {
       throw new ApiError("Authentication required", 401);
     }
@@ -108,7 +110,7 @@ export async function createClass(data: CreateClassRequest): Promise<Class> {
     const formData = new FormData();
     formData.append("name", data.title);
     formData.append("description", data.description);
-    
+
     // Jika ada cover image, tambahkan ke form data dengan nama field "file" sesuai backend
     if (data.coverImage) {
       formData.append("file", data.coverImage);
@@ -164,7 +166,7 @@ export async function updateClass(
 ): Promise<Class> {
   try {
     const token = await getToken();
-    
+
     if (!token) {
       throw new ApiError("Authentication required", 401);
     }
@@ -227,7 +229,7 @@ export async function updateClass(
 export async function deleteClass(id: string): Promise<void> {
   try {
     const token = await getToken();
-    
+
     if (!token) {
       throw new ApiError("Authentication required", 401);
     }
@@ -257,7 +259,7 @@ export async function deleteClass(id: string): Promise<void> {
 export async function getClassById(id: string): Promise<Class> {
   try {
     const token = await getToken();
-    
+
     if (!token) {
       throw new ApiError("Authentication required", 401);
     }
@@ -310,9 +312,7 @@ export async function getClassById(id: string): Promise<Class> {
  * Fetch public classes (no authentication required)
  * Used for home page and public viewing
  */
-export async function fetchPublicClasses(
-  page: number = 1
-): Promise<{
+export async function fetchPublicClasses(page: number = 1): Promise<{
   classes: Class[];
   meta: {
     totalItems: number;
@@ -338,29 +338,32 @@ export async function fetchPublicClasses(
     // Check if request failed
     if (!response.ok || !responseData.success) {
       throw new ApiError(
-        responseData.message || `Failed to fetch public classes (${response.status})`,
+        responseData.message ||
+          `Failed to fetch public classes (${response.status})`,
         response.status
       );
     }
 
     // Transform API response to frontend format
-    const classes: Class[] = responseData.data.classes.map((apiClass: {
-      id: number;
-      name: string;
-      description: string;
-      image_path: string;
-      image_path_relative: string;
-    }) => ({
-      id: apiClass.id.toString(),
-      title: apiClass.name,
-      description: apiClass.description,
-      coverImage: apiClass.image_path_relative,
-      teacherId: "",
-      teacherName: "",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      studentCount: 0,
-    }));
+    const classes: Class[] = responseData.data.classes.map(
+      (apiClass: {
+        id: number;
+        name: string;
+        description: string;
+        image_path: string;
+        image_path_relative: string;
+      }) => ({
+        id: apiClass.id.toString(),
+        title: apiClass.name,
+        description: apiClass.description,
+        coverImage: apiClass.image_path_relative,
+        teacherId: "",
+        teacherName: "",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        studentCount: 0,
+      })
+    );
 
     return {
       classes,
@@ -406,7 +409,8 @@ export async function fetchPublicClassDetail(classId: string): Promise<{
 
     if (!response.ok || !responseData.success) {
       throw new ApiError(
-        responseData.message || `Failed to fetch class detail (${response.status})`,
+        responseData.message ||
+          `Failed to fetch class detail (${response.status})`,
         response.status
       );
     }
@@ -426,29 +430,31 @@ export async function fetchPublicClassDetail(classId: string): Promise<{
     };
 
     // Transform sections from API format
-    const sections = (apiClass.sections || []).map((section: {
-      id: number;
-      title: string;
-      description: string | null;
-      order: number;
-      Material: Array<{ id: number; title: string; type?: string }>;
-      Quiz: Array<{ id: number; title: string; totalQuestions?: number }>;
-    }) => ({
-      id: section.id,
-      name: section.title,
-      description: section.description || "",
-      order: section.order,
-      materials: (section.Material || []).map((material) => ({
-        id: material.id,
-        title: material.title,
-        type: material.type || "document",
-      })),
-      quizzes: (section.Quiz || []).map((quiz) => ({
-        id: quiz.id,
-        title: quiz.title,
-        totalQuestions: quiz.totalQuestions || 0,
-      })),
-    }));
+    const sections = (apiClass.sections || []).map(
+      (section: {
+        id: number;
+        title: string;
+        description: string | null;
+        order: number;
+        Material: Array<{ id: number; title: string; type?: string }>;
+        Quiz: Array<{ id: number; title: string; totalQuestions?: number }>;
+      }) => ({
+        id: section.id,
+        name: section.title,
+        description: section.description || "",
+        order: section.order,
+        materials: (section.Material || []).map((material) => ({
+          id: material.id,
+          title: material.title,
+          type: material.type || "document",
+        })),
+        quizzes: (section.Quiz || []).map((quiz) => ({
+          id: quiz.id,
+          title: quiz.title,
+          totalQuestions: quiz.totalQuestions || 0,
+        })),
+      })
+    );
 
     return {
       class: classData,
@@ -485,7 +491,7 @@ export async function fetchStudentClassDetail(classId: string): Promise<{
 }> {
   try {
     const token = await getToken();
-    
+
     if (!token) {
       throw new ApiError("Authentication required", 401);
     }
@@ -503,12 +509,14 @@ export async function fetchStudentClassDetail(classId: string): Promise<{
 
     if (!response.ok || !responseData.success) {
       throw new ApiError(
-        responseData.message || `Failed to fetch class detail (${response.status})`,
+        responseData.message ||
+          `Failed to fetch class detail (${response.status})`,
         response.status
       );
     }
 
     const apiClass = responseData.data;
+
     const classData: Class = {
       id: apiClass.id.toString(),
       title: apiClass.name,
@@ -522,29 +530,34 @@ export async function fetchStudentClassDetail(classId: string): Promise<{
     };
 
     // Transform sections from API format
-    const sections = (apiClass.sections || []).map((section: {
-      id: number;
-      title: string;
-      description: string | null;
-      order: number;
-      Material: Array<{ id: number; title: string; type?: string }>;
-      Quiz: Array<{ id: number; title: string; totalQuestions?: number }>;
-    }) => ({
-      id: section.id,
-      name: section.title,
-      description: section.description || "",
-      order: section.order,
-      materials: (section.Material || []).map((material) => ({
-        id: material.id,
-        title: material.title,
-        type: material.type || "document",
-      })),
-      quizzes: (section.Quiz || []).map((quiz) => ({
-        id: quiz.id,
-        title: quiz.title,
-        totalQuestions: quiz.totalQuestions || 0,
-      })),
-    }));
+    const sections = (apiClass.sections || []).map(
+      (section: {
+        id: number;
+        title: string;
+        description: string | null;
+        order: number;
+        Material: Array<{ id: number; title: string; type?: string }>;
+        Quiz: Array<{
+          id: number;
+          title: string;
+        }>;
+      }) => ({
+        id: section.id,
+        name: section.title,
+        description: section.description || "",
+        order: section.order,
+        materials: (section.Material || []).map((material) => ({
+          id: material.id,
+          title: material.title,
+          type: material.type || "document",
+        })),
+        quizzes: (section.Quiz || []).map((quiz) => ({
+          id: quiz.id,
+          title: quiz.title,
+          totalQuestions: -1, // -1 indicates unknown, will be hidden in UI
+        })),
+      })
+    );
 
     return {
       class: classData,

@@ -1,6 +1,7 @@
 import { ApiError, handleApiError } from "../errors";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+const BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001/api/v1";
 
 async function getToken(): Promise<string | null> {
   if (typeof window === "undefined") {
@@ -68,10 +69,12 @@ export interface MyClassesResponse {
 /**
  * Enroll in a class
  */
-export async function enrollClass(classId: number): Promise<EnrollmentResponse> {
+export async function enrollClass(
+  classId: number
+): Promise<EnrollmentResponse> {
   try {
     const token = await getToken();
-    
+
     if (!token) {
       throw new ApiError("Authentication required", 401);
     }
@@ -106,7 +109,7 @@ export async function enrollClass(classId: number): Promise<EnrollmentResponse> 
 export async function unenrollClass(classId: number): Promise<void> {
   try {
     const token = await getToken();
-    
+
     if (!token) {
       throw new ApiError("Authentication required", 401);
     }
@@ -139,7 +142,7 @@ export async function unenrollClass(classId: number): Promise<void> {
 export async function checkEnrollmentStatus(classId: number): Promise<boolean> {
   try {
     const token = await getToken();
-    
+
     if (!token) {
       return false;
     }
@@ -171,7 +174,7 @@ export async function checkEnrollmentStatus(classId: number): Promise<boolean> {
 export async function fetchMyClasses(): Promise<EnrolledClass[]> {
   try {
     const token = await getToken();
-    
+
     if (!token) {
       throw new ApiError("Authentication required", 401);
     }

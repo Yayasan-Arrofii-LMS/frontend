@@ -2,25 +2,25 @@ import {
   Quiz,
   Question,
   QuizAttempt,
-  StudentAnswer,
+  AttemptAnswer,
   QuizResponse,
   QuizzesResponse,
   QuestionResponse,
   QuestionsResponse,
   QuizAttemptResponse,
   QuizAttemptsResponse,
-  StudentAnswerResponse,
+  SaveAnswerResponse,
+  SavedAnswersResponse,
+  SavedAnswersData,
   CreateQuizInput,
   UpdateQuizInput,
   CreateQuestionInput,
   UpdateQuestionInput,
-  StartQuizAttemptInput,
   SaveAnswerInput,
   SubmitQuizInput,
 } from "@/types/section";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1";
+const API_BASE_URL = "http://localhost:3001/api/v1";
 
 // Helper function to get auth token
 function getAuthToken(): string {
@@ -90,20 +90,19 @@ export async function fetchQuizzes(sectionId: number): Promise<Quiz[]> {
 
 /**
  * Fetch a single quiz by ID
+ * Note: Backend doesn't have GET endpoint for single quiz.
+ * Use getMyAttempts to get quiz details from attempts,
+ * or start a new attempt to get quiz data.
  */
 export async function fetchQuiz(
   sectionId: number,
   quizId: number
 ): Promise<Quiz> {
-  try {
-    const response = await apiCall<QuizResponse>(
-      `/classes/sections/${sectionId}/quizzes/${quizId}`
-    );
-    return response.data;
-  } catch (error) {
-    console.error("Error fetching quiz:", error);
-    throw error;
-  }
+  // This endpoint doesn't exist in backend
+  // We need to get quiz details from attempts or sections data
+  throw new Error(
+    "fetchQuiz endpoint not available. Use section data or start quiz."
+  );
 }
 
 /**
@@ -137,9 +136,7 @@ export async function updateQuiz(
   data: UpdateQuizInput
 ): Promise<Quiz> {
   try {
-    console.log(
-      `Calling PATCH /classes/sections/${sectionId}/quizzes/${quizId}`
-    );
+    console.log(`Calling PATCH /sections/${sectionId}/quizzes/${quizId}`);
     console.log("Update data:", data);
 
     const response = await apiCall<QuizResponse>(
@@ -183,28 +180,24 @@ export async function deleteQuiz(
 // ============================================
 
 /**
- * Fetch all questions for a quiz
- * Questions are included in the quiz response
+ * Fetch all questions for a quiz (with answers - for teachers/admin)
+ * This is used by the manage questions modal
  */
 export async function fetchQuestions(
   sectionId: number,
   quizId: number
 ): Promise<Question[]> {
   try {
-    // Fetch the quiz which includes questions
-    const quiz = await fetchQuiz(sectionId, quizId);
-    console.log("Fetched quiz with questions:", quiz);
-    
-    // Backend uses snake_case (quiz_question), frontend expects PascalCase (Question)
-    const questions = quiz.Question || quiz.quiz_question || [];
-    console.log("Questions array:", questions);
-    
-    // Normalize answer field names
-    const normalizedQuestions = questions.map(q => ({
+    // Use the proper getQuizQuestions endpoint
+    const questions = await getQuizQuestions(sectionId, quizId);
+    console.log("Fetched questions:", questions);
+
+    // Normalize answer field names if needed
+    const normalizedQuestions = questions.map((q) => ({
       ...q,
-      Answer: q.Answer || q.quiz_answer || []
+      Answer: q.Answer || q.quiz_answer || [],
     }));
-    
+
     return normalizedQuestions;
   } catch (error) {
     console.error("Error fetching questions:", error);
@@ -303,36 +296,37 @@ export async function deleteQuestion(
 
 /**
  * Start a new quiz attempt
+ * POST /sections/:sectionId/quizzes/:quizId/start
  */
-export async function startQuizAttempt(
+export async function startQuiz(
   sectionId: number,
-  data: StartQuizAttemptInput
+  quizId: number
 ): Promise<QuizAttempt> {
   try {
     const response = await apiCall<QuizAttemptResponse>(
-      `/classes/sections/${sectionId}/quizzes/attempts`,
+      `/classes/sections/${sectionId}/quizzes/${quizId}/start`,
       {
         method: "POST",
-        body: JSON.stringify(data),
       }
     );
     return response.data;
   } catch (error) {
-    console.error("Error starting quiz attempt:", error);
+    console.error("Error starting quiz:", error);
     throw error;
   }
 }
 
 /**
- * Save/auto-save a student answer
+ * Save a student answer (auto-save)
+ * POST /sections/:sectionId/quizzes/save-answer
  */
 export async function saveAnswer(
   sectionId: number,
   data: SaveAnswerInput
-): Promise<StudentAnswer> {
+): Promise<AttemptAnswer> {
   try {
-    const response = await apiCall<StudentAnswerResponse>(
-      `/classes/sections/${sectionId}/quizzes/answers`,
+    const response = await apiCall<SaveAnswerResponse>(
+      `/classes/sections/${sectionId}/quizzes/save-answer`,
       {
         method: "POST",
         body: JSON.stringify(data),
@@ -347,17 +341,18 @@ export async function saveAnswer(
 
 /**
  * Submit quiz attempt (final submission)
+ * POST /sections/:sectionId/quizzes/submit
  */
 export async function submitQuiz(
   sectionId: number,
-  data: SubmitQuizInput
+  attemptId: number
 ): Promise<QuizAttempt> {
   try {
     const response = await apiCall<QuizAttemptResponse>(
-      `/classes/sections/${sectionId}/quizzes/attempts/submit`,
+      `/classes/sections/${sectionId}/quizzes/submit`,
       {
         method: "POST",
-        body: JSON.stringify(data),
+        body: JSON.stringify({ attemptId }),
       }
     );
     return response.data;
@@ -369,54 +364,98 @@ export async function submitQuiz(
 
 /**
  * Get quiz attempt result/details
+ * GET /sections/:sectionId/quizzes/attempts/:attemptId/result
  */
-export async function getAttemptResult(
+export async function getQuizResult(
   sectionId: number,
   attemptId: number
 ): Promise<QuizAttempt> {
   try {
     const response = await apiCall<QuizAttemptResponse>(
-      `/classes/sections/${sectionId}/quizzes/attempts/${attemptId}`
+      `/classes/sections/${sectionId}/quizzes/attempts/${attemptId}/result`
     );
     return response.data;
   } catch (error) {
-    console.error("Error getting attempt result:", error);
+    console.error("Error getting quiz result:", error);
     throw error;
   }
 }
 
 /**
- * Get all quiz attempts for a student (current user)
+ * Get all my quiz attempts
+ * GET /sections/:sectionId/quizzes/my-attempts/:quizId
  */
-export async function getMyQuizAttempts(
+export async function getMyAttempts(
   sectionId: number,
   quizId: number
-): Promise<QuizAttempt[]> {
+): Promise<{ attempts: QuizAttempt[]; meta?: any }> {
   try {
     const response = await apiCall<QuizAttemptsResponse>(
-      `/classes/sections/${sectionId}/quizzes/${quizId}/my-attempts`
+      `/classes/sections/${sectionId}/quizzes/my-attempts/${quizId}`
     );
-    return response.data;
+    return {
+      attempts: response.data,
+      meta: response.meta,
+    };
   } catch (error) {
-    console.error("Error getting quiz attempts:", error);
+    console.error("Error getting my attempts:", error);
     throw error;
   }
 }
 
 /**
- * Get all attempts for a quiz (Teacher/Admin view)
+ * Get all saved answers for an attempt
+ * GET /sections/:sectionId/quizzes/attempts/:attemptId/questions
  */
-export async function getAllQuizAttempts(
+export async function getSavedAnswers(
   sectionId: number,
-  quizId: number
-): Promise<QuizAttempt[]> {
+  attemptId: number
+): Promise<SavedAnswersData> {
   try {
-    const response = await apiCall<QuizAttemptsResponse>(
-      `/classes/sections/${sectionId}/quizzes/${quizId}/attempts`
+    const response = await apiCall<SavedAnswersResponse>(
+      `/classes/sections/${sectionId}/quizzes/attempts/${attemptId}/questions`
     );
     return response.data;
   } catch (error) {
-    console.error("Error getting all quiz attempts:", error);
+    console.error("Error getting saved answers:", error);
+    throw error;
+  }
+}
+
+/**
+ * Get all questions for a quiz (with answers for teachers)
+ * GET /sections/:sectionId/quizzes/:quizId/questions
+ */
+export async function getQuizQuestions(
+  sectionId: number,
+  quizId: number
+): Promise<Question[]> {
+  try {
+    const response = await apiCall<QuestionsResponse>(
+      `/classes/sections/${sectionId}/quizzes/${quizId}/questions`
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error getting quiz questions:", error);
+    throw error;
+  }
+}
+
+/**
+ * Get a single question by ID
+ * GET /sections/:sectionId/quizzes/questions/:questionId
+ */
+export async function getQuestionById(
+  sectionId: number,
+  questionId: number
+): Promise<Question> {
+  try {
+    const response = await apiCall<QuestionResponse>(
+      `/classes/sections/${sectionId}/quizzes/questions/${questionId}`
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error getting question:", error);
     throw error;
   }
 }
