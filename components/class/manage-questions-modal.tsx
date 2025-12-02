@@ -76,10 +76,10 @@ export function ManageQuestionsModal({
     setIsLoading(true);
     try {
       const data = await fetchQuestions(sectionId, quizId);
-      console.log("Loaded questions:", data);
+      console.log("Pertanyaan dimuat:", data);
       
       if (!data || data.length === 0) {
-        console.log("No questions found, starting with empty list");
+        console.log("Tidak ada pertanyaan, mulai dengan daftar kosong");
         setQuestions([]);
         return;
       }
@@ -100,7 +100,7 @@ export function ManageQuestionsModal({
       }));
       setQuestions(formattedQuestions);
     } catch (error) {
-      console.error("Error loading questions:", error);
+      console.error("Kesalahan saat memuat pertanyaan:", error);
       toast.error("Gagal memuat pertanyaan");
       setQuestions([]);
     } finally {
@@ -328,7 +328,7 @@ export function ManageQuestionsModal({
       router.refresh();
       onClose();
     } catch (error) {
-      console.error("Error saving questions:", error);
+      console.error("Kesalahan saat menyimpan pertanyaan:", error);
       toast.error(
         error instanceof Error ? error.message : "Gagal menyimpan pertanyaan"
       );

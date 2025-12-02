@@ -4,7 +4,6 @@ import {
   ClassResponse,
   Section,
   Material,
-  QuizSummary,
   SectionsResponse,
   SectionResponse,
   MaterialResponse,

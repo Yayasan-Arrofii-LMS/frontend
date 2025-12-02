@@ -49,6 +49,7 @@ interface Section {
     id: number;
     title: string;
     totalQuestions: number;
+    max_attempts?: number;
   }>;
 }
 
@@ -64,54 +65,13 @@ export default function ClassDetailPage() {
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
-  const [showQuizDialog, setShowQuizDialog] = useState(false);
-  const [selectedQuiz, setSelectedQuiz] = useState<{
-    id: number;
-    title: string;
-    sectionId: number;
-    totalQuestions: number;
-    maxAttempts?: number;
-    attemptCount?: number;
-  } | null>(null);
-  const [quizAttempts, setQuizAttempts] = useState<
-    Record<number, { count: number; maxAttempts: number }>
-  >({});
 
-  const handleQuizClick = async (quiz: any, sectionId: number) => {
-    try {
-      // Fetch quiz attempts to check if max attempts reached
-      const { getMyAttempts } = await import("@/lib/api/quizzes");
-      const { attempts } = await getMyAttempts(sectionId, quiz.id);
-      const submittedAttempts = attempts.filter((a: any) => a.submitted_at);
-
-      console.log("Quiz max_attempts:", quiz.max_attempts);
-      console.log("Submitted attempts count:", submittedAttempts.length);
-      console.log("All attempts:", attempts);
-
-      // Use quiz data from sections (already includes max_attempts)
-      if (
-        quiz.max_attempts > 0 &&
-        submittedAttempts.length >= quiz.max_attempts
-      ) {
-        toast.error(
-          `Anda telah mencapai batas maksimal ${quiz.max_attempts} percobaan untuk kuis ini`
-        );
-        return;
-      }
-
-      setSelectedQuiz({
-        id: quiz.id,
-        title: quiz.title,
-        sectionId: sectionId,
-        totalQuestions: quiz.quiz_question?.length || 0,
-        maxAttempts: quiz.max_attempts,
-        attemptCount: submittedAttempts.length,
-      });
-      setShowQuizDialog(true);
-    } catch (error) {
-      console.error("Failed to check quiz attempts:", error);
-      toast.error("Gagal memuat informasi kuis");
-    }
+  const handleQuizClick = (
+    quiz: { id: number; title: string; totalQuestions: number; max_attempts?: number },
+    sectionId: number
+  ) => {
+    // Navigate to quiz detail page
+    router.push(`/classes/${classId}/quizzes/${quiz.id}/detail?sectionId=${sectionId}`);
   };
 
   useEffect(() => {
@@ -130,36 +90,6 @@ export default function ClassDetailPage() {
           setClassData(data.class);
           setSections(data.sections);
           setIsEnrolled(data.isEnrolled);
-
-          // Fetch attempts for all quizzes
-          if (data.isEnrolled) {
-            const { getMyAttempts } = await import("@/lib/api/quizzes");
-            const attemptsData: Record<
-              number,
-              { count: number; maxAttempts: number }
-            > = {};
-
-            for (const section of data.sections) {
-              for (const quiz of section.quizzes) {
-                try {
-                  const { attempts } = await getMyAttempts(section.id, quiz.id);
-                  const submittedCount = attempts.filter(
-                    (a: any) => a.submitted_at
-                  ).length;
-                  attemptsData[quiz.id] = {
-                    count: submittedCount,
-                    maxAttempts: quiz.max_attempts || 0,
-                  };
-                } catch (error) {
-                  console.error(
-                    `Failed to fetch attempts for quiz ${quiz.id}:`,
-                    error
-                  );
-                }
-              }
-            }
-            setQuizAttempts(attemptsData);
-          }
         } else {
           // Not authenticated: show login dialog
           setShowLoginDialog(true);
@@ -194,34 +124,6 @@ export default function ClassDetailPage() {
       const data = await fetchStudentClassDetail(classId);
       setClassData(data.class);
       setSections(data.sections);
-
-      // Reload quiz attempts
-      const { getMyAttempts } = await import("@/lib/api/quizzes");
-      const attemptsData: Record<
-        number,
-        { count: number; maxAttempts: number }
-      > = {};
-
-      for (const section of data.sections) {
-        for (const quiz of section.quizzes) {
-          try {
-            const { attempts } = await getMyAttempts(section.id, quiz.id);
-            const submittedCount = attempts.filter(
-              (a: any) => a.submitted_at
-            ).length;
-            attemptsData[quiz.id] = {
-              count: submittedCount,
-              maxAttempts: quiz.max_attempts || 0,
-            };
-          } catch (error) {
-            console.error(
-              `Failed to fetch attempts for quiz ${quiz.id}:`,
-              error
-            );
-          }
-        }
-      }
-      setQuizAttempts(attemptsData);
     } catch (error) {
       console.error("Failed to enroll:", error);
       toast.error(
@@ -426,13 +328,7 @@ export default function ClassDetailPage() {
                           <h4 className="font-semibold mb-2 text-sm">Kuis</h4>
                           <div className="space-y-2">
                             {section.quizzes.map((quiz) => {
-                              const attempts = quizAttempts[quiz.id];
-                              const isMaxAttemptsReached =
-                                attempts &&
-                                attempts.maxAttempts > 0 &&
-                                attempts.count >= attempts.maxAttempts;
-                              const canClick =
-                                isEnrolled && !isMaxAttemptsReached;
+                              const canClick = isEnrolled;
 
                               return (
                                 <div
@@ -444,12 +340,6 @@ export default function ClassDetailPage() {
                                       );
                                       return;
                                     }
-                                    if (isMaxAttemptsReached) {
-                                      toast.error(
-                                        `Anda telah mencapai batas maksimal ${attempts.maxAttempts} percobaan untuk kuis ini`
-                                      );
-                                      return;
-                                    }
                                     handleQuizClick(quiz, section.id);
                                   }}
                                   className={`flex items-center gap-3 p-3 rounded-lg border ${
@@ -458,13 +348,7 @@ export default function ClassDetailPage() {
                                       : "bg-muted/50 cursor-not-allowed opacity-60"
                                   }`}
                                 >
-                                  <BookOpen
-                                    className={`h-4 w-4 ${
-                                      isMaxAttemptsReached
-                                        ? "text-destructive"
-                                        : "text-muted-foreground"
-                                    }`}
-                                  />
+                                  <BookOpen className="h-4 w-4 text-muted-foreground" />
                                   <span className="flex-1 text-sm">
                                     {quiz.title}
                                   </span>
@@ -475,15 +359,6 @@ export default function ClassDetailPage() {
                                         className="text-xs"
                                       >
                                         {quiz.totalQuestions} pertanyaan
-                                      </Badge>
-                                    )}
-                                    {isMaxAttemptsReached && (
-                                      <Badge
-                                        variant="destructive"
-                                        className="text-xs"
-                                      >
-                                        {attempts.count}/{attempts.maxAttempts}{" "}
-                                        percobaan
                                       </Badge>
                                     )}
                                     {!isEnrolled && (
@@ -622,86 +497,6 @@ export default function ClassDetailPage() {
           </Card>
         </div>
       </div>
-
-      {/* Quiz Start Confirmation Dialog */}
-      <Dialog open={showQuizDialog} onOpenChange={setShowQuizDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Mulai Kuis?</DialogTitle>
-            <DialogDescription>
-              Pastikan Anda siap sebelum memulai kuis ini
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div>
-              <h4 className="font-semibold mb-2">{selectedQuiz?.title}</h4>
-            </div>
-            {(selectedQuiz?.totalQuestions &&
-              selectedQuiz.totalQuestions > 0) ||
-            (selectedQuiz?.maxAttempts && selectedQuiz.maxAttempts > 0) ? (
-              <div className="grid grid-cols-2 gap-4">
-                {selectedQuiz?.totalQuestions &&
-                  selectedQuiz.totalQuestions > 0 && (
-                    <div className="p-4 border rounded-lg">
-                      <p className="text-sm text-muted-foreground mb-1">
-                        Jumlah Soal
-                      </p>
-                      <p className="text-2xl font-bold">
-                        {selectedQuiz.totalQuestions}
-                      </p>
-                    </div>
-                  )}
-                {selectedQuiz?.maxAttempts && selectedQuiz.maxAttempts > 0 && (
-                  <div className="p-4 border rounded-lg">
-                    <p className="text-sm text-muted-foreground mb-1">
-                      Percobaan
-                    </p>
-                    <p className="text-2xl font-bold">
-                      {(selectedQuiz.attemptCount || 0) + 1}/
-                      {selectedQuiz.maxAttempts}
-                    </p>
-                  </div>
-                )}
-              </div>
-            ) : null}
-            <div className="space-y-2 text-sm text-muted-foreground">
-              <div className="flex items-start gap-2">
-                <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
-                <p>Waktu mulai dihitung setelah Anda klik "Mulai Kuis"</p>
-              </div>
-              <div className="flex items-start gap-2">
-                <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
-                <p>Progress akan tersimpan dan dapat dilanjutkan nanti</p>
-              </div>
-              <div className="flex items-start gap-2">
-                <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
-                <p>Pastikan koneksi internet Anda stabil</p>
-              </div>
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <Button
-              variant="outline"
-              onClick={() => setShowQuizDialog(false)}
-              className="flex-1"
-            >
-              Batal
-            </Button>
-            <Button
-              onClick={() => {
-                if (selectedQuiz) {
-                  router.push(
-                    `/classes/${classId}/quizzes/${selectedQuiz.id}?sectionId=${selectedQuiz.sectionId}`
-                  );
-                }
-              }}
-              className="flex-1"
-            >
-              Mulai Kuis
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

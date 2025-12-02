@@ -6,9 +6,9 @@ export default function UserLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen">
+    <div className="h-screen flex flex-col">
       <PublicNavbar />
-      <main className="pt-0">{children}</main>
+      <main className="flex-1 overflow-y-auto">{children}</main>
     </div>
   );
 }

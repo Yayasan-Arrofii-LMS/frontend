@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,7 +31,6 @@ export default function ClassesPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
-  const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
   
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const router = useRouter();
@@ -46,7 +44,7 @@ export default function ClassesPage() {
         setTotalPages(meta.totalPages);
         setTotalItems(meta.totalItems);
       } catch (error) {
-        console.error("Failed to load classes:", error);
+        console.error("Gagal memuat kelas:", error);
         toast.error("Gagal memuat kelas");
         setClasses([]);
       } finally {
@@ -70,7 +68,6 @@ export default function ClassesPage() {
     }
 
     if (!isAuthenticated) {
-      setSelectedClassId(classId);
       setShowLoginDialog(true);
     } else {
       router.push(`/classes/${classId}`);
@@ -85,9 +82,9 @@ export default function ClassesPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="mb-3 text-4xl font-bold">All Classes</h1>
+        <h1 className="mb-3 text-4xl font-bold">Semua Kelas</h1>
         <p className="text-lg text-muted-foreground">
-          Browse and explore all available courses
+          Jelajahi dan temukan semua kursus yang tersedia
         </p>
       </div>
 
@@ -96,7 +93,7 @@ export default function ClassesPage() {
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="text"
-            placeholder="Search classes..."
+            placeholder="Cari kelas..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
@@ -125,7 +122,7 @@ export default function ClassesPage() {
       ) : filteredClasses.length === 0 ? (
         <div className="py-16 text-center">
           <p className="text-lg text-muted-foreground">
-            {searchQuery ? "No classes found matching your search" : "No classes available"}
+            {searchQuery ? "Tidak ada kelas yang cocok dengan pencarian Anda" : "Tidak ada kelas tersedia"}
           </p>
         </div>
       ) : (
@@ -162,7 +159,7 @@ export default function ClassesPage() {
                   {classItem.studentCount !== undefined && classItem.studentCount > 0 && (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Users className="h-4 w-4" />
-                      <span>{classItem.studentCount} students</span>
+                      <span>{classItem.studentCount} siswa</span>
                     </div>
                   )}
                 </CardContent>
@@ -181,7 +178,7 @@ export default function ClassesPage() {
             disabled={currentPage === 1}
           >
             <ChevronLeft className="h-4 w-4 mr-1" />
-            Previous
+            Sebelumnya
           </Button>
           
           <div className="flex items-center gap-2">
@@ -217,7 +214,7 @@ export default function ClassesPage() {
             onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
             disabled={currentPage === totalPages}
           >
-            Next
+            Selanjutnya
             <ChevronRight className="h-4 w-4 ml-1" />
           </Button>
         </div>
@@ -225,14 +222,14 @@ export default function ClassesPage() {
 
       {!isLoading && totalItems > 0 && !searchQuery && (
         <div className="mt-4 text-center text-sm text-muted-foreground">
-          Showing page {currentPage} of {totalPages} ({totalItems} total classes)
+          Menampilkan halaman {currentPage} dari {totalPages} ({totalItems} total kelas)
         </div>
       )}
 
       <AlertDialog open={showLoginDialog} onOpenChange={setShowLoginDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Login Required</AlertDialogTitle>
+            <AlertDialogTitle>Login Diperlukan</AlertDialogTitle>
             <AlertDialogDescription>
               Anda harus login terlebih dahulu untuk melihat detail kelas.
               Silakan login atau buat akun baru untuk melanjutkan.

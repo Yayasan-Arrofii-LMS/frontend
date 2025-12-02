@@ -161,11 +161,12 @@ export default function QuizPage() {
             }
 
             toast.success("Kuis dimulai! Semangat!");
-          } catch (startError: any) {
+          } catch (startError) {
             // Handle specific errors from startQuiz
+            const error = startError as Error;
             if (
-              startError.message?.includes("Maksimal percobaan") ||
-              startError.message?.includes("max attempts")
+              error.message?.includes("Maksimal percobaan") ||
+              error.message?.includes("max attempts")
             ) {
               toast.error("Anda telah mencapai batas maksimal percobaan");
             } else {

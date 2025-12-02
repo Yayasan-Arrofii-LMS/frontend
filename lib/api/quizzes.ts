@@ -17,7 +17,6 @@ import {
   CreateQuestionInput,
   UpdateQuestionInput,
   SaveAnswerInput,
-  SubmitQuizInput,
 } from "@/types/section";
 
 const API_BASE_URL = "http://localhost:3001/api/v1";
@@ -94,10 +93,7 @@ export async function fetchQuizzes(sectionId: number): Promise<Quiz[]> {
  * Use getMyAttempts to get quiz details from attempts,
  * or start a new attempt to get quiz data.
  */
-export async function fetchQuiz(
-  sectionId: number,
-  quizId: number
-): Promise<Quiz> {
+export async function fetchQuiz(): Promise<Quiz> {
   // This endpoint doesn't exist in backend
   // We need to get quiz details from attempts or sections data
   throw new Error(
@@ -388,7 +384,7 @@ export async function getQuizResult(
 export async function getMyAttempts(
   sectionId: number,
   quizId: number
-): Promise<{ attempts: QuizAttempt[]; meta?: any }> {
+): Promise<{ attempts: QuizAttempt[]; meta?: Record<string, unknown> }> {
   try {
     const response = await apiCall<QuizAttemptsResponse>(
       `/classes/sections/${sectionId}/quizzes/my-attempts/${quizId}`

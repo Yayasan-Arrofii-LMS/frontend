@@ -7,5 +7,9 @@ export default async function CourseDetailPage({
 }) {
   const { id } = await params;
   
-  return <ClassDetailContent classId={id} basePath="/course" />;
+  return (
+    <div className="container mx-auto px-4 py-6 md:px-6">
+      <ClassDetailContent classId={id} basePath="/course" />
+    </div>
+  );
 }

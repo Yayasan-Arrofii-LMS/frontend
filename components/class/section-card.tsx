@@ -39,7 +39,7 @@ import {
   deleteMaterial,
   reorderMaterials,
 } from "@/lib/api/sections";
-import { deleteQuiz, fetchQuiz } from "@/lib/api/quizzes";
+import { deleteQuiz } from "@/lib/api/quizzes";
 import { toast } from "sonner";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -367,16 +367,20 @@ export function SectionCard({
   const handleEditQuiz = useCallback(
     async (quizId: number) => {
       try {
-        // Fetch full quiz data
-        const quizData = await fetchQuiz(section.id, quizId);
+        // Find quiz data from section.Quiz
+        const quizData = section.Quiz.find((q: QuizSummary | Quiz) => q.id === quizId) as Quiz | undefined;
+        if (!quizData) {
+          toast.error("Quiz tidak ditemukan");
+          return;
+        }
         setEditingQuiz(quizData);
         setIsEditQuizOpen(true);
       } catch (error) {
         toast.error("Gagal memuat data quiz");
-        console.error("Error fetching quiz:", error);
+        console.error("Kesalahan saat memuat quiz:", error);
       }
     },
-    [section.id]
+    [section.Quiz]
   );
 
   const handleDeleteQuiz = useCallback(
@@ -762,7 +766,6 @@ export function SectionCard({
           setEditingQuiz(null);
         }}
         onUpdate={onUpdate}
-        classId={classId}
         sectionId={section.id}
         quiz={editingQuiz}
       />

@@ -26,7 +26,7 @@ export default function HomePage() {
         // Show first 8 classes for featured section
         setClasses(publicClasses.slice(0, 8));
       } catch (error) {
-        console.error("Failed to load classes:", error);
+        console.error("Gagal memuat kelas:", error);
         toast.error("Gagal memuat kelas");
         setClasses([]);
       } finally {
@@ -47,28 +47,28 @@ export default function HomePage() {
           </div>
 
           <h1 className="mb-6 text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
-            Welcome to{" "}
+            Selamat Datang di{" "}
             <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
               Sekolah Alam
             </span>
           </h1>
 
           <p className="mb-8 text-lg text-muted-foreground sm:text-xl md:mb-12">
-            A modern learning management system designed to empower educators
-            and inspire students. Access your courses, manage your classes, and
-            track your progress all in one place.
+            Sistem manajemen pembelajaran modern yang dirancang untuk memberdayakan
+            para pendidik dan menginspirasi siswa. Akses kursus Anda, kelola kelas Anda,
+            dan lacak kemajuan Anda semua dalam satu tempat.
           </p>
 
           {!isLoading && !isAuthenticated && (
             <div className="flex flex-col gap-4 sm:flex-row sm:justify-center">
               <Button size="lg" asChild>
                 <Link href="/login">
-                  Get Started
+                  Mulai Sekarang
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
               <Button size="lg" variant="outline" asChild>
-                <Link href="/register">Create Account</Link>
+                <Link href="/register">Buat Akun</Link>
               </Button>
             </div>
           )}
@@ -76,7 +76,7 @@ export default function HomePage() {
           {isAuthenticated && (
             <div className="flex flex-col gap-4 sm:flex-row sm:justify-center">
               <Button size="lg" variant="outline" asChild>
-                <Link href="/classes">Browse Classes</Link>
+                <Link href="/classes">Jelajahi Kelas</Link>
               </Button>
             </div>
           )}
@@ -87,9 +87,9 @@ export default function HomePage() {
       <section className="border-t px-4 py-16">
         <div className="mx-auto max-w-6xl">
           <div className="mb-12 text-center">
-            <h2 className="mb-3 text-3xl font-bold">Featured Classes</h2>
+            <h2 className="mb-3 text-3xl font-bold">Kelas Unggulan</h2>
             <p className="text-muted-foreground">
-              Explore our most popular courses and start learning today
+              Jelajahi kursus paling populer kami dan mulai belajar hari ini
             </p>
           </div>
 
@@ -160,7 +160,7 @@ export default function HomePage() {
           <div className="text-center">
             <Button variant="outline" size="lg" asChild>
               <Link href="/classes">
-                View All Classes
+                Lihat Semua Kelas
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
@@ -171,17 +171,17 @@ export default function HomePage() {
       {/* Key Features */}
       <section className="border-t bg-muted/50 px-4 py-16">
         <div className="mx-auto max-w-6xl">
-          <h2 className="mb-12 text-center text-3xl font-bold">Key Features</h2>
+          <h2 className="mb-12 text-center text-3xl font-bold">Fitur Utama</h2>
 
           <div className="grid gap-8 md:grid-cols-3">
             <div className="flex flex-col items-center text-center">
               <div className="mb-4 rounded-full bg-primary/10 p-4">
                 <BookOpen className="h-8 w-8 text-primary" />
               </div>
-              <h3 className="mb-2 text-xl font-semibold">Course Management</h3>
+              <h3 className="mb-2 text-xl font-semibold">Manajemen Kursus</h3>
               <p className="text-muted-foreground">
-                Easily create, organize, and manage your courses with our
-                intuitive interface.
+                Buat, atur, dan kelola kursus Anda dengan mudah menggunakan
+                antarmuka yang intuitif.
               </p>
             </div>
 
@@ -189,10 +189,10 @@ export default function HomePage() {
               <div className="mb-4 rounded-full bg-primary/10 p-4">
                 <Users className="h-8 w-8 text-primary" />
               </div>
-              <h3 className="mb-2 text-xl font-semibold">Teacher Portal</h3>
+              <h3 className="mb-2 text-xl font-semibold">Portal Guru</h3>
               <p className="text-muted-foreground">
-                Comprehensive tools for teachers to manage students and track
-                their progress.
+                Alat komprehensif untuk guru mengelola siswa dan melacak
+                kemajuan mereka.
               </p>
             </div>
 
@@ -200,10 +200,10 @@ export default function HomePage() {
               <div className="mb-4 rounded-full bg-primary/10 p-4">
                 <GraduationCap className="h-8 w-8 text-primary" />
               </div>
-              <h3 className="mb-2 text-xl font-semibold">Student Dashboard</h3>
+              <h3 className="mb-2 text-xl font-semibold">Dasbor Siswa</h3>
               <p className="text-muted-foreground">
-                Access all your courses, assignments, and resources in one
-                central location.
+                Akses semua kursus, tugas, dan sumber daya Anda di satu
+                lokasi terpusat.
               </p>
             </div>
           </div>
@@ -212,7 +212,7 @@ export default function HomePage() {
 
       <footer className="border-t px-4 py-8">
         <div className="mx-auto max-w-6xl text-center text-sm text-muted-foreground">
-          <p>&copy; {currentYear} Sekolah Alam. All rights reserved.</p>
+          <p>&copy; {currentYear} Sekolah Alam. Hak cipta dilindungi.</p>
         </div>
       </footer>
     </div>

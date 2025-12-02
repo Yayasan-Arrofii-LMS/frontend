@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import {
   Dialog,
   DialogContent,
@@ -23,19 +22,18 @@ interface Quiz {
   id: number;
   title: string;
   description: string;
-  max_attempts: number;
-  time_limit: number;
-  open_at: string;
-  close_at: string;
-  passing_grade: number;
-  xp: number;
+  max_attempts?: number;
+  time_limit?: number;
+  open_at?: string;
+  close_at?: string;
+  passing_grade?: number;
+  xp?: number;
 }
 
 interface EditQuizModalProps {
   isOpen: boolean;
   onClose: () => void;
   onUpdate: () => void;
-  classId: string;
   sectionId: number;
   quiz: Quiz | null;
 }
@@ -44,11 +42,9 @@ export function EditQuizModal({
   isOpen,
   onClose,
   onUpdate,
-  classId,
   sectionId,
   quiz,
 }: EditQuizModalProps) {
-  const router = useRouter();
   const { preference, setPreference } = useFullscreenPreference();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -63,14 +59,16 @@ export function EditQuizModal({
   // Set initial values when quiz changes
   useEffect(() => {
     if (quiz) {
-      setTitle(quiz.title);
-      setDescription(quiz.description);
-      setMaxAttempts(quiz.max_attempts.toString());
-      setTimeLimit(quiz.time_limit.toString());
+      setTitle(quiz.title || "");
+      setDescription(quiz.description || "");
+      setMaxAttempts(quiz.max_attempts?.toString() || "3");
+      setTimeLimit(quiz.time_limit?.toString() || "60");
 
       // Format datetime for input
-      const formatDateTimeLocal = (dateString: string) => {
+      const formatDateTimeLocal = (dateString?: string) => {
+        if (!dateString) return "";
         const date = new Date(dateString);
+        if (isNaN(date.getTime())) return "";
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, "0");
         const day = String(date.getDate()).padStart(2, "0");
@@ -81,8 +79,8 @@ export function EditQuizModal({
 
       setOpenAt(formatDateTimeLocal(quiz.open_at));
       setCloseAt(formatDateTimeLocal(quiz.close_at));
-      setPassingGrade(quiz.passing_grade.toString());
-      setXp(quiz.xp.toString());
+      setPassingGrade(quiz.passing_grade?.toString() || "70");
+      setXp(quiz.xp?.toString() || "10");
     }
   }, [quiz]);
 
@@ -166,19 +164,16 @@ export function EditQuizModal({
         xp: xpValue,
       };
 
-      console.log("Updating quiz with data:", updateData);
-      console.log("Section ID:", sectionId, "Quiz ID:", quiz.id);
+      console.log("Memperbarui quiz dengan data:", updateData);
+      console.log("ID Seksi:", sectionId, "ID Quiz:", quiz.id);
 
       await updateQuiz(sectionId, quiz.id, updateData);
 
       toast.success("Quiz berhasil diperbarui");
       onUpdate();
       handleClose();
-
-      // Refresh data
-      router.refresh();
     } catch (error) {
-      console.error("Error updating quiz:", error);
+      console.error("Kesalahan saat memperbarui quiz:", error);
       toast.error(
         error instanceof Error ? error.message : "Gagal memperbarui quiz"
       );
