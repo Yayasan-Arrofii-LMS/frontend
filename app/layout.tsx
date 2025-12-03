@@ -9,7 +9,7 @@ import { cookies } from "next/headers";
 import { cn } from "@/lib/utils";
 
 // Force dynamic rendering (uses cookies for theme)
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 const fontSans = Poppins({
   variable: "--font-poppins",
@@ -49,8 +49,8 @@ export default async function RootLayout({
       >
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
-          enableSystem
+          defaultTheme="light"
+          enableSystem={false}
           disableTransitionOnChange
           enableColorScheme
         >
