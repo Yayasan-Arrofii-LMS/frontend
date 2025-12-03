@@ -12,6 +12,11 @@ const nextConfig: NextConfig = {
         hostname: "localhost",
         port: "3001",
       },
+      {
+        protocol: "https",
+        hostname: "api.lms-sekolahalam.my.id",
+        pathname: "/files/public/**",
+      },
     ],
   },
 };
