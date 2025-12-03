@@ -5,39 +5,47 @@ import { useRouter } from "next/navigation";
 import { updateMaterial } from "@/lib/api/sections";
 import { toast } from "sonner";
 import { useFullscreenPreference } from "@/hooks/use-fullscreen-preference";
-import { MaterialForm } from "./material-form";
+import { MaterialFormWithTabs } from "./material-form-with-tabs";
 
 interface EditMaterialContainerProps {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ 
-    sectionId: string; 
-    materialId: string; 
-    title: string; 
-    content: string; 
+  searchParams: Promise<{
+    sectionId: string;
+    materialId: string;
+    title: string;
+    content: string;
     xp?: string;
+    openFilesTab?: string;
   }>;
 }
 
-export function EditMaterialContainer({ params, searchParams }: EditMaterialContainerProps) {
+export function EditMaterialContainer({
+  params,
+  searchParams,
+}: EditMaterialContainerProps) {
   const { id: classId } = use(params);
   const searchParamsResolved = use(searchParams);
-  const { 
-    sectionId: sectionIdStr, 
-    materialId: materialIdStr, 
-    title: initialTitle, 
-    content: initialContent, 
-    xp: initialXp 
+  const {
+    sectionId: sectionIdStr,
+    materialId: materialIdStr,
+    title: initialTitle,
+    content: initialContent,
+    xp: initialXp,
+    openFilesTab,
   } = searchParamsResolved;
-  
+
   const sectionId = parseInt(sectionIdStr);
   const materialId = parseInt(materialIdStr);
   const router = useRouter();
   const { setPreference } = useFullscreenPreference();
 
   const [title, setTitle] = useState(decodeURIComponent(initialTitle || ""));
-  const [content, setContent] = useState(decodeURIComponent(initialContent || ""));
+  const [content, setContent] = useState(
+    decodeURIComponent(initialContent || "")
+  );
   const [xp, setXp] = useState(initialXp ? decodeURIComponent(initialXp) : "");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const defaultTab = openFilesTab === "true" ? "files" : "content";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,7 +91,9 @@ export function EditMaterialContainer({ params, searchParams }: EditMaterialCont
 
   const handleMinimize = () => {
     setPreference("modal");
-    router.push(`/teacher/my-courses/${classId}?openEditMaterial=${materialId}&sectionId=${sectionId}`);
+    router.push(
+      `/teacher/my-courses/${classId}?openEditMaterial=${materialId}&sectionId=${sectionId}`
+    );
   };
 
   const handleBack = () => {
@@ -92,7 +102,7 @@ export function EditMaterialContainer({ params, searchParams }: EditMaterialCont
   };
 
   return (
-    <MaterialForm
+    <MaterialFormWithTabs
       mode="edit"
       title={title}
       content={content}
@@ -104,6 +114,10 @@ export function EditMaterialContainer({ params, searchParams }: EditMaterialCont
       onSubmit={handleSubmit}
       onMinimize={handleMinimize}
       onBack={handleBack}
+      classId={classId}
+      sectionId={sectionId}
+      materialId={materialId}
+      defaultTab={defaultTab}
     />
   );
 }

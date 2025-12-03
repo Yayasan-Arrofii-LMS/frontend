@@ -250,12 +250,16 @@ export default function QuizPage() {
 
   const loadReview = async () => {
     try {
-      // Fetch questions with correct answers
-      const questions = await getQuizQuestions(sectionId, quizId);
-      console.log("Review questions loaded:", questions);
-      console.log("User answers:", answers);
-      setReviewQuestions(questions);
-      setShowReview(true);
+      // Use questions from result.quiz.quiz_question which has quiz_answer with is_correct
+      if (result && result.quiz && result.quiz.quiz_question) {
+        const questions = result.quiz.quiz_question;
+        console.log("Review questions from result.quiz:", questions);
+        console.log("User answers:", answers);
+        setReviewQuestions(questions);
+        setShowReview(true);
+      } else {
+        toast.error("Data pembahasan tidak tersedia");
+      }
     } catch (error) {
       console.error("Failed to load review:", error);
       toast.error("Gagal memuat pembahasan");
@@ -316,10 +320,7 @@ export default function QuizPage() {
 
   // Show result if quiz is submitted
   if (result) {
-    const passed =
-      result.score && quizData && result.quiz
-        ? result.score >= result.quiz.passing_grade
-        : false;
+    const passed = result.isPassed ?? false;
 
     // Show review mode
     if (showReview && reviewQuestions.length > 0) {
@@ -348,13 +349,6 @@ export default function QuizPage() {
               const userAnswer = answers[question.id]?.[0];
               const questionAnswers =
                 question.Answer || question.quiz_answer || [];
-
-              console.log(`Question ${question.id}:`, {
-                hasAnswer: question.Answer,
-                hasQuizAnswer: question.quiz_answer,
-                answersLength: questionAnswers.length,
-                userAnswer,
-              });
 
               const correctAnswer = questionAnswers.find(
                 (a: Answer) => a.is_correct
@@ -417,10 +411,20 @@ export default function QuizPage() {
                             <div className="flex flex-col gap-1 shrink-0">
                               {isCorrectAnswer && (
                                 <Badge variant="default" className="text-xs">
+                                  <CheckCircle className="h-3 w-3 mr-1" />
                                   Jawaban Benar
                                 </Badge>
                               )}
-                              {isUserAnswer && (
+                              {isUserAnswer && !isCorrectAnswer && (
+                                <Badge
+                                  variant="destructive"
+                                  className="text-xs"
+                                >
+                                  <AlertCircle className="h-3 w-3 mr-1" />
+                                  Jawaban Anda
+                                </Badge>
+                              )}
+                              {isUserAnswer && isCorrectAnswer && (
                                 <Badge variant="secondary" className="text-xs">
                                   Jawaban Anda
                                 </Badge>
@@ -482,20 +486,33 @@ export default function QuizPage() {
             <CardDescription>Hasil kuis {quizData?.quizTitle}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
+            {/* Score Summary */}
             <div className="space-y-4">
               <div className="flex justify-between items-center p-4 bg-muted rounded-lg">
                 <span className="font-semibold">Nilai Anda:</span>
-                <span className="text-3xl font-bold">{result.score}</span>
+                <div className="text-right">
+                  <div className="text-3xl font-bold">{result.score}</div>
+                  {result.totalScore && (
+                    <div className="text-sm text-muted-foreground">
+                      dari {result.totalScore} poin
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {result.quiz && (
-                <div className="flex justify-between items-center p-4 bg-muted rounded-lg">
-                  <span className="font-semibold">Nilai Kelulusan:</span>
-                  <span className="text-xl font-bold">
-                    {result.quiz.passing_grade}
-                  </span>
-                </div>
-              )}
+              {result.quiz &&
+                result.quiz.passing_grade &&
+                result.totalScore && (
+                  <div className="flex justify-between items-center p-4 bg-muted rounded-lg">
+                    <span className="font-semibold">Nilai Kelulusan:</span>
+                    <span className="text-xl font-bold">
+                      {(
+                        (result.quiz.passing_grade / 100) *
+                        result.totalScore
+                      ).toFixed(2)}
+                    </span>
+                  </div>
+                )}
 
               <div className="flex justify-between items-center p-4 bg-muted rounded-lg">
                 <span className="font-semibold">Status:</span>
@@ -503,6 +520,32 @@ export default function QuizPage() {
                   {passed ? "LULUS" : "BELUM LULUS"}
                 </Badge>
               </div>
+
+              {/* Quiz Statistics */}
+              {result.quiz && result.quiz.quiz_question && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 bg-muted rounded-lg text-center">
+                    <div className="text-2xl font-bold">
+                      {result.quiz.quiz_question.length}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Total Soal
+                    </div>
+                  </div>
+                  <div className="p-3 bg-muted rounded-lg text-center">
+                    <div className="text-2xl font-bold">
+                      {result.attemp_answer?.filter((answer: any) =>
+                        answer.attemp_multiple_answer?.some(
+                          (ma: any) => ma.quiz_answer?.is_correct
+                        )
+                      ).length || 0}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Jawaban Benar
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex flex-col gap-3">
@@ -665,11 +708,15 @@ export default function QuizPage() {
                       {question.answers.map((answer) => (
                         <div
                           key={answer.id}
-                          className="flex items-center space-x-3 border rounded-lg p-4 hover:bg-accent cursor-pointer"
+                          onClick={() =>
+                            handleAnswerChange(question.id, answer.id)
+                          }
+                          className="flex items-center space-x-3 border rounded-lg p-4 hover:bg-accent cursor-pointer transition-colors"
                         >
                           <RadioGroupItem
                             value={answer.id.toString()}
                             id={`q${question.id}-a${answer.id}`}
+                            className="pointer-events-none"
                           />
                           <Label
                             htmlFor={`q${question.id}-a${answer.id}`}

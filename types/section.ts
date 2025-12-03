@@ -96,6 +96,9 @@ export interface QuizAttempt {
   quizId: number;
   quiz?: Quiz;
   attemp_answer: AttemptAnswer[];
+  totalScore?: number;
+  percentage?: number;
+  isPassed?: boolean;
 }
 
 // Saved Answer Format (for getSavedAnswers)

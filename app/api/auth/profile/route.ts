@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
     // Get token from cookies or Authorization header
     const cookieStore = await cookies();
     let token = cookieStore.get("auth_token")?.value;
-    
+
     // Fallback to Authorization header if cookie not found
     if (!token) {
       const authHeader = request.headers.get("Authorization");
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     // Fetch user profile from backend
     try {
       const profileData = await getProfile(token);
-      
+
       // Return user profile with all data from backend
       return NextResponse.json({
         success: true,
@@ -44,6 +44,17 @@ export async function GET(request: NextRequest) {
         },
       });
     } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+
+      // If it's a 401 error (token expired/invalid), return 401 instead of 500
+      if (errorMessage.includes("401")) {
+        return NextResponse.json(
+          { success: false, message: "Token expired or invalid", data: null },
+          { status: 401 }
+        );
+      }
+
       console.error("Error fetching profile:", error);
       return NextResponse.json(
         { success: false, message: "Failed to fetch profile", data: null },

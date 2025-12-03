@@ -82,14 +82,28 @@ export function AddMaterialModal({
 
     setIsSubmitting(true);
     try {
-      await createMaterial(classId, sectionId, {
+      const newMaterial = await createMaterial(classId, sectionId, {
         title: title.trim(),
         content: content.trim(),
         xp: xpValue,
       });
-      toast.success("Materi berhasil ditambahkan");
-      onAdd();
+      toast.success(
+        "Materi berhasil ditambahkan. Anda dapat menambahkan file sekarang."
+      );
+
       handleClose();
+
+      // Refresh data first
+      await onAdd();
+
+      // Small delay to ensure data is refreshed
+      setTimeout(() => {
+        // Trigger opening edit material modal with the new material
+        const event = new CustomEvent("openEditMaterial", {
+          detail: { materialId: newMaterial.id, sectionId, openFilesTab: true },
+        });
+        window.dispatchEvent(event);
+      }, 100);
     } catch {
       toast.error("Gagal menambahkan materi");
     } finally {
@@ -167,7 +181,8 @@ export function AddMaterialModal({
                 rows={8}
               />
               <p className="text-xs text-muted-foreground">
-                Konten bisa berupa teks, link YouTube, link gambar, link PDF, dll.
+                Konten bisa berupa teks, link YouTube, link gambar, link PDF,
+                dll.
               </p>
             </div>
 

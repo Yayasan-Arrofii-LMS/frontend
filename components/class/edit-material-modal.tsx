@@ -30,6 +30,7 @@ interface EditMaterialModalProps {
   sectionId: number;
   material: Material;
   basePath?: string;
+  defaultTab?: "content" | "files";
 }
 
 export function EditMaterialModal({
@@ -40,6 +41,7 @@ export function EditMaterialModal({
   sectionId,
   material,
   basePath = "/course",
+  defaultTab = "content",
 }: EditMaterialModalProps) {
   const router = useRouter();
   const { preference, setPreference } = useFullscreenPreference();
@@ -47,12 +49,14 @@ export function EditMaterialModal({
   const [content, setContent] = useState(material.content);
   const [xp, setXp] = useState(material.xp?.toString() || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeTab, setActiveTab] = useState<"content" | "files">(defaultTab);
 
   useEffect(() => {
     setTitle(material.title);
     setContent(material.content);
     setXp(material.xp?.toString() || "");
-  }, [material]);
+    setActiveTab(defaultTab);
+  }, [material, defaultTab]);
 
   useEffect(() => {
     if (isOpen && preference === "fullscreen") {
@@ -63,6 +67,7 @@ export function EditMaterialModal({
         title: encodeURIComponent(material.title),
         content: encodeURIComponent(material.content),
         ...(material.xp && { xp: material.xp.toString() }),
+        ...(activeTab === "files" && { openFilesTab: "true" }),
       });
       router.push(`${basePath}/${classId}/material/edit?${params}`);
     }
@@ -73,6 +78,7 @@ export function EditMaterialModal({
     sectionId,
     material,
     basePath,
+    activeTab,
     onClose,
     router,
   ]);
@@ -86,6 +92,7 @@ export function EditMaterialModal({
       title: encodeURIComponent(material.title),
       content: encodeURIComponent(material.content),
       ...(material.xp && { xp: material.xp.toString() }),
+      ...(activeTab === "files" && { openFilesTab: "true" }),
     });
     router.push(`${basePath}/${classId}/material/edit?${params}`);
   };
@@ -159,7 +166,8 @@ export function EditMaterialModal({
         </DialogHeader>
 
         <Tabs
-          defaultValue="content"
+          value={activeTab}
+          onValueChange={(value) => setActiveTab(value as "content" | "files")}
           className="flex-1 overflow-hidden flex flex-col"
         >
           <TabsList className="grid w-full grid-cols-2">

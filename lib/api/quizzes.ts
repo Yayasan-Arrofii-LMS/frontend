@@ -89,16 +89,30 @@ export async function fetchQuizzes(sectionId: number): Promise<Quiz[]> {
 }
 
 /**
- * Fetch a single quiz by ID
- * Note: Backend doesn't have GET endpoint for single quiz.
- * Use getMyAttempts to get quiz details from attempts,
- * or start a new attempt to get quiz data.
+ * Fetch a single quiz by ID with questions and answers
+ * GET /classes/sections/:sectionId/quizzes/:id
+ */
+export async function fetchQuizDetail(
+  sectionId: number,
+  quizId: number
+): Promise<Quiz> {
+  try {
+    const response = await apiCall<QuizResponse>(
+      `/classes/sections/${sectionId}/quizzes/${quizId}`
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching quiz detail:", error);
+    throw error;
+  }
+}
+
+/**
+ * @deprecated Use fetchQuizDetail instead
  */
 export async function fetchQuiz(): Promise<Quiz> {
-  // This endpoint doesn't exist in backend
-  // We need to get quiz details from attempts or sections data
   throw new Error(
-    "fetchQuiz endpoint not available. Use section data or start quiz."
+    "fetchQuiz endpoint not available. Use fetchQuizDetail with sectionId and quizId."
   );
 }
 

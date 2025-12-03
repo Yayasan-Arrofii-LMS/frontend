@@ -39,7 +39,7 @@ import {
   deleteMaterial,
   reorderMaterials,
 } from "@/lib/api/sections";
-import { deleteQuiz } from "@/lib/api/quizzes";
+import { deleteQuiz, fetchQuizDetail } from "@/lib/api/quizzes";
 import { toast } from "sonner";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -261,6 +261,9 @@ export function SectionCard({
   const [isAddMaterialOpen, setIsAddMaterialOpen] = useState(false);
   const [isAddQuizOpen, setIsAddQuizOpen] = useState(false);
   const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
+  const [editMaterialDefaultTab, setEditMaterialDefaultTab] = useState<
+    "content" | "files"
+  >("content");
   const [deletingMaterialId, setDeletingMaterialId] = useState<number | null>(
     null
   );
@@ -292,6 +295,32 @@ export function SectionCard({
   useEffect(() => {
     setLocalMaterials(section.Material);
   }, [section.Material]);
+
+  // Listen for openEditMaterial event from AddMaterialModal
+  useEffect(() => {
+    const handleOpenEditMaterial = (event: Event) => {
+      const customEvent = event as CustomEvent<{
+        materialId: number;
+        sectionId: number;
+        openFilesTab?: boolean;
+      }>;
+      const { materialId, sectionId, openFilesTab } = customEvent.detail;
+
+      // Only respond if it's for this section
+      if (sectionId === section.id) {
+        const material = section.Material.find((m) => m.id === materialId);
+        if (material) {
+          setEditMaterialDefaultTab(openFilesTab ? "files" : "content");
+          setEditingMaterial(material);
+        }
+      }
+    };
+
+    window.addEventListener("openEditMaterial", handleOpenEditMaterial);
+    return () => {
+      window.removeEventListener("openEditMaterial", handleOpenEditMaterial);
+    };
+  }, [section.id, section.Material]);
 
   // Handle trigger modal open from URL params
   useEffect(() => {
@@ -367,12 +396,8 @@ export function SectionCard({
   const handleEditQuiz = useCallback(
     async (quizId: number) => {
       try {
-        // Find quiz data from section.Quiz
-        const quizData = section.Quiz.find((q: QuizSummary | Quiz) => q.id === quizId) as Quiz | undefined;
-        if (!quizData) {
-          toast.error("Quiz tidak ditemukan");
-          return;
-        }
+        // Fetch full quiz detail from API including questions and answers
+        const quizData = await fetchQuizDetail(section.id, quizId);
         setEditingQuiz(quizData);
         setIsEditQuizOpen(true);
       } catch (error) {
@@ -380,7 +405,7 @@ export function SectionCard({
         console.error("Kesalahan saat memuat quiz:", error);
       }
     },
-    [section.Quiz]
+    [section.id]
   );
 
   const handleDeleteQuiz = useCallback(
@@ -715,12 +740,16 @@ export function SectionCard({
       {editingMaterial && (
         <EditMaterialModal
           isOpen={true}
-          onClose={() => setEditingMaterial(null)}
+          onClose={() => {
+            setEditingMaterial(null);
+            setEditMaterialDefaultTab("content");
+          }}
           onUpdate={onUpdate}
           classId={classId}
           sectionId={section.id}
           material={editingMaterial}
           basePath={basePath}
+          defaultTab={editMaterialDefaultTab}
         />
       )}
 

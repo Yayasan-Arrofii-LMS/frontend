@@ -32,6 +32,10 @@ export async function getProfile(token: string): Promise<ProfileData> {
   });
 
   if (!response.ok) {
+    // Don't log 401 errors as they are expected when token is invalid/expired
+    if (response.status !== 401) {
+      console.error(`Profile fetch failed with status: ${response.status}`);
+    }
     throw new Error(`Failed to fetch profile: ${response.status}`);
   }
 

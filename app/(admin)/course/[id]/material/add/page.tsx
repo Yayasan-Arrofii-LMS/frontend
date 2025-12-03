@@ -1,12 +1,15 @@
 "use client";
 
-import { use } from "react";
+import { use, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createMaterial } from "@/lib/api/sections";
+import { createMaterialFile } from "@/lib/api/material-files";
 import { toast } from "sonner";
 import { useFullscreenPreference } from "@/hooks/use-fullscreen-preference";
-import { MaterialForm } from "@/app/(teacher)/_components/material/material-form";
-import { useState } from "react";
+import {
+  MaterialFormWithTabs,
+  StagedFile,
+} from "@/app/(teacher)/_components/material/material-form-with-tabs";
 
 export default function AddMaterialPage({
   params,
@@ -25,8 +28,14 @@ export default function AddMaterialPage({
   const [content, setContent] = useState("");
   const [xp, setXp] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [createdMaterialId, setCreatedMaterialId] = useState<number | null>(
+    null
+  );
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (
+    e: React.FormEvent,
+    stagedFiles?: StagedFile[]
+  ) => {
     e.preventDefault();
 
     if (!title.trim()) {
@@ -52,15 +61,48 @@ export default function AddMaterialPage({
 
     setIsSubmitting(true);
     try {
-      await createMaterial(classId, sectionId, {
+      const newMaterial = await createMaterial(classId, sectionId, {
         title: title.trim(),
         content: content.trim(),
         xp: xpValue,
       });
-      toast.success("Materi berhasil ditambahkan");
-      setPreference("modal");
-      router.push(`/course/${classId}`);
-      router.refresh();
+      setCreatedMaterialId(newMaterial.id);
+
+      // Upload staged files if any
+      if (stagedFiles && stagedFiles.length > 0) {
+        let successCount = 0;
+        let failCount = 0;
+
+        for (const stagedFile of stagedFiles) {
+          try {
+            await createMaterialFile(
+              classId,
+              sectionId,
+              newMaterial.id,
+              stagedFile.file,
+              stagedFile.title
+            );
+            successCount++;
+          } catch (error) {
+            console.error("Failed to upload file:", stagedFile.title, error);
+            failCount++;
+          }
+        }
+
+        if (failCount === 0) {
+          toast.success(
+            `Materi berhasil ditambahkan dengan ${successCount} file.`
+          );
+        } else {
+          toast.warning(
+            `Materi berhasil ditambahkan. ${successCount} file berhasil diupload, ${failCount} file gagal.`
+          );
+        }
+      } else {
+        toast.success(
+          "Materi berhasil ditambahkan. Anda dapat menambahkan file sekarang."
+        );
+      }
     } catch {
       toast.error("Gagal menambahkan materi");
     } finally {
@@ -79,8 +121,8 @@ export default function AddMaterialPage({
   };
 
   return (
-    <MaterialForm
-      mode="add"
+    <MaterialFormWithTabs
+      mode={createdMaterialId ? "edit" : "add"}
       title={title}
       content={content}
       xp={xp}
@@ -91,6 +133,10 @@ export default function AddMaterialPage({
       onSubmit={handleSubmit}
       onMinimize={handleMinimize}
       onBack={handleBack}
+      classId={classId}
+      sectionId={sectionId}
+      materialId={createdMaterialId || undefined}
+      defaultTab={createdMaterialId ? "files" : "content"}
     />
   );
 }

@@ -3,16 +3,20 @@
 import { use, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createMaterial } from "@/lib/api/sections";
+import { createMaterialFile } from "@/lib/api/material-files";
 import { toast } from "sonner";
 import { useFullscreenPreference } from "@/hooks/use-fullscreen-preference";
-import { MaterialForm } from "./material-form";
+import { MaterialFormWithTabs, StagedFile } from "./material-form-with-tabs";
 
 interface AddMaterialContainerProps {
   params: Promise<{ id: string }>;
   searchParams: Promise<{ sectionId: string }>;
 }
 
-export function AddMaterialContainer({ params, searchParams }: AddMaterialContainerProps) {
+export function AddMaterialContainer({
+  params,
+  searchParams,
+}: AddMaterialContainerProps) {
   const { id: classId } = use(params);
   const { sectionId: sectionIdStr } = use(searchParams);
   const sectionId = parseInt(sectionIdStr);
@@ -23,8 +27,14 @@ export function AddMaterialContainer({ params, searchParams }: AddMaterialContai
   const [content, setContent] = useState("");
   const [xp, setXp] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [createdMaterialId, setCreatedMaterialId] = useState<number | null>(
+    null
+  );
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (
+    e: React.FormEvent,
+    stagedFiles?: StagedFile[]
+  ) => {
     e.preventDefault();
 
     if (!title.trim()) {
@@ -50,15 +60,48 @@ export function AddMaterialContainer({ params, searchParams }: AddMaterialContai
 
     setIsSubmitting(true);
     try {
-      await createMaterial(classId, sectionId, {
+      const newMaterial = await createMaterial(classId, sectionId, {
         title: title.trim(),
         content: content.trim(),
         xp: xpValue,
       });
-      toast.success("Materi berhasil ditambahkan");
-      setPreference("modal");
-      router.push(`/teacher/my-courses/${classId}`);
-      router.refresh();
+      setCreatedMaterialId(newMaterial.id);
+
+      // Upload staged files if any
+      if (stagedFiles && stagedFiles.length > 0) {
+        let successCount = 0;
+        let failCount = 0;
+
+        for (const stagedFile of stagedFiles) {
+          try {
+            await createMaterialFile(
+              classId,
+              sectionId,
+              newMaterial.id,
+              stagedFile.file,
+              stagedFile.title
+            );
+            successCount++;
+          } catch (error) {
+            console.error("Failed to upload file:", stagedFile.title, error);
+            failCount++;
+          }
+        }
+
+        if (failCount === 0) {
+          toast.success(
+            `Materi berhasil ditambahkan dengan ${successCount} file.`
+          );
+        } else {
+          toast.warning(
+            `Materi berhasil ditambahkan. ${successCount} file berhasil diupload, ${failCount} file gagal.`
+          );
+        }
+      } else {
+        toast.success(
+          "Materi berhasil ditambahkan. Anda dapat menambahkan file sekarang."
+        );
+      }
     } catch {
       toast.error("Gagal menambahkan materi");
     } finally {
@@ -77,8 +120,8 @@ export function AddMaterialContainer({ params, searchParams }: AddMaterialContai
   };
 
   return (
-    <MaterialForm
-      mode="add"
+    <MaterialFormWithTabs
+      mode={createdMaterialId ? "edit" : "add"}
       title={title}
       content={content}
       xp={xp}
@@ -89,6 +132,10 @@ export function AddMaterialContainer({ params, searchParams }: AddMaterialContai
       onSubmit={handleSubmit}
       onMinimize={handleMinimize}
       onBack={handleBack}
+      classId={classId}
+      sectionId={sectionId}
+      materialId={createdMaterialId || undefined}
+      defaultTab={createdMaterialId ? "files" : "content"}
     />
   );
 }
