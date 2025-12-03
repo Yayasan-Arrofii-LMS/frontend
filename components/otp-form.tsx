@@ -42,11 +42,11 @@ export function OTPForm({ ...props }: React.ComponentProps<typeof Card>) {
       if (!otpSent) {
         // If OTP wasn't sent yet (shouldn't happen in normal flow, but just in case)
         // Backend should send OTP during registration, but we can resend as backup
-        toast.info("If you don't receive OTP, click Resend button");
+        toast.info("Jika Anda tidak menerima OTP, klik tombol Kirim Ulang");
         sessionStorage.setItem("otp_sent", "true");
       }
     } else {
-      toast.error("Email not found. Please register again.");
+      toast.error("Email tidak ditemukan. Silakan daftar lagi.");
       router.push("/register");
     }
   }, [router]);
@@ -55,12 +55,12 @@ export function OTPForm({ ...props }: React.ComponentProps<typeof Card>) {
     e.preventDefault();
 
     if (otp.length !== 6) {
-      toast.error("Please enter a valid 6-digit code");
+      toast.error("Silakan masukkan kode 6 digit yang valid");
       return;
     }
 
     if (!email) {
-      toast.error("Email not found");
+      toast.error("Email tidak ditemukan");
       return;
     }
 
@@ -70,7 +70,7 @@ export function OTPForm({ ...props }: React.ComponentProps<typeof Card>) {
       const response = await verifyOTP({ email, code: otp });
 
       if (response.success) {
-        toast.success(response.message || "OTP verified successfully!");
+        toast.success(response.message || "OTP berhasil diverifikasi!");
 
         if (response.data?.reset_token) {
           // For forgot password flow, store reset token and redirect to reset password
@@ -85,11 +85,11 @@ export function OTPForm({ ...props }: React.ComponentProps<typeof Card>) {
           router.push("/login");
         }
       } else {
-        toast.error(response.message || "Invalid or expired OTP");
+        toast.error(response.message || "OTP tidak valid atau kedaluwarsa");
       }
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to verify OTP"
+        error instanceof Error ? error.message : "Gagal memverifikasi OTP"
       );
     } finally {
       setIsLoading(false);
@@ -98,7 +98,7 @@ export function OTPForm({ ...props }: React.ComponentProps<typeof Card>) {
 
   const handleResend = async () => {
     if (!email) {
-      toast.error("Email not found");
+      toast.error("Email tidak ditemukan");
       return;
     }
 
@@ -108,14 +108,14 @@ export function OTPForm({ ...props }: React.ComponentProps<typeof Card>) {
       const response = await resendOTP(email);
 
       if (response.success) {
-        toast.success(response.message || "OTP resent successfully!");
+        toast.success(response.message || "OTP berhasil dikirim ulang!");
         setOtp(""); // Clear OTP input
       } else {
-        toast.error(response.message || "Failed to resend OTP");
+        toast.error(response.message || "Gagal mengirim ulang OTP");
       }
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to resend OTP"
+        error instanceof Error ? error.message : "Gagal mengirim ulang OTP"
       );
     } finally {
       setIsResending(false);
@@ -125,16 +125,16 @@ export function OTPForm({ ...props }: React.ComponentProps<typeof Card>) {
   return (
     <Card {...props}>
       <CardHeader>
-        <CardTitle>Enter verification code</CardTitle>
+        <CardTitle>Masukkan kode verifikasi</CardTitle>
         <CardDescription>
-          We sent a 6-digit code to {email ? email : "your email"}.
+          Kami mengirim kode 6 digit ke {email ? email : "email Anda"}.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit}>
           <FieldGroup>
             <Field>
-              <FieldLabel htmlFor="otp">Verification code</FieldLabel>
+              <FieldLabel htmlFor="otp">Kode verifikasi</FieldLabel>
               <InputOTP
                 maxLength={6}
                 id="otp"
@@ -153,22 +153,22 @@ export function OTPForm({ ...props }: React.ComponentProps<typeof Card>) {
                 </InputOTPGroup>
               </InputOTP>
               <FieldDescription>
-                Enter the 6-digit code sent to your email.
+                Masukkan kode 6 digit yang dikirim ke email Anda.
               </FieldDescription>
             </Field>
             <FieldGroup>
               <Button type="submit" disabled={isLoading || otp.length !== 6}>
-                {isLoading ? "Verifying..." : "Verify"}
+                {isLoading ? "Memverifikasi..." : "Verifikasi"}
               </Button>
               <FieldDescription className="text-center">
-                Didn&apos;t receive the code?{" "}
+                Tidak menerima kode?{" "}
                 <button
                   type="button"
                   onClick={handleResend}
                   disabled={isResending}
                   className="underline hover:text-primary"
                 >
-                  {isResending ? "Sending..." : "Resend"}
+                  {isResending ? "Mengirim..." : "Kirim Ulang"}
                 </button>
               </FieldDescription>
             </FieldGroup>

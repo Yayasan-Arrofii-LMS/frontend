@@ -37,31 +37,31 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
     const newErrors: Record<string, string> = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = "Name is required";
+      newErrors.name = "Nama wajib diisi";
     }
 
     if (!formData.username.trim()) {
-      newErrors.username = "Username is required";
+      newErrors.username = "Username wajib diisi";
     }
 
     if (!formData.email.trim()) {
-      newErrors.email = "Email is required";
+      newErrors.email = "Email wajib diisi";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = "Invalid email format";
+      newErrors.email = "Format email tidak valid";
     }
 
     if (!formData.password.trim()) {
-      newErrors.password = "Password is required";
+      newErrors.password = "Password wajib diisi";
     } else if (formData.password.trim().length < 8) {
-      newErrors.password = "Password must be at least 8 characters";
+      newErrors.password = "Password minimal 8 karakter";
     }
 
     if (!formData.passwordConfirmation.trim()) {
-      newErrors.passwordConfirmation = "Please confirm your password";
+      newErrors.passwordConfirmation = "Silakan konfirmasi password Anda";
     } else if (
       formData.password.trim() !== formData.passwordConfirmation.trim()
     ) {
-      newErrors.passwordConfirmation = "Passwords do not match";
+      newErrors.passwordConfirmation = "Password tidak cocok";
     }
 
     setErrors(newErrors);
@@ -81,17 +81,17 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
       const response = await register(formData);
 
       if (response.success) {
-        toast.success(response.message || "Registration successful!");
+        toast.success(response.message || "Registrasi berhasil!");
         // Store email untuk OTP verification
         sessionStorage.setItem("verification_email", formData.email);
         sessionStorage.setItem("otp_sent", "true");
         router.push("/otp");
       } else {
-        toast.error(response.message || "Registration failed");
+        toast.error(response.message || "Registrasi gagal");
       }
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Registration failed"
+        error instanceof Error ? error.message : "Registrasi gagal"
       );
     } finally {
       setIsLoading(false);
@@ -110,16 +110,16 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
   return (
     <Card {...props}>
       <CardHeader>
-        <CardTitle>Create an account</CardTitle>
+        <CardTitle>Buat akun</CardTitle>
         <CardDescription>
-          Enter your information below to create your account
+          Masukkan informasi Anda untuk membuat akun
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit}>
           <FieldGroup>
             <Field>
-              <FieldLabel htmlFor="name">Full Name</FieldLabel>
+              <FieldLabel htmlFor="name">Nama Lengkap</FieldLabel>
               <Input
                 id="name"
                 type="text"
@@ -169,8 +169,7 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
                 </FieldDescription>
               ) : (
                 <FieldDescription>
-                  We&apos;ll use this to contact you. We will not share your
-                  email with anyone else.
+                  Kami akan menggunakan ini untuk menghubungi Anda. Kami tidak akan membagikan email Anda.
                 </FieldDescription>
               )}
             </Field>
@@ -190,13 +189,13 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
                 </FieldDescription>
               ) : (
                 <FieldDescription>
-                  Must be at least 8 characters long.
+                  Minimal 8 karakter.
                 </FieldDescription>
               )}
             </Field>
             <Field>
               <FieldLabel htmlFor="passwordConfirmation">
-                Confirm Password
+                Konfirmasi Password
               </FieldLabel>
               <Input
                 id="passwordConfirmation"
@@ -212,20 +211,25 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
                 </FieldDescription>
               ) : (
                 <FieldDescription>
-                  Please confirm your password.
+                  Silakan konfirmasi password Anda.
                 </FieldDescription>
               )}
             </Field>
             <FieldGroup>
               <Field>
                 <Button type="submit" disabled={isLoading}>
-                  {isLoading ? "Creating Account..." : "Create Account"}
+                  {isLoading ? "Membuat Akun..." : "Buat Akun"}
                 </Button>
-                <Button variant="outline" type="button" disabled={isLoading}>
-                  Sign up with Google
+                <Button 
+                  variant="outline" 
+                  type="button" 
+                  disabled={true}
+                  className="opacity-50 cursor-not-allowed"
+                >
+                  Daftar dengan Google
                 </Button>
                 <FieldDescription className="px-6 text-center">
-                  Already have an account? <Link href="/login">Sign in</Link>
+                  Sudah punya akun? <Link href="/login">Masuk</Link>
                 </FieldDescription>
               </Field>
             </FieldGroup>

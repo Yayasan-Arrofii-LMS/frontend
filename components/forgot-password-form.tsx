@@ -31,10 +31,10 @@ export function ForgotPasswordForm({
 
   const validateEmail = (email: string) => {
     if (!email.trim()) {
-      return "Email is required";
+      return "Email wajib diisi";
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return "Invalid email format";
+      return "Format email tidak valid";
     }
     return "";
   };
@@ -54,16 +54,16 @@ export function ForgotPasswordForm({
       const response = await forgotPassword(email);
 
       if (response.success) {
-        toast.success(response.message || "Password reset OTP sent!");
+        toast.success(response.message || "OTP reset password berhasil dikirim!");
         // Store email for OTP verification
         sessionStorage.setItem("verification_email", email);
         router.push("/otp?flow=forgot-password");
       } else {
-        toast.error(response.message || "Failed to send reset OTP");
+        toast.error(response.message || "Gagal mengirim OTP reset");
       }
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to send reset OTP"
+        error instanceof Error ? error.message : "Gagal mengirim OTP reset"
       );
     } finally {
       setIsLoading(false);
@@ -80,10 +80,10 @@ export function ForgotPasswordForm({
   return (
     <Card {...props}>
       <CardHeader>
-        <CardTitle>Forgot your password?</CardTitle>
+        <CardTitle>Lupa password?</CardTitle>
         <CardDescription>
-          Enter your email address and we&apos;ll send you a verification code
-          to reset your password.
+          Masukkan alamat email Anda dan kami akan mengirimkan kode verifikasi
+          untuk reset password.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -109,10 +109,10 @@ export function ForgotPasswordForm({
             <FieldGroup>
               <Field>
                 <Button type="submit" disabled={isLoading}>
-                  {isLoading ? "Sending..." : "Send Reset Code"}
+                  {isLoading ? "Mengirim..." : "Kirim Kode Reset"}
                 </Button>
                 <FieldDescription className="text-center">
-                  Remember your password? <Link href="/login">Sign in</Link>
+                  Ingat password Anda? <Link href="/login">Masuk</Link>
                 </FieldDescription>
               </Field>
             </FieldGroup>

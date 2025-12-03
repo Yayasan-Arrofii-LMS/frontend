@@ -10,13 +10,13 @@ export function LogoutButton() {
 
   const handleLogout = () => {
     logout();
-    toast.success("Logged out successfully");
+    toast.success("Berhasil keluar");
   };
 
   return (
     <Button variant="ghost" size="sm" onClick={handleLogout} className="gap-2">
       <LogOut className="h-4 w-4" />
-      Logout
+      Keluar
     </Button>
   );
 }
