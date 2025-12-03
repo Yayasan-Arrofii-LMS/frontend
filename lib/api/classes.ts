@@ -312,7 +312,10 @@ export async function getClassById(id: string): Promise<Class> {
  * Fetch public classes (no authentication required)
  * Used for home page and public viewing
  */
-export async function fetchPublicClasses(page: number = 1): Promise<{
+export async function fetchPublicClasses(
+  page: number = 1,
+  search?: string
+): Promise<{
   classes: Class[];
   meta: {
     totalItems: number;
@@ -324,6 +327,9 @@ export async function fetchPublicClasses(page: number = 1): Promise<{
   try {
     const url = new URL(`${BASE_URL}/public/classes`);
     url.searchParams.append("page", page.toString());
+    if (search && search.trim() !== "") {
+      url.searchParams.append("search", search.trim());
+    }
 
     const response = await fetch(url.toString(), {
       method: "GET",

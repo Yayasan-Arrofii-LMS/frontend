@@ -31,6 +31,7 @@ import {
 
 export default function ClassesPage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [classes, setClasses] = useState<Class[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -41,12 +42,23 @@ export default function ClassesPage() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const router = useRouter();
 
+  // Debounce search value
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setCurrentPage(1); // Reset to first page on search
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   useEffect(() => {
     async function loadClasses() {
       try {
         setIsLoading(true);
         const { classes: publicClasses, meta } = await fetchPublicClasses(
-          currentPage
+          currentPage,
+          debouncedSearch
         );
         setClasses(publicClasses);
         setTotalPages(meta.totalPages);
@@ -61,13 +73,7 @@ export default function ClassesPage() {
     }
 
     loadClasses();
-  }, [currentPage]);
-
-  const filteredClasses = classes.filter(
-    (classItem) =>
-      classItem.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      classItem.description.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  }, [currentPage, debouncedSearch]);
 
   const handleClassClick = (classId: string, e: React.MouseEvent) => {
     e.preventDefault();
@@ -128,7 +134,7 @@ export default function ClassesPage() {
             </Card>
           ))}
         </div>
-      ) : filteredClasses.length === 0 ? (
+      ) : classes.length === 0 ? (
         <div className="py-16 text-center">
           <p className="text-lg text-muted-foreground">
             {searchQuery
@@ -138,7 +144,7 @@ export default function ClassesPage() {
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {filteredClasses.map((classItem) => (
+          {classes.map((classItem) => (
             <div
               key={classItem.id}
               onClick={(e) => handleClassClick(classItem.id, e)}
@@ -183,7 +189,7 @@ export default function ClassesPage() {
         </div>
       )}
 
-      {!isLoading && filteredClasses.length > 0 && !searchQuery && (
+      {!isLoading && classes.length > 0 && (
         <div className="mt-8 flex items-center justify-center gap-2">
           <Button
             variant="outline"
