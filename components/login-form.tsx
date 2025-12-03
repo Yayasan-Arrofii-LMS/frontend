@@ -38,11 +38,11 @@ export function LoginForm({
     const newErrors: Record<string, string> = {};
 
     if (!formData.usernameoremail.trim()) {
-      newErrors.usernameoremail = "Email or username is required";
+      newErrors.usernameoremail = "Email atau username wajib diisi";
     }
 
     if (!formData.password.trim()) {
-      newErrors.password = "Password is required";
+      newErrors.password = "Password wajib diisi";
     }
 
     setErrors(newErrors);
@@ -62,7 +62,7 @@ export function LoginForm({
       const response = await login(formData);
 
       if (response.success && response.data?.token) {
-        toast.success(response.message || "Login successful!");
+        toast.success(response.message || "Login berhasil!");
         
         // Store token and user info
         setAuthToken(response.data.token, {
@@ -83,17 +83,17 @@ export function LoginForm({
           router.push("/home");
         }
       } else {
-        toast.error(response.message || "Login failed");
+        toast.error(response.message || "Login gagal");
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Login failed";
+      const message = error instanceof Error ? error.message : "Login gagal";
 
       // Cek apakah akun belum diverifikasi
       if (
         message.includes("not verified") ||
         message.includes("Account not verified")
       ) {
-        toast.error("Please verify your account first");
+        toast.error("Silakan verifikasi akun Anda terlebih dahulu");
         // Store email untuk verification jika ada di usernameoremail
         if (formData.usernameoremail.includes("@")) {
           sessionStorage.setItem(
@@ -124,9 +124,9 @@ export function LoginForm({
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
         <CardHeader>
-          <CardTitle>Login to your account</CardTitle>
+          <CardTitle>Masuk ke akun Anda</CardTitle>
           <CardDescription>
-            Enter your email or username below to login to your account
+            Masukkan email atau username Anda untuk masuk
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -134,12 +134,12 @@ export function LoginForm({
             <FieldGroup>
               <Field>
                 <FieldLabel htmlFor="usernameoremail">
-                  Email or Username
+                  Email atau Username
                 </FieldLabel>
                 <Input
                   id="usernameoremail"
                   type="text"
-                  placeholder="sekolah@alam.com or sekolahalam"
+                  placeholder="sekolah@alam.com atau sekolahalam"
                   value={formData.usernameoremail}
                   onChange={handleChange}
                   disabled={isLoading}
@@ -158,7 +158,7 @@ export function LoginForm({
                     href="/forgot-password"
                     className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
                   >
-                    Forgot your password?
+                    Lupa password?
                   </Link>
                 </div>
                 <Input
@@ -177,14 +177,19 @@ export function LoginForm({
               </Field>
               <Field>
                 <Button type="submit" disabled={isLoading}>
-                  {isLoading ? "Logging in..." : "Login"}
+                  {isLoading ? "Masuk..." : "Masuk"}
                 </Button>
-                <Button variant="outline" type="button" disabled={isLoading}>
-                  Login with Google
+                <Button 
+                  variant="outline" 
+                  type="button" 
+                  disabled={true}
+                  className="opacity-50 cursor-not-allowed"
+                >
+                  Masuk dengan Google
                 </Button>
                 <FieldDescription className="text-center">
-                  Don&apos;t have an account?{" "}
-                  <Link href="/register">Sign up</Link>
+                  Belum punya akun?{" "}
+                  <Link href="/register">Daftar</Link>
                 </FieldDescription>
               </Field>
             </FieldGroup>

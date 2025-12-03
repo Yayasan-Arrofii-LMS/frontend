@@ -14,7 +14,7 @@ export const ErrorAlert = ({ message, onRetry }: ErrorAlertProps) => (
           <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />
           <div className="flex-1">
             <p className="text-sm text-destructive font-medium mb-1">
-              Failed to load dashboard data
+              Gagal memuat data dasbor
             </p>
             <p className="text-sm text-destructive/80">
               {message}
@@ -24,7 +24,7 @@ export const ErrorAlert = ({ message, onRetry }: ErrorAlertProps) => (
                 onClick={onRetry}
                 className="mt-3 text-sm text-destructive hover:text-destructive/80 underline underline-offset-4"
               >
-                Try again
+                Coba lagi
               </button>
             )}
           </div>

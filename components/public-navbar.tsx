@@ -34,10 +34,10 @@ export function PublicNavbar() {
   };
 
   const navLinks = [
-    { href: "/home", label: "Home" },
-    { href: "/classes", label: "Classes" },
-    ...(isAuthenticated ? [{ href: "/my-classes", label: "My Classes" }] : []),
-    { href: "/about", label: "About Us" },
+    { href: "/home", label: "Beranda" },
+    { href: "/classes", label: "Kelas" },
+    ...(isAuthenticated ? [{ href: "/my-classes", label: "Kelas Saya" }] : []),
+    { href: "/about", label: "Tentang Kami" },
   ];
 
   const getInitials = (name?: string) => {
@@ -106,7 +106,7 @@ export function PublicNavbar() {
                     {user.role?.toLowerCase() === "admin" && (
                       <>
                         <DropdownMenuItem asChild>
-                          <Link href="/dashboard">Dashboard</Link>
+                          <Link href="/dashboard">Dasbor</Link>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                       </>
@@ -114,7 +114,7 @@ export function PublicNavbar() {
                     {user.role?.toLowerCase() === "teacher" && (
                       <>
                         <DropdownMenuItem asChild>
-                          <Link href="/teacher/my-courses">My Courses</Link>
+                          <Link href="/teacher/my-courses">Kursus Saya</Link>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                       </>
@@ -124,9 +124,9 @@ export function PublicNavbar() {
                   <>
                     <div className="flex items-center justify-start gap-2 p-2">
                       <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-medium leading-none">User</p>
+                        <p className="text-sm font-medium leading-none">Pengguna</p>
                         <p className="text-xs leading-none text-muted-foreground">
-                          Logged in
+                          Sedang masuk
                         </p>
                       </div>
                     </div>
@@ -134,7 +134,7 @@ export function PublicNavbar() {
                   </>
                 )}
                 <DropdownMenuItem onClick={handleLogout}>
-                  Logout
+                  Keluar
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -143,13 +143,13 @@ export function PublicNavbar() {
               <Button variant="ghost" size="sm" asChild>
                 <Link href="/login">
                   <LogIn className="mr-2 h-4 w-4" />
-                  Login
+                  Masuk
                 </Link>
               </Button>
               <Button size="sm" asChild>
                 <Link href="/register">
                   <UserPlus className="mr-2 h-4 w-4" />
-                  Register
+                  Daftar
                 </Link>
               </Button>
             </div>

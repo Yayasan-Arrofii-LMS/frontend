@@ -11,17 +11,17 @@ export const EmptyState = ({ onRetry }: EmptyStateProps) => (
       <CardContent className="text-center">
         <Database className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
         <h3 className="text-lg font-medium text-foreground mb-2">
-          No Data Available
+          Data Tidak Tersedia
         </h3>
         <p className="text-sm text-muted-foreground mb-4">
-          Dashboard data is currently unavailable. Please try refreshing the page.
+          Data dasbor saat ini tidak tersedia. Silakan coba refresh halaman.
         </p>
         {onRetry && (
           <button
             onClick={onRetry}
             className="text-sm text-primary hover:text-primary/80 underline underline-offset-4"
           >
-            Refresh Data
+            Muat Ulang Data
           </button>
         )}
       </CardContent>

@@ -38,7 +38,7 @@ export function ResetPasswordForm({
     if (token) {
       setResetToken(token);
     } else {
-      toast.error("Reset token not found. Please try again.");
+      toast.error("Token reset tidak ditemukan. Silakan coba lagi.");
       router.push("/forgot-password");
     }
   }, [router]);
@@ -47,17 +47,17 @@ export function ResetPasswordForm({
     const newErrors: Record<string, string> = {};
 
     if (!formData.newPassword.trim()) {
-      newErrors.newPassword = "Password is required";
+      newErrors.newPassword = "Password wajib diisi";
     } else if (formData.newPassword.trim().length < 8) {
-      newErrors.newPassword = "Password must be at least 8 characters";
+      newErrors.newPassword = "Password minimal 8 karakter";
     }
 
     if (!formData.confirmPassword.trim()) {
-      newErrors.confirmPassword = "Please confirm your password";
+      newErrors.confirmPassword = "Silakan konfirmasi password Anda";
     } else if (
       formData.newPassword.trim() !== formData.confirmPassword.trim()
     ) {
-      newErrors.confirmPassword = "Passwords do not match";
+      newErrors.confirmPassword = "Password tidak cocok";
     }
 
     setErrors(newErrors);
@@ -72,7 +72,7 @@ export function ResetPasswordForm({
     }
 
     if (!resetToken) {
-      toast.error("Reset token not found");
+      toast.error("Token reset tidak ditemukan");
       return;
     }
 
@@ -86,16 +86,16 @@ export function ResetPasswordForm({
       });
 
       if (response.success) {
-        toast.success(response.message || "Password reset successful!");
+        toast.success(response.message || "Reset password berhasil!");
         // Clear session storage
         sessionStorage.removeItem("reset_token");
         router.push("/login");
       } else {
-        toast.error(response.message || "Failed to reset password");
+        toast.error(response.message || "Gagal reset password");
       }
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to reset password"
+        error instanceof Error ? error.message : "Gagal reset password"
       );
     } finally {
       setIsLoading(false);
@@ -114,16 +114,16 @@ export function ResetPasswordForm({
   return (
     <Card {...props}>
       <CardHeader>
-        <CardTitle>Reset your password</CardTitle>
+        <CardTitle>Reset password Anda</CardTitle>
         <CardDescription>
-          Enter your new password below to reset your account password.
+          Masukkan password baru Anda untuk reset password akun.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit}>
           <FieldGroup>
             <Field>
-              <FieldLabel htmlFor="newPassword">New Password</FieldLabel>
+              <FieldLabel htmlFor="newPassword">Password Baru</FieldLabel>
               <Input
                 id="newPassword"
                 type="password"
@@ -138,13 +138,13 @@ export function ResetPasswordForm({
                 </FieldDescription>
               ) : (
                 <FieldDescription>
-                  Must be at least 8 characters long.
+                  Minimal 8 karakter.
                 </FieldDescription>
               )}
             </Field>
             <Field>
               <FieldLabel htmlFor="confirmPassword">
-                Confirm New Password
+                Konfirmasi Password Baru
               </FieldLabel>
               <Input
                 id="confirmPassword"
@@ -160,14 +160,14 @@ export function ResetPasswordForm({
                 </FieldDescription>
               ) : (
                 <FieldDescription>
-                  Please confirm your new password.
+                  Silakan konfirmasi password baru Anda.
                 </FieldDescription>
               )}
             </Field>
             <FieldGroup>
               <Field>
                 <Button type="submit" disabled={isLoading}>
-                  {isLoading ? "Resetting..." : "Reset Password"}
+                  {isLoading ? "Mereset..." : "Reset Password"}
                 </Button>
               </Field>
             </FieldGroup>
