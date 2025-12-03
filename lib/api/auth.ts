@@ -151,20 +151,23 @@ export async function resetPassword(data: {
 }
 
 // Token management utilities
-export function setAuthToken(token: string, userInfo?: {
-  username?: string;
-  email?: string;
-  name?: string;
-  role?: string;
-}) {
+export function setAuthToken(
+  token: string,
+  userInfo?: {
+    username?: string;
+    email?: string;
+    name?: string;
+    role?: string;
+  }
+) {
   if (typeof window !== "undefined") {
     localStorage.setItem("auth_token", token);
-    
+
     // Store user info if provided
     if (userInfo) {
       localStorage.setItem("user_info", JSON.stringify(userInfo));
     }
-    
+
     // Also set in cookie for middleware
     document.cookie = `auth_token=${token}; path=/; max-age=${
       60 * 60 * 24 * 7
@@ -226,7 +229,7 @@ export async function verifyRole(
   token: string
 ): Promise<AuthResponse<VerifyRoleData>> {
   const API_BASE_URL =
-    process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1";
+    process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001/api/v1";
 
   const response = await fetch(`${API_BASE_URL}/verify-role`, {
     method: "GET",
