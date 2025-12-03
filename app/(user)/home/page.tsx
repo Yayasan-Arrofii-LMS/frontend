@@ -17,12 +17,44 @@ import { fetchPublicClasses } from "@/lib/api/classes";
 import { Class } from "@/types/class";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function HomePage() {
   const currentYear = new Date().getFullYear();
   const { isLoading, isAuthenticated } = useAuth();
   const [classes, setClasses] = useState<Class[]>([]);
   const [isLoadingClasses, setIsLoadingClasses] = useState(true);
+  const [showLoginDialog, setShowLoginDialog] = useState(false);
+  const router = useRouter();
+
+  const handleClassClick = (classId: string, e: React.MouseEvent) => {
+    e.preventDefault();
+
+    if (isLoading) {
+      return;
+    }
+
+    if (!isAuthenticated) {
+      setShowLoginDialog(true);
+    } else {
+      router.push(`/classes/${classId}`);
+    }
+  };
+
+  const handleLoginRedirect = () => {
+    setShowLoginDialog(false);
+    router.push("/login");
+  };
 
   useEffect(() => {
     async function loadClasses() {
@@ -128,7 +160,11 @@ export default function HomePage() {
             <div className="mb-8 overflow-x-auto">
               <div className="flex gap-6 pb-4" style={{ width: "max-content" }}>
                 {classes.map((classItem) => (
-                  <Link key={classItem.id} href={`/classes/${classItem.id}`}>
+                  <div
+                    key={classItem.id}
+                    onClick={(e) => handleClassClick(classItem.id, e)}
+                    className="cursor-pointer"
+                  >
                     <Card className="overflow-hidden transition-shadow hover:shadow-lg w-[320px] flex-shrink-0">
                       <div className="aspect-video w-full overflow-hidden bg-muted relative">
                         <Image
@@ -163,7 +199,7 @@ export default function HomePage() {
                           )}
                       </CardContent>
                     </Card>
-                  </Link>
+                  </div>
                 ))}
               </div>
             </div>
@@ -231,6 +267,24 @@ export default function HomePage() {
           <p>&copy; {currentYear} Sekolah Alam. Hak cipta dilindungi.</p>
         </div>
       </footer>
+
+      <AlertDialog open={showLoginDialog} onOpenChange={setShowLoginDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Login Diperlukan</AlertDialogTitle>
+            <AlertDialogDescription>
+              Anda harus login terlebih dahulu untuk melihat detail kelas.
+              Silakan login atau buat akun baru untuk melanjutkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleLoginRedirect}>
+              Login
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
