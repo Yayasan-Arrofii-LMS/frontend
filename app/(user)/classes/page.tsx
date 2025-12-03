@@ -1,7 +1,13 @@
 "use client";
 
 import Image from "next/image";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Users, Search, ChevronLeft, ChevronRight } from "lucide-react";
@@ -31,7 +37,7 @@ export default function ClassesPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
-  
+
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const router = useRouter();
 
@@ -39,7 +45,9 @@ export default function ClassesPage() {
     async function loadClasses() {
       try {
         setIsLoading(true);
-        const { classes: publicClasses, meta } = await fetchPublicClasses(currentPage);
+        const { classes: publicClasses, meta } = await fetchPublicClasses(
+          currentPage
+        );
         setClasses(publicClasses);
         setTotalPages(meta.totalPages);
         setTotalItems(meta.totalItems);
@@ -55,14 +63,15 @@ export default function ClassesPage() {
     loadClasses();
   }, [currentPage]);
 
-  const filteredClasses = classes.filter((classItem) =>
-    classItem.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    classItem.description.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredClasses = classes.filter(
+    (classItem) =>
+      classItem.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      classItem.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleClassClick = (classId: string, e: React.MouseEvent) => {
     e.preventDefault();
-    
+
     if (authLoading) {
       return;
     }
@@ -80,7 +89,7 @@ export default function ClassesPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-7xl overflow-x-hidden\">
       <div className="mb-8">
         <h1 className="mb-3 text-4xl font-bold">Semua Kelas</h1>
         <p className="text-lg text-muted-foreground">
@@ -122,7 +131,9 @@ export default function ClassesPage() {
       ) : filteredClasses.length === 0 ? (
         <div className="py-16 text-center">
           <p className="text-lg text-muted-foreground">
-            {searchQuery ? "Tidak ada kelas yang cocok dengan pencarian Anda" : "Tidak ada kelas tersedia"}
+            {searchQuery
+              ? "Tidak ada kelas yang cocok dengan pencarian Anda"
+              : "Tidak ada kelas tersedia"}
           </p>
         </div>
       ) : (
@@ -144,7 +155,9 @@ export default function ClassesPage() {
                   />
                 </div>
                 <CardHeader>
-                  <CardTitle className="line-clamp-1">{classItem.title}</CardTitle>
+                  <CardTitle className="line-clamp-1">
+                    {classItem.title}
+                  </CardTitle>
                   <CardDescription className="line-clamp-2">
                     {classItem.description}
                   </CardDescription>
@@ -156,12 +169,13 @@ export default function ClassesPage() {
                       <span>{classItem.teacherName}</span>
                     </div>
                   )}
-                  {classItem.studentCount !== undefined && classItem.studentCount > 0 && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Users className="h-4 w-4" />
-                      <span>{classItem.studentCount} siswa</span>
-                    </div>
-                  )}
+                  {classItem.studentCount !== undefined &&
+                    classItem.studentCount > 0 && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Users className="h-4 w-4" />
+                        <span>{classItem.studentCount} siswa</span>
+                      </div>
+                    )}
                 </CardContent>
               </Card>
             </div>
@@ -180,7 +194,7 @@ export default function ClassesPage() {
             <ChevronLeft className="h-4 w-4 mr-1" />
             Sebelumnya
           </Button>
-          
+
           <div className="flex items-center gap-2">
             {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
               let pageNum;
@@ -211,7 +225,9 @@ export default function ClassesPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+            onClick={() =>
+              setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+            }
             disabled={currentPage === totalPages}
           >
             Selanjutnya
@@ -222,7 +238,8 @@ export default function ClassesPage() {
 
       {!isLoading && totalItems > 0 && !searchQuery && (
         <div className="mt-4 text-center text-sm text-muted-foreground">
-          Menampilkan halaman {currentPage} dari {totalPages} ({totalItems} total kelas)
+          Menampilkan halaman {currentPage} dari {totalPages} ({totalItems}{" "}
+          total kelas)
         </div>
       )}
 

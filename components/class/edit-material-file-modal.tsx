@@ -17,7 +17,6 @@ import { updateMaterialFile, MaterialFile } from "@/lib/api/material-files";
 import { Save } from "lucide-react";
 
 interface EditMaterialFileModalProps {
-  sectionId: number;
   materialId: number;
   file: MaterialFile | null;
   open: boolean;
@@ -26,7 +25,6 @@ interface EditMaterialFileModalProps {
 }
 
 export function EditMaterialFileModal({
-  sectionId,
   materialId,
   file,
   open,
@@ -58,12 +56,12 @@ export function EditMaterialFileModal({
     try {
       const formData = new FormData();
       formData.append("title", title);
-      
+
       if (newFile) {
         formData.append("file", newFile);
       }
 
-      await updateMaterialFile(sectionId, materialId, file.id, formData);
+      await updateMaterialFile(materialId, file.id, formData);
       toast.success("File berhasil diperbarui");
       setTitle("");
       setNewFile(null);
@@ -72,7 +70,8 @@ export function EditMaterialFileModal({
       onSuccess();
     } catch (error: unknown) {
       console.error("Gagal memperbarui file materi:", error);
-      const errorMessage = error instanceof Error ? error.message : "Gagal memperbarui file";
+      const errorMessage =
+        error instanceof Error ? error.message : "Gagal memperbarui file";
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);
@@ -84,9 +83,7 @@ export function EditMaterialFileModal({
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Edit File Materi</DialogTitle>
-          <DialogDescription>
-            Perbarui informasi file materi
-          </DialogDescription>
+          <DialogDescription>Perbarui informasi file materi</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="space-y-4 py-4">
@@ -118,9 +115,9 @@ export function EditMaterialFileModal({
               </p>
             </div>
 
-            {file && (
+            {file && file.file_path && (
               <div className="text-sm text-muted-foreground">
-                <p>File saat ini: {file.path.split("/").pop()}</p>
+                <p>File saat ini: {file.file_path.split("/").pop()}</p>
               </div>
             )}
           </div>

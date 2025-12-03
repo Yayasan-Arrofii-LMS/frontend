@@ -2,7 +2,12 @@
 
 import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import {
   Collapsible,
   CollapsibleContent,
@@ -85,7 +90,9 @@ function SidebarContent({
                   <button
                     key={`material-${material.id}`}
                     onClick={() =>
-                      router.push(`/classes/${classId}/materials/${material.id}`)
+                      router.push(
+                        `/classes/${classId}/materials/${material.id}`
+                      )
                     }
                     className={cn(
                       "flex items-center gap-2 w-full p-2 rounded-lg text-sm hover:bg-accent",
@@ -148,31 +155,34 @@ export function ClassContentSidebar({
   return (
     <>
       {/* Mobile Header */}
-      <div className="lg:hidden sticky top-0 z-10 bg-background border-b p-4 flex items-center gap-3">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => router.push(`/classes/${classId}`)}
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="outline" size="icon">
-              <Menu className="h-5 w-5" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="w-80 p-0">
-            <SidebarContent
-              sections={sections}
-              currentItemId={currentItemId}
-              currentItemType={currentItemType}
-              expandedSections={expandedSections}
-              onToggleSection={onToggleSection}
-            />
-          </SheetContent>
-        </Sheet>
-        <h1 className="font-semibold">Konten Kelas</h1>
+      <div className="lg:hidden sticky top-0 z-10 bg-background border-b">
+        <div className="flex items-center justify-between px-2 py-2">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-80 p-0">
+              <SheetTitle className="sr-only">Daftar Isi Kelas</SheetTitle>
+              <SidebarContent
+                sections={sections}
+                currentItemId={currentItemId}
+                currentItemType={currentItemType}
+                expandedSections={expandedSections}
+                onToggleSection={onToggleSection}
+              />
+            </SheetContent>
+          </Sheet>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.push(`/classes/${classId}`)}
+            className="ml-auto"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+        </div>
       </div>
 
       {/* Desktop Sidebar */}

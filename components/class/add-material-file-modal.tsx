@@ -17,7 +17,6 @@ import { createMaterialFile } from "@/lib/api/material-files";
 import { Upload } from "lucide-react";
 
 interface AddMaterialFileModalProps {
-  sectionId: number;
   materialId: number;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -25,7 +24,6 @@ interface AddMaterialFileModalProps {
 }
 
 export function AddMaterialFileModal({
-  sectionId,
   materialId,
   open,
   onOpenChange,
@@ -38,12 +36,12 @@ export function AddMaterialFileModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validation
     const newErrors: { title?: string; file?: string } = {};
     if (!title.trim()) newErrors.title = "Judul file wajib diisi";
     if (!file) newErrors.file = "File wajib dipilih";
-    
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
@@ -57,7 +55,7 @@ export function AddMaterialFileModal({
         formData.append("file", file);
       }
 
-      await createMaterialFile(sectionId, materialId, formData);
+      await createMaterialFile(materialId, formData);
       toast.success("File berhasil ditambahkan");
       setTitle("");
       setFile(null);
@@ -66,7 +64,8 @@ export function AddMaterialFileModal({
       onSuccess();
     } catch (error: unknown) {
       console.error("Gagal menambahkan file materi:", error);
-      const errorMessage = error instanceof Error ? error.message : "Gagal menambahkan file";
+      const errorMessage =
+        error instanceof Error ? error.message : "Gagal menambahkan file";
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);

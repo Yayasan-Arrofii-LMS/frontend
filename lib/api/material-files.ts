@@ -3,7 +3,7 @@ import { authenticatedFetch, ApiResponse } from "./client";
 export interface MaterialFile {
   id: number;
   title: string;
-  path: string;
+  file_path: string;
   createdAt: string;
   updatedAt: string;
   materialId: number;
@@ -23,24 +23,27 @@ export interface MaterialFileResponse {
 
 // Admin/Teacher endpoints
 export async function fetchMaterialFiles(
-  sectionId: number,
   materialId: number
 ): Promise<MaterialFile[]> {
   const response = await authenticatedFetch<MaterialFile[]>(
-    `/classes/sections/${sectionId}/materials/${materialId}/files`
+    `/classes/sections/materials/${materialId}/files`
   );
   return response.data;
 }
 
 export async function createMaterialFile(
-  sectionId: number,
   materialId: number,
   data: FormData
 ): Promise<MaterialFile> {
   const token = localStorage.getItem("auth_token");
-  const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001/api/v1";
-  
-  const response = await fetch(`${BASE_URL}/classes/sections/${sectionId}/materials/${materialId}/files`, {
+  const BASE_URL =
+    process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001/api/v1";
+
+  const endpoint = `${BASE_URL}/classes/sections/materials/${materialId}/files`;
+  console.log("Upload endpoint:", endpoint);
+  console.log("FormData keys:", Array.from(data.keys()));
+
+  const response = await fetch(endpoint, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -48,9 +51,22 @@ export async function createMaterialFile(
     body: data,
   });
 
+  console.log("Response status:", response.status);
+
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: "Upload failed" }));
-    throw new Error(error.message || "Failed to upload file");
+    let errorMessage = "Upload failed";
+    try {
+      const errorData = await response.json();
+      console.error("Upload error response:", errorData);
+      errorMessage = errorData.message || errorData.error || errorMessage;
+    } catch (e) {
+      // Response is not JSON, try to get text
+      const textError = await response.text();
+      console.error("Upload error (text):", textError);
+      errorMessage =
+        textError || `HTTP ${response.status}: ${response.statusText}`;
+    }
+    throw new Error(errorMessage);
   }
 
   const result: ApiResponse<MaterialFile> = await response.json();
@@ -58,25 +74,36 @@ export async function createMaterialFile(
 }
 
 export async function updateMaterialFile(
-  sectionId: number,
   materialId: number,
   fileId: number,
   data: FormData
 ): Promise<MaterialFile> {
   const token = localStorage.getItem("auth_token");
-  const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001/api/v1";
-  
-  const response = await fetch(`${BASE_URL}/classes/sections/${sectionId}/materials/${materialId}/files/${fileId}`, {
-    method: "PATCH",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-    body: data,
-  });
+  const BASE_URL =
+    process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001/api/v1";
+
+  const response = await fetch(
+    `${BASE_URL}/classes/sections/materials/${materialId}/files/${fileId}`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: data,
+    }
+  );
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: "Update failed" }));
-    throw new Error(error.message || "Failed to update file");
+    let errorMessage = "Update failed";
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.message || errorData.error || errorMessage;
+    } catch (e) {
+      const textError = await response.text();
+      errorMessage =
+        textError || `HTTP ${response.status}: ${response.statusText}`;
+    }
+    throw new Error(errorMessage);
   }
 
   const result: ApiResponse<MaterialFile> = await response.json();
@@ -84,13 +111,15 @@ export async function updateMaterialFile(
 }
 
 export async function deleteMaterialFile(
-  sectionId: number,
   materialId: number,
   fileId: number
 ): Promise<void> {
-  await authenticatedFetch(`/classes/sections/${sectionId}/materials/${materialId}/files/${fileId}`, {
-    method: "DELETE",
-  });
+  await authenticatedFetch(
+    `/classes/sections/materials/${materialId}/files/${fileId}`,
+    {
+      method: "DELETE",
+    }
+  );
 }
 
 // Student endpoints

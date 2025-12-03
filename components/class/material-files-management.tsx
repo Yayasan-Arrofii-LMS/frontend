@@ -45,12 +45,10 @@ import {
 } from "lucide-react";
 
 interface MaterialFilesManagementProps {
-  sectionId: number;
   materialId: number;
 }
 
 export function MaterialFilesManagement({
-  sectionId,
   materialId,
 }: MaterialFilesManagementProps) {
   const [files, setFiles] = useState<MaterialFile[]>([]);
@@ -64,7 +62,7 @@ export function MaterialFilesManagement({
   const loadFiles = async () => {
     try {
       setIsLoading(true);
-      const data = await fetchMaterialFiles(sectionId, materialId);
+      const data = await fetchMaterialFiles(materialId);
       setFiles(data);
     } catch (error) {
       console.error("Gagal memuat file materi:", error);
@@ -77,7 +75,7 @@ export function MaterialFilesManagement({
   useEffect(() => {
     loadFiles();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sectionId, materialId]);
+  }, [materialId]);
 
   const handleEdit = (file: MaterialFile) => {
     setSelectedFile(file);
@@ -93,7 +91,7 @@ export function MaterialFilesManagement({
     if (!fileToDelete) return;
 
     try {
-      await deleteMaterialFile(sectionId, materialId, fileToDelete.id);
+      await deleteMaterialFile(materialId, fileToDelete.id);
       toast.success("File berhasil dihapus");
       loadFiles();
     } catch (error) {
@@ -105,9 +103,38 @@ export function MaterialFilesManagement({
     }
   };
 
-  const getFileUrl = (path: string) => {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-    return `${baseUrl}/${path}`;
+  const handleDownloadFile = async (file: MaterialFile) => {
+    try {
+      const token = localStorage.getItem("auth_token");
+      const baseUrl =
+        process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001/api/v1";
+
+      // Use API endpoint to get file with authentication
+      const fileUrl = `${baseUrl}/classes/sections/materials/files/${file.id}/download`;
+
+      const response = await fetch(fileUrl, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to download file");
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = file.file_path.split("/").pop() || "download";
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error("Error downloading file:", error);
+      toast.error("Gagal mengunduh file");
+    }
   };
 
   if (isLoading) {
@@ -151,16 +178,14 @@ export function MaterialFilesManagement({
                   <TableRow key={file.id}>
                     <TableCell className="font-medium">{file.title}</TableCell>
                     <TableCell>
-                      {file.path ? (
-                        <a
-                          href={getFileUrl(file.path)}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                      {file.file_path ? (
+                        <button
+                          onClick={() => handleDownloadFile(file)}
                           className="text-primary hover:underline flex items-center gap-2"
                         >
                           <FileDown className="h-4 w-4" />
-                          {file.path.split("/").pop()}
-                        </a>
+                          {file.file_path.split("/").pop()}
+                        </button>
                       ) : (
                         <span className="text-muted-foreground">No file</span>
                       )}
@@ -203,7 +228,6 @@ export function MaterialFilesManagement({
       </Card>
 
       <AddMaterialFileModal
-        sectionId={sectionId}
         materialId={materialId}
         open={addModalOpen}
         onOpenChange={setAddModalOpen}
@@ -211,7 +235,6 @@ export function MaterialFilesManagement({
       />
 
       <EditMaterialFileModal
-        sectionId={sectionId}
         materialId={materialId}
         file={selectedFile}
         open={editModalOpen}

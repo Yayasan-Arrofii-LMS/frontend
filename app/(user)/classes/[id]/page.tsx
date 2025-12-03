@@ -67,11 +67,18 @@ export default function ClassDetailPage() {
   const [showLoginDialog, setShowLoginDialog] = useState(false);
 
   const handleQuizClick = (
-    quiz: { id: number; title: string; totalQuestions: number; max_attempts?: number },
+    quiz: {
+      id: number;
+      title: string;
+      totalQuestions: number;
+      max_attempts?: number;
+    },
     sectionId: number
   ) => {
     // Navigate to quiz detail page
-    router.push(`/classes/${classId}/quizzes/${quiz.id}/detail?sectionId=${sectionId}`);
+    router.push(
+      `/classes/${classId}/quizzes/${quiz.id}/detail?sectionId=${sectionId}`
+    );
   };
 
   useEffect(() => {
@@ -157,16 +164,16 @@ export default function ClassDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <Skeleton className="h-8 w-32 mb-8" />
-        <div className="grid gap-8 lg:grid-cols-3">
-          <div className="lg:col-span-2 space-y-6">
-            <Skeleton className="h-64 w-full rounded-lg" />
-            <Skeleton className="h-12 w-3/4" />
-            <Skeleton className="h-24 w-full" />
+      <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8 max-w-7xl">
+        <Skeleton className="h-8 w-32 mb-4 sm:mb-8" />
+        <div className="grid gap-4 sm:gap-6 lg:gap-8 lg:grid-cols-3">
+          <div className="lg:col-span-2 space-y-4 sm:space-y-6">
+            <Skeleton className="h-48 sm:h-64 w-full rounded-lg" />
+            <Skeleton className="h-10 sm:h-12 w-3/4" />
+            <Skeleton className="h-20 sm:h-24 w-full" />
           </div>
           <div>
-            <Skeleton className="h-96 w-full rounded-lg" />
+            <Skeleton className="h-64 sm:h-96 w-full rounded-lg" />
           </div>
         </div>
       </div>
@@ -175,9 +182,11 @@ export default function ClassDetailPage() {
 
   if (!classData) {
     return (
-      <div className="container mx-auto px-4 py-16 text-center">
-        <AlertCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-        <h2 className="text-2xl font-bold mb-2">Kelas tidak ditemukan</h2>
+      <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-16 text-center max-w-7xl">
+        <AlertCircle className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-4 text-muted-foreground" />
+        <h2 className="text-xl sm:text-2xl font-bold mb-2">
+          Kelas tidak ditemukan
+        </h2>
         <p className="text-muted-foreground mb-6">
           Kelas yang Anda cari tidak tersedia
         </p>
@@ -190,8 +199,8 @@ export default function ClassDetailPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Login Dialog */}
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-7xl">
+      {/* Login Required Dialog */}
       <Dialog open={showLoginDialog} onOpenChange={setShowLoginDialog}>
         <DialogContent>
           <DialogHeader>
@@ -226,15 +235,17 @@ export default function ClassDetailPage() {
       <Button
         variant="ghost"
         onClick={() => router.push("/classes")}
-        className="mb-6"
+        className="mb-4 sm:mb-6"
+        size="sm"
       >
         <ArrowLeft className="h-4 w-4 mr-2" />
-        Kembali ke Daftar Kelas
+        <span className="hidden sm:inline">Kembali ke Daftar Kelas</span>
+        <span className="sm:hidden">Kembali</span>
       </Button>
 
-      <div className="grid gap-8 lg:grid-cols-3">
+      <div className="grid gap-4 sm:gap-6 lg:gap-8 lg:grid-cols-3">
         {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-4 sm:space-y-6">
           {/* Class Header */}
           <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-muted">
             <Image
@@ -247,8 +258,10 @@ export default function ClassDetailPage() {
           </div>
 
           <div>
-            <h1 className="text-4xl font-bold mb-4">{classData.title}</h1>
-            <p className="text-lg text-muted-foreground">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 break-words">
+              {classData.title}
+            </h1>
+            <p className="text-base sm:text-lg text-muted-foreground break-words">
               {classData.description}
             </p>
           </div>
@@ -257,7 +270,9 @@ export default function ClassDetailPage() {
 
           {/* Sections */}
           <div>
-            <h2 className="text-2xl font-bold mb-4">Konten Kelas</h2>
+            <h2 className="text-xl sm:text-2xl font-bold mb-4\">
+              Konten Kelas
+            </h2>
             <div className="space-y-4">
               {sections.length === 0 ? (
                 <Card>

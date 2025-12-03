@@ -3,7 +3,13 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -89,7 +95,8 @@ export default function MyClassesPage() {
             <BookOpen className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
             <h2 className="text-2xl font-bold mb-2">Belum Ada Kelas</h2>
             <p className="text-muted-foreground mb-6">
-              Anda belum mendaftar ke kelas apapun. Mulai belajar dengan mendaftar ke kelas yang tersedia.
+              Anda belum mendaftar ke kelas apapun. Mulai belajar dengan
+              mendaftar ke kelas yang tersedia.
             </p>
             <Button onClick={() => router.push("/classes")}>
               Jelajahi Kelas
@@ -104,7 +111,10 @@ export default function MyClassesPage() {
               const classData = enrollment.class;
               const imageUrl = classData.image_path?.startsWith("http")
                 ? classData.image_path
-                : `${process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "")}/${classData.image_path}`;
+                : `${process.env.NEXT_PUBLIC_API_BASE_URL?.replace(
+                    "/api/v1",
+                    ""
+                  )}/${classData.image_path}`;
 
               return (
                 <Card
@@ -122,14 +132,19 @@ export default function MyClassesPage() {
                     />
                     {/* Role Badge */}
                     <div className="absolute top-2 right-2">
-                      <Badge variant="secondary" className="bg-background/80 backdrop-blur">
+                      <Badge
+                        variant="secondary"
+                        className="bg-background/80 backdrop-blur"
+                      >
                         {enrollment.role}
                       </Badge>
                     </div>
                   </div>
 
                   <CardHeader>
-                    <CardTitle className="line-clamp-1">{classData.name}</CardTitle>
+                    <CardTitle className="line-clamp-1">
+                      {classData.name}
+                    </CardTitle>
                     <CardDescription className="line-clamp-2">
                       {classData.description}
                     </CardDescription>
@@ -143,7 +158,7 @@ export default function MyClassesPage() {
                       </div>
                       <div className="flex items-center gap-1">
                         <Users className="h-4 w-4" />
-                        <span>{classData._count.User_Class} Siswa</span>
+                        <span>{classData._count?.User_Class || 0} Siswa</span>
                       </div>
                     </div>
                   </CardContent>

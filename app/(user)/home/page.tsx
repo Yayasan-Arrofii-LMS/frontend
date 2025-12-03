@@ -3,7 +3,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { ArrowRight, BookOpen, Users, GraduationCap } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useEffect, useState } from "react";
@@ -38,25 +44,29 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <section className="flex flex-1 items-center justify-center px-4 py-12 md:py-24">
+    <div className="flex min-h-screen flex-col overflow-x-hidden">
+      <section className="flex flex-1 items-center justify-center px-4 sm:px-6 py-8 sm:py-12 md:py-24">
         <div className="mx-auto max-w-4xl text-center">
-          <div className="mb-8 inline-flex items-center rounded-full border bg-muted px-4 py-1.5 text-sm">
+          <div className="mb-6 sm:mb-8 inline-flex items-center rounded-full border bg-muted px-3 sm:px-4 py-1.5 text-xs sm:text-sm">
             <GraduationCap className="mr-2 h-4 w-4" />
-            <span>Sekolah Alam Learning Management System</span>
+            <span className="hidden sm:inline">
+              Sekolah Alam Learning Management System
+            </span>
+            <span className="sm:hidden">Sekolah Alam LMS</span>
           </div>
 
-          <h1 className="mb-6 text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
+          <h1 className="mb-4 sm:mb-6 text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight">
             Selamat Datang di{" "}
             <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
               Sekolah Alam
             </span>
           </h1>
 
-          <p className="mb-8 text-lg text-muted-foreground sm:text-xl md:mb-12">
-            Sistem manajemen pembelajaran modern yang dirancang untuk memberdayakan
-            para pendidik dan menginspirasi siswa. Akses kursus Anda, kelola kelas Anda,
-            dan lacak kemajuan Anda semua dalam satu tempat.
+          <p className="mb-6 sm:mb-8 md:mb-12 text-base sm:text-lg md:text-xl text-muted-foreground px-4">
+            Sistem manajemen pembelajaran modern yang dirancang untuk
+            memberdayakan para pendidik dan menginspirasi siswa. Akses kursus
+            Anda, kelola kelas Anda, dan lacak kemajuan Anda semua dalam satu
+            tempat.
           </p>
 
           {!isLoading && !isAuthenticated && (
@@ -95,9 +105,12 @@ export default function HomePage() {
 
           {isLoadingClasses ? (
             <div className="mb-8 overflow-x-auto">
-              <div className="flex gap-6 pb-4" style={{ width: 'max-content' }}>
+              <div className="flex gap-6 pb-4" style={{ width: "max-content" }}>
                 {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-                  <Card key={i} className="overflow-hidden w-[320px] flex-shrink-0">
+                  <Card
+                    key={i}
+                    className="overflow-hidden w-[320px] flex-shrink-0"
+                  >
                     <Skeleton className="aspect-video w-full" />
                     <CardHeader>
                       <Skeleton className="h-6 w-3/4" />
@@ -113,7 +126,7 @@ export default function HomePage() {
             </div>
           ) : classes.length > 0 ? (
             <div className="mb-8 overflow-x-auto">
-              <div className="flex gap-6 pb-4" style={{ width: 'max-content' }}>
+              <div className="flex gap-6 pb-4" style={{ width: "max-content" }}>
                 {classes.map((classItem) => (
                   <Link key={classItem.id} href={`/classes/${classItem.id}`}>
                     <Card className="overflow-hidden transition-shadow hover:shadow-lg w-[320px] flex-shrink-0">
@@ -127,7 +140,9 @@ export default function HomePage() {
                         />
                       </div>
                       <CardHeader>
-                        <CardTitle className="line-clamp-1">{classItem.title}</CardTitle>
+                        <CardTitle className="line-clamp-1">
+                          {classItem.title}
+                        </CardTitle>
                         <CardDescription className="line-clamp-2">
                           {classItem.description}
                         </CardDescription>
@@ -139,12 +154,13 @@ export default function HomePage() {
                             <span>{classItem.teacherName}</span>
                           </div>
                         )}
-                        {classItem.studentCount !== undefined && classItem.studentCount > 0 && (
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Users className="h-4 w-4" />
-                            <span>{classItem.studentCount} students</span>
-                          </div>
-                        )}
+                        {classItem.studentCount !== undefined &&
+                          classItem.studentCount > 0 && (
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <Users className="h-4 w-4" />
+                              <span>{classItem.studentCount} students</span>
+                            </div>
+                          )}
                       </CardContent>
                     </Card>
                   </Link>
@@ -202,8 +218,8 @@ export default function HomePage() {
               </div>
               <h3 className="mb-2 text-xl font-semibold">Dasbor Siswa</h3>
               <p className="text-muted-foreground">
-                Akses semua kursus, tugas, dan sumber daya Anda di satu
-                lokasi terpusat.
+                Akses semua kursus, tugas, dan sumber daya Anda di satu lokasi
+                terpusat.
               </p>
             </div>
           </div>

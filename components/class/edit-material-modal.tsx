@@ -66,7 +66,16 @@ export function EditMaterialModal({
       });
       router.push(`${basePath}/${classId}/material/edit?${params}`);
     }
-  }, [isOpen, preference, classId, sectionId, material, basePath, onClose, router]);
+  }, [
+    isOpen,
+    preference,
+    classId,
+    sectionId,
+    material,
+    basePath,
+    onClose,
+    router,
+  ]);
 
   const handleExpand = () => {
     setPreference("fullscreen");
@@ -149,7 +158,10 @@ export function EditMaterialModal({
           </div>
         </DialogHeader>
 
-        <Tabs defaultValue="content" className="flex-1 overflow-hidden flex flex-col">
+        <Tabs
+          defaultValue="content"
+          className="flex-1 overflow-hidden flex flex-col"
+        >
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="content">Konten Materi</TabsTrigger>
             <TabsTrigger value="files">File Materi</TabsTrigger>
@@ -191,7 +203,8 @@ export function EditMaterialModal({
                     rows={8}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Konten bisa berupa teks, link YouTube, link gambar, link PDF, dll.
+                    Konten bisa berupa teks, link YouTube, link gambar, link
+                    PDF, dll.
                   </p>
                 </div>
 
@@ -229,7 +242,7 @@ export function EditMaterialModal({
           </TabsContent>
 
           <TabsContent value="files" className="flex-1 overflow-y-auto mt-4">
-            <MaterialFilesManagement sectionId={sectionId} materialId={material.id} />
+            <MaterialFilesManagement materialId={material.id} />
           </TabsContent>
         </Tabs>
       </DialogContent>
