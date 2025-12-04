@@ -157,8 +157,8 @@ export async function fetchClassDetail(classId: string): Promise<ClassDetail> {
       title: classInfo.name,
       description: classInfo.description,
       coverImage: classInfo.image_path_relative,
-      teacherId: "teacher-1", // TODO: Get from API when available
-      teacherName: "Budi Santoso", // TODO: Get from API when available
+      teacherId: classInfo.teachers[0]?.id || "unknown",
+      teacherName: classInfo.teachers[0]?.name || "Unknown Teacher",
       studentCount: classInfo.students.length,
       sections: sectionsWithMaterials,
       createdAt: new Date().toISOString(), // TODO: Get from API when available

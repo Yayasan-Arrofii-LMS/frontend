@@ -18,6 +18,14 @@ const nextConfig: NextConfig = {
         pathname: "/files/public/**",
       },
     ],
+    minimumCacheTTL: 60,
+    dangerouslyAllowSVG: true,
+    contentDispositionType: 'attachment',
+  },
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '10mb',
+    },
   },
 };
 

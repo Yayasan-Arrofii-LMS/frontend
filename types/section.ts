@@ -334,6 +334,13 @@ export interface SavedAnswersResponse {
   data: SavedAnswersData;
 }
 
+// Teacher from API
+export interface Teacher {
+  id: string;
+  name: string;
+  email: string;
+}
+
 // Class from API
 export interface Class {
   id: number;
@@ -341,6 +348,7 @@ export interface Class {
   description: string;
   image_path: string;
   image_path_relative: string;
+  teachers: Teacher[];
   students: unknown[];
 }
 

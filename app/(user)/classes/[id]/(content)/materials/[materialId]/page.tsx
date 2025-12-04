@@ -9,7 +9,9 @@ import { Award, FileDown, Eye, Download } from "lucide-react";
 import { fetchStudentClassDetail } from "@/lib/api/classes";
 import {
   fetchSectionMaterials,
+  fetchStudentMaterialFiles,
   StudentMaterial,
+  StudentMaterialFile,
 } from "@/lib/api/student-materials";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -22,34 +24,17 @@ export default function MaterialDetailPage() {
 
   const [currentMaterial, setCurrentMaterial] =
     useState<StudentMaterial | null>(null);
+  const [materialFiles, setMaterialFiles] = useState<StudentMaterialFile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const handlePreviewFile = async (fileUrl: string, fileName: string) => {
     try {
-      console.log("Re-fetching material data to get fresh token...");
+      console.log("Re-fetching material files to get fresh token...");
 
-      const classData = await fetchStudentClassDetail(classId);
-      let currentSectionId: number | null = null;
-      for (const section of classData.sections) {
-        const material = section.materials.find((m) => m.id === materialId);
-        if (material) {
-          currentSectionId = section.id;
-          break;
-        }
-      }
-
-      if (!currentSectionId) {
-        throw new Error("Section not found");
-      }
-
-      const materials = await fetchSectionMaterials(currentSectionId);
-      const material = materials.find((m) => m.id === materialId);
-
-      if (!material) {
-        throw new Error("Material not found");
-      }
-
-      const freshFile = (material.Material_File || []).find((f) => f.type === fileName);
+      // Fetch fresh files with new tokens
+      const files = await fetchStudentMaterialFiles(materialId);
+      const freshFile = files.find((f) => f.title === fileName);
+      
       if (!freshFile) {
         throw new Error("File not found");
       }
@@ -64,32 +49,13 @@ export default function MaterialDetailPage() {
 
   const handleDownloadFile = async (fileUrl: string, fileName: string) => {
     try {
-      // Refresh the URL to get a new token by re-fetching the material data
-      console.log("Re-fetching material data to get fresh token...");
+      // Refresh the URL to get a new token by re-fetching the material files
+      console.log("Re-fetching material files to get fresh token...");
 
-      const classData = await fetchStudentClassDetail(classId);
-      let currentSectionId: number | null = null;
-      for (const section of classData.sections) {
-        const material = section.materials.find((m) => m.id === materialId);
-        if (material) {
-          currentSectionId = section.id;
-          break;
-        }
-      }
-
-      if (!currentSectionId) {
-        throw new Error("Section not found");
-      }
-
-      const materials = await fetchSectionMaterials(currentSectionId);
-      const material = materials.find((m) => m.id === materialId);
-
-      if (!material) {
-        throw new Error("Material not found");
-      }
-
-      // Find the file with fresh URL
-      const freshFile = (material.Material_File || []).find((f) => f.type === fileName);
+      // Fetch fresh files with new tokens
+      const files = await fetchStudentMaterialFiles(materialId);
+      const freshFile = files.find((f) => f.title === fileName);
+      
       if (!freshFile) {
         throw new Error("File not found");
       }
@@ -111,7 +77,7 @@ export default function MaterialDetailPage() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = freshFile.type || fileName;
+      a.download = freshFile.title || fileName;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -143,6 +109,16 @@ export default function MaterialDetailPage() {
           const material = materials.find((m) => m.id === materialId);
           if (material) {
             setCurrentMaterial(material);
+            
+            // Fetch material files separately from student endpoint
+            try {
+              const files = await fetchStudentMaterialFiles(materialId);
+              setMaterialFiles(files);
+            } catch (fileError) {
+              console.error("Failed to load material files:", fileError);
+              // Don't fail the whole page if files fail to load
+              setMaterialFiles([]);
+            }
           } else {
             toast.error("Materi tidak ditemukan");
             router.push(`/classes/${classId}`);
@@ -198,13 +174,13 @@ export default function MaterialDetailPage() {
           {currentMaterial.content}
         </div>
 
-        {currentMaterial.Material_File?.length > 0 && (
+        {materialFiles.length > 0 && (
           <>
             <Separator className="my-8" />
             <div>
               <h3 className="text-xl font-semibold mb-4">File Lampiran</h3>
               <div className="space-y-3">
-                {(currentMaterial.Material_File || []).map((file) => (
+                {materialFiles.map((file) => (
                   <div
                     key={file.id}
                     className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3 sm:p-4 border rounded-lg"
@@ -212,7 +188,7 @@ export default function MaterialDetailPage() {
                     <FileDown className="h-5 w-5 text-muted-foreground shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-foreground">
-                        File {file.type}
+                        {file.title}
                       </p>
                       <p className="text-sm text-muted-foreground">
                         Klik untuk melihat atau mengunduh
@@ -222,7 +198,7 @@ export default function MaterialDetailPage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => handlePreviewFile(file.url, file.type)}
+                        onClick={() => handlePreviewFile(file.url, file.title)}
                         className="flex-1 sm:flex-none"
                       >
                         <Eye className="h-4 w-4 sm:mr-2" />
@@ -230,7 +206,7 @@ export default function MaterialDetailPage() {
                       </Button>
                       <Button
                         size="sm"
-                        onClick={() => handleDownloadFile(file.url, file.type)}
+                        onClick={() => handleDownloadFile(file.url, file.title)}
                         className="flex-1 sm:flex-none"
                       >
                         <Download className="h-4 w-4 sm:mr-2" />
