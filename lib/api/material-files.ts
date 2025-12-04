@@ -3,7 +3,8 @@ import { authenticatedFetch, ApiResponse } from "./client";
 export interface MaterialFile {
   id: number;
   title: string;
-  file_path: string;
+  file_path?: string; // Old format
+  path?: string; // New format from API
   createdAt: string;
   updatedAt: string;
   materialId: number;
@@ -25,9 +26,11 @@ export interface MaterialFileResponse {
 export async function fetchMaterialFiles(
   materialId: number
 ): Promise<MaterialFile[]> {
-  const response = await authenticatedFetch<MaterialFile[]>(
-    `/classes/sections/materials/${materialId}/files`
-  );
+  console.log('[API] Fetching material files for materialId:', materialId);
+  const endpoint = `/classes/sections/materials/${materialId}/files`;
+  console.log('[API] Endpoint:', endpoint);
+  const response = await authenticatedFetch<MaterialFile[]>(endpoint);
+  console.log('[API] Response data:', response.data);
   return response.data;
 }
 

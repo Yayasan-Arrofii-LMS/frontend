@@ -62,17 +62,25 @@ export function MaterialFilesManagement({
   const loadFiles = async () => {
     try {
       setIsLoading(true);
+      console.log('[MaterialFilesManagement] Loading files for materialId:', materialId);
       const data = await fetchMaterialFiles(materialId);
+      console.log('[MaterialFilesManagement] Loaded files count:', data.length);
+      console.log('[MaterialFilesManagement] Files data:', data);
+      // API endpoint already filters by materialId, so we can use data directly
       setFiles(data);
     } catch (error) {
       console.error("Gagal memuat file materi:", error);
       toast.error("Gagal memuat file materi");
+      setFiles([]); // Clear files on error
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
+    // Reset files when materialId changes
+    setFiles([]);
+    setIsLoading(true);
     loadFiles();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [materialId]);
@@ -126,7 +134,7 @@ export function MaterialFilesManagement({
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = file.file_path.split("/").pop() || "download";
+      a.download = (file.path || file.file_path || "download").split("/").pop() || "download";
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -178,13 +186,13 @@ export function MaterialFilesManagement({
                   <TableRow key={file.id}>
                     <TableCell className="font-medium">{file.title}</TableCell>
                     <TableCell>
-                      {file.file_path ? (
+                      {(file.path || file.file_path) ? (
                         <button
                           onClick={() => handleDownloadFile(file)}
                           className="text-primary hover:underline flex items-center gap-2"
                         >
                           <FileDown className="h-4 w-4" />
-                          {file.file_path.split("/").pop()}
+                          {(file.path || file.file_path)!.split("/").pop()}
                         </button>
                       ) : (
                         <span className="text-muted-foreground">No file</span>

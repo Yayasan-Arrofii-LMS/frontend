@@ -49,7 +49,7 @@ export default function MaterialDetailPage() {
         throw new Error("Material not found");
       }
 
-      const freshFile = material.Material_File.find((f) => f.type === fileName);
+      const freshFile = (material.Material_File || []).find((f) => f.type === fileName);
       if (!freshFile) {
         throw new Error("File not found");
       }
@@ -89,7 +89,7 @@ export default function MaterialDetailPage() {
       }
 
       // Find the file with fresh URL
-      const freshFile = material.Material_File.find((f) => f.type === fileName);
+      const freshFile = (material.Material_File || []).find((f) => f.type === fileName);
       if (!freshFile) {
         throw new Error("File not found");
       }
@@ -198,13 +198,13 @@ export default function MaterialDetailPage() {
           {currentMaterial.content}
         </div>
 
-        {currentMaterial.Material_File.length > 0 && (
+        {currentMaterial.Material_File?.length > 0 && (
           <>
             <Separator className="my-8" />
             <div>
               <h3 className="text-xl font-semibold mb-4">File Lampiran</h3>
               <div className="space-y-3">
-                {currentMaterial.Material_File.map((file) => (
+                {(currentMaterial.Material_File || []).map((file) => (
                   <div
                     key={file.id}
                     className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3 sm:p-4 border rounded-lg"

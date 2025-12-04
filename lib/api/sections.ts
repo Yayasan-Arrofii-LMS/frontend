@@ -98,11 +98,34 @@ export async function fetchClassDetail(classId: string): Promise<ClassDetail> {
       fetchSections(classId),
     ]);
 
-    // Fetch materials for each section
+    // Fetch materials for each section only if API didn't include them
     const sectionsWithMaterials = await Promise.all(
       sections.map(async (section) => {
         try {
-          const materials = await fetchMaterials(section.id);
+          // If backend already returned materials in the section object, use it
+          if (Array.isArray((section as any).Material) && (section as any).Material.length >= 0) {
+            // Ensure Material_File exists on each material (fallback to empty array)
+            const safeMaterials = (section as any).Material.map((m: any) => ({
+              ...m,
+              Material_File: Array.isArray(m.Material_File) ? m.Material_File : [],
+            }));
+
+            return {
+              ...section,
+              Material: safeMaterials,
+            };
+          }
+
+          // Otherwise fetch materials for this section from API
+          const materialsResponse = await apiCall<MaterialsResponse>(
+            `/classes/${classId}/sections/${section.id}/materials`
+          );
+
+          const materials = materialsResponse.data.map((m: any) => ({
+            ...m,
+            Material_File: Array.isArray(m.Material_File) ? m.Material_File : [],
+          }));
+
           return {
             ...section,
             Material: materials,
@@ -113,7 +136,10 @@ export async function fetchClassDetail(classId: string): Promise<ClassDetail> {
             error
           );
           // Return section with empty materials on error
-          return section;
+          return {
+            ...section,
+            Material: [],
+          };
         }
       })
     );
