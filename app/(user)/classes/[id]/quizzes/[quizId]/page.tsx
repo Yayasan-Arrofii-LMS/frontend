@@ -534,9 +534,9 @@ export default function QuizPage() {
                   </div>
                   <div className="p-3 bg-muted rounded-lg text-center">
                     <div className="text-2xl font-bold">
-                      {result.attemp_answer?.filter((answer: any) =>
+                      {result.attemp_answer?.filter((answer: { attemp_multiple_answer?: { quiz_answer?: { is_correct: boolean } }[] }) =>
                         answer.attemp_multiple_answer?.some(
-                          (ma: any) => ma.quiz_answer?.is_correct
+                          (ma: { quiz_answer?: { is_correct: boolean } }) => ma.quiz_answer?.is_correct
                         )
                       ).length || 0}
                     </div>

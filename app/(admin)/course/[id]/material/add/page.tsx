@@ -75,13 +75,11 @@ export default function AddMaterialPage({
 
         for (const stagedFile of stagedFiles) {
           try {
-            await createMaterialFile(
-              classId,
-              sectionId,
-              newMaterial.id,
-              stagedFile.file,
-              stagedFile.title
-            );
+            const formData = new FormData();
+            formData.append('file', stagedFile.file);
+            formData.append('title', stagedFile.title);
+            
+            await createMaterialFile(newMaterial.id, formData);
             successCount++;
           } catch (error) {
             console.error("Failed to upload file:", stagedFile.title, error);

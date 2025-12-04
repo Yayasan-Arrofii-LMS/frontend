@@ -226,10 +226,8 @@ export function MaterialFormWithTabs({
             <TabsContent value="files" className="space-y-4">
               {materialId ? (
                 <MaterialFilesManagement
-                  classId={classId}
-                  sectionId={sectionId}
+                  key={`material-files-${materialId}`}
                   materialId={materialId}
-                  onUpdate={onFilesUpdate}
                 />
               ) : (
                 <div className="space-y-4">

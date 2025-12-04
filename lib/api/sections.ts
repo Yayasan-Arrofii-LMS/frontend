@@ -103,12 +103,16 @@ export async function fetchClassDetail(classId: string): Promise<ClassDetail> {
       sections.map(async (section) => {
         try {
           // If backend already returned materials in the section object, use it
-          if (Array.isArray((section as any).Material) && (section as any).Material.length >= 0) {
+          const sectionWithMaterial = section as Section & { Material?: unknown[] };
+          if (Array.isArray(sectionWithMaterial.Material) && sectionWithMaterial.Material.length >= 0) {
             // Ensure Material_File exists on each material (fallback to empty array)
-            const safeMaterials = (section as any).Material.map((m: any) => ({
-              ...m,
-              Material_File: Array.isArray(m.Material_File) ? m.Material_File : [],
-            }));
+            const safeMaterials = sectionWithMaterial.Material.map((m: unknown) => {
+              const material = m as Record<string, unknown>;
+              return {
+                ...material,
+                Material_File: Array.isArray(material.Material_File) ? material.Material_File : [],
+              } as Material;
+            });
 
             return {
               ...section,
@@ -121,10 +125,13 @@ export async function fetchClassDetail(classId: string): Promise<ClassDetail> {
             `/classes/${classId}/sections/${section.id}/materials`
           );
 
-          const materials = materialsResponse.data.map((m: any) => ({
-            ...m,
-            Material_File: Array.isArray(m.Material_File) ? m.Material_File : [],
-          }));
+          const materials = materialsResponse.data.map((m: unknown) => {
+            const material = m as Record<string, unknown>;
+            return {
+              ...material,
+              Material_File: Array.isArray(material.Material_File) ? material.Material_File : [],
+            } as Material;
+          });
 
           return {
             ...section,
