@@ -206,17 +206,6 @@ export function ClassGrid({
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
-
-                  {/* Student Count Badge */}
-                  {classItem.studentCount !== undefined && (
-                    <Badge
-                      variant="secondary"
-                      className="absolute bottom-2 left-2 bg-white text-gray-900 backdrop-blur-sm shadow-md"
-                    >
-                      <Users className="mr-1 h-3 w-3 text-gray-900" />
-                      {classItem.studentCount} Siswa
-                    </Badge>
-                  )}
                 </div>
 
                 {/* Card Content */}
@@ -224,23 +213,9 @@ export function ClassGrid({
                   <h3 className="font-semibold text-lg mb-2 line-clamp-1">
                     {classItem.title}
                   </h3>
-                  <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                  <p className="text-sm text-muted-foreground line-clamp-2">
                     {classItem.description}
                   </p>
-
-                  {/* Footer Info */}
-                  <div className="pt-3 border-t border-border">
-                    <div className="text-xs text-muted-foreground">
-                      {new Date(classItem.createdAt).toLocaleDateString(
-                        "id-ID",
-                        {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        }
-                      )}
-                    </div>
-                  </div>
                 </CardContent>
               </Card>
             ))}

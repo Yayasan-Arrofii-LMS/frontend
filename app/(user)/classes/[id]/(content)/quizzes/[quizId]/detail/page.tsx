@@ -124,6 +124,13 @@ export default function QuizDetailPage() {
   const canStartQuiz = quizData.attemptsRemaining > 0 || quizData.max_attempts === 0;
   const hasOngoingAttempt = quizData.ongoingAttempt !== null;
 
+  // Find isPassed status for best score from attempts
+  const bestScoreAttempt = quizData.bestScore !== null && quizData.bestScore !== undefined
+    ? quizData.attempts.find(attempt => attempt.score === quizData.bestScore)
+    : null;
+  const isBestScorePassed = bestScoreAttempt?.isPassed ?? 
+    (quizData.bestScore !== null ? quizData.bestScore >= quizData.passing_grade : false);
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       {/* Quiz Header */}
@@ -202,7 +209,7 @@ export default function QuizDetailPage() {
           <Separator />
 
           {/* Best Score */}
-          {quizData.bestScore !== null && (
+          {quizData.bestScore !== null && quizData.bestScore !== undefined && (
             <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -214,7 +221,7 @@ export default function QuizDetailPage() {
                     </p>
                   </div>
                 </div>
-                {quizData.bestScore >= quizData.passing_grade ? (
+                {isBestScorePassed ? (
                   <Badge variant="default" className="bg-green-500">
                     <CheckCircle2 className="h-4 w-4 mr-1" />
                     Lulus
@@ -331,7 +338,7 @@ export default function QuizDetailPage() {
                       <div className="flex items-center gap-2 mb-1">
                         <p className="text-2xl font-bold">{attempt.score}</p>
                         {attempt.is_graded ? (
-                          attempt.score >= quizData.passing_grade ? (
+                          (attempt.isPassed !== undefined ? attempt.isPassed : attempt.score >= quizData.passing_grade) ? (
                             <Badge variant="default" className="bg-green-500">
                               <CheckCircle2 className="h-3 w-3 mr-1" />
                               Lulus

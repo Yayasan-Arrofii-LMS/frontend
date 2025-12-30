@@ -6,6 +6,8 @@ export interface QuizAttemptSummary {
   is_graded: boolean;
   started_at: string;
   submitted_at: string | null;
+  percentage?: number;
+  isPassed?: boolean;
 }
 
 export interface QuizDetail {
@@ -18,9 +20,6 @@ export interface QuizDetail {
   xp: number;
   sectionId: number;
   createdAt: string;
-  _count: {
-    quiz_question: number;
-  };
   totalQuestions: number;
   attemptsUsed: number;
   attemptsRemaining: number;

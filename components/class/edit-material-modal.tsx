@@ -250,10 +250,12 @@ export function EditMaterialModal({
           </TabsContent>
 
           <TabsContent value="files" className="flex-1 overflow-y-auto mt-4">
-            <MaterialFilesManagement 
-              key={`material-files-${material.id}`}
-              materialId={material.id} 
-            />
+            {activeTab === "files" && (
+              <MaterialFilesManagement 
+                key={`material-files-${material.id}`}
+                materialId={material.id} 
+              />
+            )}
           </TabsContent>
         </Tabs>
       </DialogContent>

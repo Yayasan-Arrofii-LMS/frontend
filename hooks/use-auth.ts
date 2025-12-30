@@ -65,31 +65,18 @@ export function useAuth() {
           });
         }
       } else {
-        // If profile API fails, use localStorage data
-        if (userInfo) {
-          setUser({
-            id: "1",
-            name: userInfo.name || "User",
-            email: userInfo.email || "",
-            username: userInfo.username || "",
-            role: userInfo.role || "Student",
-            profilePicture: null,
-          });
-        }
+        // If profile API returns error (401, 500, etc.), clear token
+        console.warn("Profile API failed, clearing auth token");
+        removeAuthToken();
+        setIsAuthenticated(false);
+        setUser(null);
       }
     } catch (error) {
       console.error("Failed to fetch user profile:", error);
-      // Use localStorage data as fallback
-      if (userInfo) {
-        setUser({
-          id: "1",
-          name: userInfo.name || "User",
-          email: userInfo.email || "",
-          username: userInfo.username || "",
-          role: userInfo.role || "Student",
-          profilePicture: null,
-        });
-      }
+      // Clear token on network error to prevent stuck tokens
+      removeAuthToken();
+      setIsAuthenticated(false);
+      setUser(null);
     } finally {
       setIsLoading(false);
     }

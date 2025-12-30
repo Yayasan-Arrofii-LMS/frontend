@@ -52,9 +52,9 @@ export function PublicNavbar() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between px-4">
-        <div className="flex items-center gap-8">
-          <Link href="/home" className="flex items-center gap-2">
+      <div className="w-full flex h-16 items-center px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center gap-4 sm:gap-8 flex-1 min-w-0">
+          <Link href="/home" className="flex items-center gap-2 flex-shrink-0">
             <GraduationCap className="h-6 w-6 text-primary" />
             <span className="hidden font-bold sm:inline-block">
               Sekolah Alam
@@ -66,7 +66,7 @@ export function PublicNavbar() {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`text-sm font-medium transition-colors hover:text-primary ${
+                className={`text-sm font-medium transition-colors hover:text-primary whitespace-nowrap ${
                   pathname === link.href
                     ? "text-foreground"
                     : "text-muted-foreground"
@@ -78,7 +78,7 @@ export function PublicNavbar() {
           </nav>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <ModeToggle />
 
           {isAuthenticated ? (

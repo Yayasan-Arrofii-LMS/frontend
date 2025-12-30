@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ActiveThemeProvider } from "@/components/active-theme";
 import { ThemeTransitionHandler } from "@/components/theme-transition-handler";
+import { AuthProvider } from "@/components/auth-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { cookies } from "next/headers";
 import { cn } from "@/lib/utils";
@@ -64,8 +65,10 @@ export default async function RootLayout({
         >
           <ThemeTransitionHandler />
           <ActiveThemeProvider initialTheme={activeThemeValues}>
-            {children}
-            <Toaster />
+            <AuthProvider>
+              {children}
+              <Toaster />
+            </AuthProvider>
           </ActiveThemeProvider>
         </ThemeProvider>
       </body>
