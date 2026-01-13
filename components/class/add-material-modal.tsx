@@ -20,6 +20,7 @@ import { MaterialFilesManagement } from "@/components/class/material-files-manag
 import { toast } from "sonner";
 import { Maximize2 } from "lucide-react";
 import { useFullscreenPreference } from "@/hooks/use-fullscreen-preference";
+import { isYouTubeUrl } from "@/lib/utils/youtube";
 
 interface AddMaterialModalProps {
   isOpen: boolean;
@@ -43,6 +44,7 @@ export function AddMaterialModal({
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [xp, setXp] = useState("");
+  const [videoLink, setVideoLink] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<"content" | "files">("content");
   const [createdMaterialId, setCreatedMaterialId] = useState<number | null>(null);
@@ -84,12 +86,18 @@ export function AddMaterialModal({
       return;
     }
 
+    if (videoLink.trim() && !isYouTubeUrl(videoLink.trim())) {
+      toast.error("Link video harus berupa URL YouTube yang valid");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const newMaterial = await createMaterial(classId, sectionId, {
         title: title.trim(),
         content: content.trim(),
         xp: xpValue,
+        video_link: videoLink.trim() || undefined,
       });
       toast.success("Materi berhasil ditambahkan");
 
@@ -111,6 +119,7 @@ export function AddMaterialModal({
       setTitle("");
       setContent("");
       setXp("");
+      setVideoLink("");
       setCreatedMaterialId(null);
       setActiveTab("content");
       onClose();
@@ -211,6 +220,21 @@ export function AddMaterialModal({
                   />
                   <p className="text-xs text-muted-foreground">
                     XP yang didapat siswa setelah menyelesaikan materi ini
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="material-video-link">Link Video YouTube (Opsional)</Label>
+                  <Input
+                    id="material-video-link"
+                    type="url"
+                    placeholder="Contoh: https://youtu.be/Mm3-gk9bdiE atau https://www.youtube.com/watch?v=..."
+                    value={videoLink}
+                    onChange={(e) => setVideoLink(e.target.value)}
+                    disabled={isSubmitting || !!createdMaterialId}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Hanya link video YouTube yang diperbolehkan
                   </p>
                 </div>
               </div>

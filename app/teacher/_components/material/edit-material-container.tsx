@@ -6,6 +6,7 @@ import { updateMaterial } from "@/lib/api/sections";
 import { toast } from "sonner";
 import { useFullscreenPreference } from "@/hooks/use-fullscreen-preference";
 import { MaterialForm } from "./material-form";
+import { isYouTubeUrl } from "@/lib/utils/youtube";
 
 interface EditMaterialContainerProps {
   params: Promise<{ id: string }>;
@@ -15,6 +16,7 @@ interface EditMaterialContainerProps {
     title: string; 
     content: string; 
     xp?: string;
+    video_link?: string;
   }>;
 }
 
@@ -26,7 +28,8 @@ export function EditMaterialContainer({ params, searchParams }: EditMaterialCont
     materialId: materialIdStr, 
     title: initialTitle, 
     content: initialContent, 
-    xp: initialXp 
+    xp: initialXp,
+    video_link: initialVideoLink
   } = searchParamsResolved;
   
   const sectionId = parseInt(sectionIdStr);
@@ -37,6 +40,7 @@ export function EditMaterialContainer({ params, searchParams }: EditMaterialCont
   const [title, setTitle] = useState(decodeURIComponent(initialTitle || ""));
   const [content, setContent] = useState(decodeURIComponent(initialContent || ""));
   const [xp, setXp] = useState(initialXp ? decodeURIComponent(initialXp) : "");
+  const [videoLink, setVideoLink] = useState(initialVideoLink ? decodeURIComponent(initialVideoLink) : "");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -63,12 +67,18 @@ export function EditMaterialContainer({ params, searchParams }: EditMaterialCont
       return;
     }
 
+    if (videoLink.trim() && !isYouTubeUrl(videoLink.trim())) {
+      toast.error("Link video harus berupa URL YouTube yang valid");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       await updateMaterial(classId, sectionId, materialId, {
         title: title.trim(),
         content: content.trim(),
         xp: xpValue,
+        video_link: videoLink.trim() || undefined,
       });
       toast.success("Materi berhasil diperbarui");
       setPreference("modal");
@@ -97,10 +107,12 @@ export function EditMaterialContainer({ params, searchParams }: EditMaterialCont
       title={title}
       content={content}
       xp={xp}
+      videoLink={videoLink}
       isSubmitting={isSubmitting}
       onTitleChange={setTitle}
       onContentChange={setContent}
       onXpChange={setXp}
+      onVideoLinkChange={setVideoLink}
       onSubmit={handleSubmit}
       onMinimize={handleMinimize}
       onBack={handleBack}

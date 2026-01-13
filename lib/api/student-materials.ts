@@ -15,6 +15,7 @@ export interface StudentMaterial {
   title: string;
   content: string;
   xp: number;
+  video_link?: string | null;
   createdAt: string;
   updatedAt: string;
   sectionId: number;

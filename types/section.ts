@@ -147,6 +147,7 @@ export interface Material {
   title: string;
   content: string;
   xp?: number;
+  video_link?: string;
   sectionId: number;
   createdAt: string;
   updatedAt: string;
@@ -207,6 +208,7 @@ export interface CreateMaterialInput {
   title: string;
   content: string;
   xp?: number;
+  video_link?: string;
   order?: number;
 }
 
@@ -214,6 +216,7 @@ export interface UpdateMaterialInput {
   title?: string;
   content?: string;
   xp?: number;
+  video_link?: string;
   order?: number;
 }
 

@@ -16,10 +16,12 @@ interface MaterialFormProps {
   title: string;
   content: string;
   xp: string;
+  videoLink: string;
   isSubmitting: boolean;
   onTitleChange: (value: string) => void;
   onContentChange: (value: string) => void;
   onXpChange: (value: string) => void;
+  onVideoLinkChange: (value: string) => void;
   onSubmit: (e: React.FormEvent) => void;
   onMinimize: () => void;
   onBack: () => void;
@@ -30,10 +32,12 @@ export function MaterialForm({
   title,
   content,
   xp,
+  videoLink,
   isSubmitting,
   onTitleChange,
   onContentChange,
   onXpChange,
+  onVideoLinkChange,
   onSubmit,
   onMinimize,
   onBack,
@@ -120,6 +124,21 @@ export function MaterialForm({
               />
               <p className="text-xs text-muted-foreground">
                 XP yang akan didapatkan siswa setelah menyelesaikan materi ini
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="video-link">Link Video YouTube (Opsional)</Label>
+              <Input
+                id="video-link"
+                type="url"
+                value={videoLink}
+                onChange={(e) => onVideoLinkChange(e.target.value)}
+                placeholder="Contoh: https://youtu.be/Mm3-gk9bdiE atau https://www.youtube.com/watch?v=..."
+                disabled={isSubmitting}
+              />
+              <p className="text-xs text-muted-foreground">
+                Hanya link video YouTube yang diperbolehkan
               </p>
             </div>
 

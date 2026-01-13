@@ -21,6 +21,7 @@ import { MaterialFilesManagement } from "@/components/class/material-files-manag
 import { toast } from "sonner";
 import { Maximize2 } from "lucide-react";
 import { useFullscreenPreference } from "@/hooks/use-fullscreen-preference";
+import { isYouTubeUrl } from "@/lib/utils/youtube";
 
 interface EditMaterialModalProps {
   isOpen: boolean;
@@ -48,6 +49,7 @@ export function EditMaterialModal({
   const [title, setTitle] = useState(material.title);
   const [content, setContent] = useState(material.content);
   const [xp, setXp] = useState(material.xp?.toString() || "");
+  const [videoLink, setVideoLink] = useState(material.video_link || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<"content" | "files">(defaultTab);
 
@@ -55,6 +57,7 @@ export function EditMaterialModal({
     setTitle(material.title);
     setContent(material.content);
     setXp(material.xp?.toString() || "");
+    setVideoLink(material.video_link || "");
     setActiveTab(defaultTab);
   }, [material, defaultTab]);
 
@@ -67,6 +70,7 @@ export function EditMaterialModal({
         title: encodeURIComponent(material.title),
         content: encodeURIComponent(material.content),
         ...(material.xp && { xp: material.xp.toString() }),
+        ...(material.video_link && { video_link: encodeURIComponent(material.video_link) }),
         ...(activeTab === "files" && { openFilesTab: "true" }),
       });
       router.push(`${basePath}/${classId}/material/edit?${params}`);
@@ -92,6 +96,7 @@ export function EditMaterialModal({
       title: encodeURIComponent(material.title),
       content: encodeURIComponent(material.content),
       ...(material.xp && { xp: material.xp.toString() }),
+      ...(material.video_link && { video_link: encodeURIComponent(material.video_link) }),
       ...(activeTab === "files" && { openFilesTab: "true" }),
     });
     router.push(`${basePath}/${classId}/material/edit?${params}`);
@@ -121,12 +126,18 @@ export function EditMaterialModal({
       return;
     }
 
+    if (videoLink.trim() && !isYouTubeUrl(videoLink.trim())) {
+      toast.error("Link video harus berupa URL YouTube yang valid");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       await updateMaterial(classId, sectionId, material.id, {
         title: title.trim(),
         content: content.trim(),
         xp: xpValue,
+        video_link: videoLink.trim() || undefined,
       });
       toast.success("Materi berhasil diperbarui");
       onUpdate();
@@ -229,6 +240,21 @@ export function EditMaterialModal({
                   />
                   <p className="text-xs text-muted-foreground">
                     XP yang didapat siswa setelah menyelesaikan materi ini
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-material-video-link">Link Video YouTube (Opsional)</Label>
+                  <Input
+                    id="edit-material-video-link"
+                    type="url"
+                    placeholder="Contoh: https://youtu.be/Mm3-gk9bdiE atau https://www.youtube.com/watch?v=..."
+                    value={videoLink}
+                    onChange={(e) => setVideoLink(e.target.value)}
+                    disabled={isSubmitting}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Hanya link video YouTube yang diperbolehkan
                   </p>
                 </div>
               </div>

@@ -15,6 +15,7 @@ import {
 } from "@/lib/api/student-materials";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { extractYouTubeVideoId, getYouTubeEmbedUrl } from "@/lib/utils/youtube";
 
 export default function MaterialDetailPage() {
   const params = useParams();
@@ -173,6 +174,41 @@ export default function MaterialDetailPage() {
         <div className="whitespace-pre-wrap leading-relaxed">
           {currentMaterial.content}
         </div>
+
+        {currentMaterial.video_link && (
+          <>
+            <Separator className="my-8" />
+            <div className="not-prose">
+              <h3 className="text-xl font-semibold mb-4">Video Pembelajaran</h3>
+              {(() => {
+                const videoId = extractYouTubeVideoId(currentMaterial.video_link);
+                if (videoId) {
+                  return (
+                    <div className="aspect-video w-full rounded-lg overflow-hidden bg-muted">
+                      <iframe
+                        width="100%"
+                        height="100%"
+                        src={getYouTubeEmbedUrl(videoId)}
+                        title="YouTube video player"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowFullScreen
+                        className="border-0"
+                      />
+                    </div>
+                  );
+                } else {
+                  return (
+                    <div className="p-4 border rounded-lg bg-muted/50">
+                      <p className="text-sm text-muted-foreground">
+                        Link video: {currentMaterial.video_link}
+                      </p>
+                    </div>
+                  );
+                }
+              })()}
+            </div>
+          </>
+        )}
 
         {materialFiles.length > 0 && (
           <>

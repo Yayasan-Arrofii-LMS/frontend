@@ -6,6 +6,7 @@ import { createMaterial } from "@/lib/api/sections";
 import { toast } from "sonner";
 import { useFullscreenPreference } from "@/hooks/use-fullscreen-preference";
 import { MaterialForm } from "./material-form";
+import { isYouTubeUrl } from "@/lib/utils/youtube";
 
 interface AddMaterialContainerProps {
   params: Promise<{ id: string }>;
@@ -22,6 +23,7 @@ export function AddMaterialContainer({ params, searchParams }: AddMaterialContai
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [xp, setXp] = useState("");
+  const [videoLink, setVideoLink] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -48,12 +50,18 @@ export function AddMaterialContainer({ params, searchParams }: AddMaterialContai
       return;
     }
 
+    if (videoLink.trim() && !isYouTubeUrl(videoLink.trim())) {
+      toast.error("Link video harus berupa URL YouTube yang valid");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       await createMaterial(classId, sectionId, {
         title: title.trim(),
         content: content.trim(),
         xp: xpValue,
+        video_link: videoLink.trim() || undefined,
       });
       toast.success("Materi berhasil ditambahkan");
       setPreference("modal");
@@ -82,10 +90,12 @@ export function AddMaterialContainer({ params, searchParams }: AddMaterialContai
       title={title}
       content={content}
       xp={xp}
+      videoLink={videoLink}
       isSubmitting={isSubmitting}
       onTitleChange={setTitle}
       onContentChange={setContent}
       onXpChange={setXp}
+      onVideoLinkChange={setVideoLink}
       onSubmit={handleSubmit}
       onMinimize={handleMinimize}
       onBack={handleBack}
