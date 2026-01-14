@@ -16,7 +16,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { createMaterial } from "@/lib/api/sections";
-import { MaterialFilesManagement } from "@/components/class/material-files-management";
 import { toast } from "sonner";
 import { Maximize2 } from "lucide-react";
 import { useFullscreenPreference } from "@/hooks/use-fullscreen-preference";
@@ -47,7 +46,7 @@ export function AddMaterialModal({
   const [videoLink, setVideoLink] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<"content" | "files">("content");
-  const [createdMaterialId, setCreatedMaterialId] = useState<number | null>(null);
+  const [materialFiles, setMaterialFiles] = useState<{ file: File; title: string }[]>([]);
 
   useEffect(() => {
     if (isOpen && preference === "fullscreen") {
@@ -93,20 +92,51 @@ export function AddMaterialModal({
 
     setIsSubmitting(true);
     try {
+      // Step 1: Create material first
       const newMaterial = await createMaterial(classId, sectionId, {
         title: title.trim(),
         content: content.trim(),
         xp: xpValue,
         video_link: videoLink.trim() || undefined,
       });
-      toast.success("Materi berhasil ditambahkan");
 
-      // Save the created material ID and switch to files tab
-      setCreatedMaterialId(newMaterial.id);
-      setActiveTab("files");
+      // Step 2: Upload files if any
+      if (materialFiles.length > 0) {
+        const { createMaterialFile } = await import("@/lib/api/material-files");
+        
+        let successCount = 0;
+        let failCount = 0;
+
+        for (const item of materialFiles) {
+          try {
+            const formData = new FormData();
+            formData.append("file", item.file);
+            formData.append("title", item.title || item.file.name);
+            
+            await createMaterialFile(newMaterial.id, formData);
+            successCount++;
+          } catch (error) {
+            console.error(`Failed to upload file ${item.file.name}:`, error);
+            failCount++;
+          }
+        }
+
+        if (failCount > 0) {
+          toast.warning(
+            `Materi berhasil ditambahkan. ${successCount} file berhasil diupload, ${failCount} file gagal.`
+          );
+        } else {
+          toast.success(
+            `Materi dan ${successCount} file berhasil ditambahkan`
+          );
+        }
+      } else {
+        toast.success("Materi berhasil ditambahkan");
+      }
       
-      // Refresh data
+      // Refresh data and close modal
       await onAdd();
+      handleClose();
     } catch {
       toast.error("Gagal menambahkan materi");
     } finally {
@@ -120,10 +150,31 @@ export function AddMaterialModal({
       setContent("");
       setXp("");
       setVideoLink("");
-      setCreatedMaterialId(null);
+      setMaterialFiles([]);
       setActiveTab("content");
       onClose();
     }
+  };
+
+  const handleAddFiles = (files: FileList | null) => {
+    if (!files) return;
+    const newFiles = Array.from(files).map((file) => ({
+      file,
+      title: file.name.replace(/\.[^/.]+$/, ""), // Remove extension
+    }));
+    setMaterialFiles((prev) => [...prev, ...newFiles]);
+    toast.success(`${newFiles.length} file ditambahkan`);
+  };
+
+  const handleUpdateFileTitle = (index: number, title: string) => {
+    setMaterialFiles((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, title } : item))
+    );
+  };
+
+  const handleRemoveFile = (index: number) => {
+    setMaterialFiles((prev) => prev.filter((_, i) => i !== index));
+    toast.success("File dihapus");
   };
 
   if (!isOpen) return null;
@@ -147,9 +198,12 @@ export function AddMaterialModal({
             <div className="flex-1">
               <DialogTitle>Tambah Materi Baru</DialogTitle>
               <DialogDescription>
-                {createdMaterialId 
-                  ? "Materi berhasil dibuat. Tambahkan file jika diperlukan"
-                  : "Isi konten materi dan tambahkan file jika diperlukan"}
+                Isi konten materi dan tambahkan file jika diperlukan.
+                {materialFiles.length > 0 && (
+                  <span className="text-primary font-medium">
+                    {" "}({materialFiles.length} file siap diupload)
+                  </span>
+                )}
               </DialogDescription>
             </div>
           </div>
@@ -163,7 +217,7 @@ export function AddMaterialModal({
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="content">Konten Materi</TabsTrigger>
             <TabsTrigger value="files">
-              File Materi
+              File Materi {materialFiles.length > 0 && `(${materialFiles.length})`}
             </TabsTrigger>
           </TabsList>
 
@@ -179,7 +233,7 @@ export function AddMaterialModal({
                     placeholder="Contoh: Pengenalan React Hooks"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    disabled={isSubmitting || !!createdMaterialId}
+                    disabled={isSubmitting}
                     autoFocus
                     maxLength={255}
                   />
@@ -199,7 +253,7 @@ export function AddMaterialModal({
                     onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
                       setContent(e.target.value)
                     }
-                    disabled={isSubmitting || !!createdMaterialId}
+                    disabled={isSubmitting}
                     rows={8}
                   />
                   <p className="text-xs text-muted-foreground">
@@ -216,7 +270,7 @@ export function AddMaterialModal({
                     placeholder="Contoh: 10"
                     value={xp}
                     onChange={(e) => setXp(e.target.value)}
-                    disabled={isSubmitting || !!createdMaterialId}
+                    disabled={isSubmitting}
                   />
                   <p className="text-xs text-muted-foreground">
                     XP yang didapat siswa setelah menyelesaikan materi ini
@@ -231,7 +285,7 @@ export function AddMaterialModal({
                     placeholder="Contoh: https://youtu.be/Mm3-gk9bdiE atau https://www.youtube.com/watch?v=..."
                     value={videoLink}
                     onChange={(e) => setVideoLink(e.target.value)}
-                    disabled={isSubmitting || !!createdMaterialId}
+                    disabled={isSubmitting}
                   />
                   <p className="text-xs text-muted-foreground">
                     Hanya link video YouTube yang diperbolehkan
@@ -246,54 +300,106 @@ export function AddMaterialModal({
                   onClick={handleClose}
                   disabled={isSubmitting}
                 >
-                  {createdMaterialId ? "Selesai" : "Batal"}
+                  Batal
                 </Button>
-                {!createdMaterialId && (
-                  <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? "Menyimpan..." : "Simpan Materi"}
-                  </Button>
-                )}
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? "Menyimpan..." : "Simpan Materi"}
+                </Button>
               </DialogFooter>
             </form>
           </TabsContent>
 
           <TabsContent value="files" className="flex-1 overflow-y-auto mt-4">
-            {createdMaterialId ? (
-              <MaterialFilesManagement 
-                key={`material-files-${createdMaterialId}`}
-                materialId={createdMaterialId} 
-              />
-            ) : (
-              <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-                <div className="rounded-full bg-muted p-3 mb-4">
-                  <svg
-                    className="h-6 w-6 text-muted-foreground"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                    />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-semibold mb-2">
-                  File siap untuk ditambahkan
-                </h3>
-                <p className="text-sm text-muted-foreground max-w-sm mb-4">
-                  Silakan simpan konten materi terlebih dahulu pada tab &quot;Konten Materi&quot;. Setelah itu, Anda dapat menambahkan file di sini.
+            <div className="space-y-4 px-1">
+              <div className="space-y-2">
+                <Label htmlFor="material-files">
+                  Tambah File (Opsional)
+                </Label>
+                <Input
+                  id="material-files"
+                  type="file"
+                  multiple
+                  onChange={(e) => handleAddFiles(e.target.files)}
+                  disabled={isSubmitting}
+                />
+                <p className="text-xs text-muted-foreground">
+                  File akan diupload setelah materi berhasil dibuat. Anda bisa menambahkan beberapa file sekaligus.
                 </p>
-                <Button
-                  variant="outline"
-                  onClick={() => setActiveTab("content")}
-                >
-                  Kembali ke Konten Materi
-                </Button>
               </div>
-            )}
+
+              {materialFiles.length > 0 && (
+                <div className="space-y-2">
+                  <Label>File yang akan diupload ({materialFiles.length})</Label>
+                  <div className="space-y-3">
+                    {materialFiles.map((item, index) => (
+                      <div
+                        key={index}
+                        className="border rounded-md p-3 space-y-2"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <svg
+                              className="h-4 w-4 text-muted-foreground shrink-0"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                              />
+                            </svg>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">
+                                {item.file.name}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {(item.file.size / 1024).toFixed(1)} KB
+                              </p>
+                            </div>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveFile(index)}
+                            disabled={isSubmitting}
+                          >
+                            <svg
+                              className="h-4 w-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M6 18L18 6M6 6l12 12"
+                              />
+                            </svg>
+                          </Button>
+                        </div>
+                        <div className="space-y-1">
+                          <Label htmlFor={`file-title-${index}`} className="text-xs">
+                            Judul File
+                          </Label>
+                          <Input
+                            id={`file-title-${index}`}
+                            placeholder="Masukkan judul file"
+                            value={item.title}
+                            onChange={(e) => handleUpdateFileTitle(index, e.target.value)}
+                            disabled={isSubmitting}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </TabsContent>
         </Tabs>
       </DialogContent>

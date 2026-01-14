@@ -19,6 +19,7 @@ export interface Question {
   quizId: number;
   createdAt: string;
   updatedAt: string;
+  explanation?: string | null;
   Answer: Answer[];
   quiz_answer?: Answer[]; // Backend uses snake_case
 }
@@ -48,6 +49,9 @@ export interface Quiz {
   updatedAt: string;
   Question?: Question[];
   quiz_question?: Question[]; // Backend uses snake_case
+  _count?: {
+    quiz_attempt: number;
+  };
 }
 
 // Multiple Choice Answer from API
@@ -74,7 +78,7 @@ export interface AttemptMultipleAnswer {
 export interface AttemptAnswer {
   id: number;
   path: string | null;
-  answer: string;
+  answer: string | null;
   createdAt: string;
   updatedAt: string;
   attemptId: number;
@@ -133,12 +137,15 @@ export interface SavedAnswersData {
 // Material File from API
 export interface MaterialFile {
   id: number;
-  filename: string;
+  title: string;
   url: string;
-  size: number;
-  mimeType: string;
+  materialId: number;
   createdAt: string;
   updatedAt: string;
+  // Legacy fields (optional for backward compatibility)
+  filename?: string;
+  size?: number;
+  mimeType?: string;
 }
 
 // Material from API

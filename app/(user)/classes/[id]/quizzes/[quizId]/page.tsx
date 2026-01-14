@@ -110,6 +110,23 @@ export default function QuizPage() {
         // Check if max attempts reached
         const anyAttempt = attempts[0];
         if (anyAttempt?.quiz) {
+          // Check open_at and close_at
+          const now = new Date();
+          const openAt = new Date(anyAttempt.quiz.open_at);
+          const closeAt = new Date(anyAttempt.quiz.close_at);
+
+          if (now < openAt) {
+            toast.error(`Kuis belum dibuka. Akan dibuka pada ${openAt.toLocaleString("id-ID")}`);
+            router.push(`/classes/${classId}`);
+            return;
+          }
+
+          if (now > closeAt) {
+            toast.error(`Kuis telah ditutup pada ${closeAt.toLocaleString("id-ID")}`);
+            router.push(`/classes/${classId}`);
+            return;
+          }
+
           if (
             anyAttempt.quiz.max_attempts > 0 &&
             submittedAttempts.length >= anyAttempt.quiz.max_attempts

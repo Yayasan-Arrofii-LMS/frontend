@@ -33,7 +33,6 @@ export function EditMaterialFileModal({
 }: EditMaterialFileModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [title, setTitle] = useState("");
-  const [newFile, setNewFile] = useState<File | null>(null);
   const [errors, setErrors] = useState<{ title?: string }>({});
 
   useEffect(() => {
@@ -57,14 +56,9 @@ export function EditMaterialFileModal({
       const formData = new FormData();
       formData.append("title", title);
 
-      if (newFile) {
-        formData.append("file", newFile);
-      }
-
       await updateMaterialFile(materialId, file.id, formData);
       toast.success("File berhasil diperbarui");
       setTitle("");
-      setNewFile(null);
       setErrors({});
       onOpenChange(false);
       onSuccess();
@@ -102,24 +96,6 @@ export function EditMaterialFileModal({
                 <p className="text-sm text-destructive">{errors.title}</p>
               )}
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="file">File (opsional)</Label>
-              <Input
-                id="file"
-                type="file"
-                onChange={(e) => setNewFile(e.target.files?.[0] || null)}
-              />
-              <p className="text-xs text-muted-foreground">
-                Kosongkan jika tidak ingin mengubah file
-              </p>
-            </div>
-
-            {file && file.file_path && (
-              <div className="text-sm text-muted-foreground">
-                <p>File saat ini: {file.file_path.split("/").pop()}</p>
-              </div>
-            )}
           </div>
 
           <DialogFooter>

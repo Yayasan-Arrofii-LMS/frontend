@@ -134,7 +134,7 @@ export function MaterialFilesManagement({
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = (file.path || file.file_path || "download").split("/").pop() || "download";
+      a.download = file.title || "download";
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -176,7 +176,6 @@ export function MaterialFilesManagement({
               <TableHeader>
                 <TableRow>
                   <TableHead>Judul</TableHead>
-                  <TableHead>File</TableHead>
                   <TableHead>Tanggal Upload</TableHead>
                   <TableHead className="w-[70px]"></TableHead>
                 </TableRow>
@@ -185,19 +184,6 @@ export function MaterialFilesManagement({
                 {files.map((file) => (
                   <TableRow key={file.id}>
                     <TableCell className="font-medium">{file.title}</TableCell>
-                    <TableCell>
-                      {(file.path || file.file_path) ? (
-                        <button
-                          onClick={() => handleDownloadFile(file)}
-                          className="text-primary hover:underline flex items-center gap-2"
-                        >
-                          <FileDown className="h-4 w-4" />
-                          {(file.path || file.file_path)!.split("/").pop()}
-                        </button>
-                      ) : (
-                        <span className="text-muted-foreground">No file</span>
-                      )}
-                    </TableCell>
                     <TableCell>
                       {new Date(file.createdAt).toLocaleDateString("id-ID", {
                         day: "2-digit",

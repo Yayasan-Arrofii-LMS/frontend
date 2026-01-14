@@ -3,11 +3,16 @@ import { authenticatedFetch, ApiResponse } from "./client";
 export interface MaterialFile {
   id: number;
   title: string;
-  file_path?: string; // Old format
-  path?: string; // New format from API
+  url: string;
+  materialId: number;
   createdAt: string;
   updatedAt: string;
-  materialId: number;
+  // Legacy fields (optional for backward compatibility)
+  filename?: string;
+  file_path?: string;
+  path?: string;
+  size?: number;
+  mimeType?: string;
 }
 
 export interface MaterialFilesResponse {

@@ -121,8 +121,27 @@ export default function QuizDetailPage() {
     );
   }
 
-  const canStartQuiz = quizData.attemptsRemaining > 0 || quizData.max_attempts === 0;
+  // Check if quiz is open
+  const now = new Date();
+  const openAt = new Date(quizData.open_at);
+  const closeAt = new Date(quizData.close_at);
+  const isBeforeOpen = now < openAt;
+  const isAfterClose = now > closeAt;
+  const isOpen = !isBeforeOpen && !isAfterClose;
+
+  const canStartQuiz = (quizData.attemptsRemaining > 0 || quizData.max_attempts === 0) && isOpen;
   const hasOngoingAttempt = quizData.ongoingAttempt !== null;
+
+  // Format date helper
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleString("id-ID", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
 
   // Find isPassed status for best score from attempts
   const bestScoreAttempt = quizData.bestScore !== null && quizData.bestScore !== undefined
@@ -208,6 +227,72 @@ export default function QuizDetailPage() {
 
           <Separator />
 
+          {/* Schedule Info */}
+          <div className="space-y-3">
+            <h3 className="font-semibold text-sm text-muted-foreground">Jadwal Kuis</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Open At */}
+              <div className="flex items-start gap-3 p-4 rounded-lg border">
+                <Calendar className="h-5 w-5 text-green-500 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Dibuka</p>
+                  <p className="text-sm font-semibold mt-1">{formatDate(quizData.open_at)}</p>
+                </div>
+              </div>
+              {/* Close At */}
+              <div className="flex items-start gap-3 p-4 rounded-lg border">
+                <Calendar className="h-5 w-5 text-red-500 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Ditutup</p>
+                  <p className="text-sm font-semibold mt-1">{formatDate(quizData.close_at)}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Status Badge */}
+            {isBeforeOpen && (
+              <div className="flex items-start gap-2 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                <AlertCircle className="h-5 w-5 text-blue-500 mt-0.5 shrink-0" />
+                <div className="text-sm">
+                  <p className="font-semibold text-blue-700 dark:text-blue-400">
+                    Kuis Belum Dibuka
+                  </p>
+                  <p className="text-muted-foreground mt-1">
+                    Kuis akan dibuka pada {formatDate(quizData.open_at)}
+                  </p>
+                </div>
+              </div>
+            )}
+            {isAfterClose && (
+              <div className="flex items-start gap-2 p-4 rounded-lg bg-red-500/10 border border-red-500/20">
+                <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 shrink-0" />
+                <div className="text-sm">
+                  <p className="font-semibold text-red-700 dark:text-red-400">
+                    Kuis Telah Ditutup
+                  </p>
+                  <p className="text-muted-foreground mt-1">
+                    Kuis ditutup pada {formatDate(quizData.close_at)}
+                  </p>
+                </div>
+              </div>
+            )}
+            {isOpen && (
+              <div className="flex items-start gap-2 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
+                <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5 shrink-0" />
+                <div className="text-sm">
+                  <p className="font-semibold text-green-700 dark:text-green-400">
+                    Kuis Sedang Berlangsung
+                  </p>
+                  <p className="text-muted-foreground mt-1">
+                    Kuis akan ditutup pada {formatDate(quizData.close_at)}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <Separator />
+
           {/* Best Score */}
           {quizData.bestScore !== null && quizData.bestScore !== undefined && (
             <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
@@ -258,26 +343,33 @@ export default function QuizDetailPage() {
                     onClick={handleContinueQuiz}
                     className="flex-1"
                     size="lg"
+                    disabled={!isOpen}
                   >
                     <PlayCircle className="h-5 w-5 mr-2" />
                     Lanjutkan Kuis
                   </Button>
-                  {canStartQuiz && (
+                  {(quizData.attemptsRemaining > 0 || quizData.max_attempts === 0) && (
                     <Button
                       onClick={handleStartQuiz}
                       variant="outline"
                       className="flex-1"
                       size="lg"
+                      disabled={!isOpen}
                     >
                       Mulai Baru
                     </Button>
                   )}
                 </div>
               </div>
-            ) : canStartQuiz ? (
-              <Button onClick={handleStartQuiz} className="w-full" size="lg">
+            ) : (quizData.attemptsRemaining > 0 || quizData.max_attempts === 0) ? (
+              <Button 
+                onClick={handleStartQuiz} 
+                className="w-full" 
+                size="lg"
+                disabled={!isOpen}
+              >
                 <PlayCircle className="h-5 w-5 mr-2" />
-                Mulai Kuis
+                {isBeforeOpen ? "Kuis Belum Dibuka" : isAfterClose ? "Kuis Telah Ditutup" : "Mulai Kuis"}
               </Button>
             ) : (
               <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20 text-center">

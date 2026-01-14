@@ -81,7 +81,51 @@ export async function fetchQuizzes(sectionId: number): Promise<Quiz[]> {
     const response = await apiCall<QuizzesResponse>(
       `/classes/sections/${sectionId}/quizzes`
     );
-    return response.data;
+    
+    // Transform API response from snake_case to camelCase
+    const quizzes = response.data.map((quiz: any) => {
+      const transformed: Quiz = {
+        id: quiz.id,
+        title: quiz.title,
+        description: quiz.description,
+        max_attempts: quiz.max_attempts,
+        time_limit: quiz.time_limit,
+        open_at: quiz.open_at,
+        close_at: quiz.close_at,
+        passing_grade: quiz.passing_grade,
+        xp: quiz.xp,
+        sectionId: quiz.sectionId,
+        createdAt: quiz.createdAt,
+        updatedAt: quiz.updatedAt,
+      };
+
+      // Transform quiz_question to Question if present
+      if (quiz.quiz_question && Array.isArray(quiz.quiz_question)) {
+        transformed.Question = quiz.quiz_question.map((q: any) => ({
+          id: q.id,
+          question: q.question,
+          type: q.type,
+          points: q.points,
+          quizId: q.quizId,
+          createdAt: q.createdAt,
+          updatedAt: q.updatedAt,
+          explanation: q.explanation,
+          // Transform quiz_answer to Answer
+          Answer: q.quiz_answer?.map((a: any) => ({
+            id: a.id,
+            answer: a.answer,
+            is_correct: a.is_correct,
+            questionId: a.questionId,
+            createdAt: a.createdAt,
+            updatedAt: a.updatedAt,
+          })) || [],
+        }));
+      }
+
+      return transformed;
+    });
+
+    return quizzes;
   } catch (error) {
     console.error("Error fetching quizzes:", error);
     throw error;
@@ -100,7 +144,47 @@ export async function fetchQuizDetail(
     const response = await apiCall<QuizResponse>(
       `/classes/sections/${sectionId}/quizzes/${quizId}`
     );
-    return response.data;
+    
+    const quiz = response.data as any;
+    const transformed: Quiz = {
+      id: quiz.id,
+      title: quiz.title,
+      description: quiz.description,
+      max_attempts: quiz.max_attempts,
+      time_limit: quiz.time_limit,
+      open_at: quiz.open_at,
+      close_at: quiz.close_at,
+      passing_grade: quiz.passing_grade,
+      xp: quiz.xp,
+      sectionId: quiz.sectionId,
+      createdAt: quiz.createdAt,
+      updatedAt: quiz.updatedAt,
+    };
+
+    // Transform quiz_question to Question if present
+    if (quiz.quiz_question && Array.isArray(quiz.quiz_question)) {
+      transformed.Question = quiz.quiz_question.map((q: any) => ({
+        id: q.id,
+        question: q.question,
+        type: q.type,
+        points: q.points,
+        quizId: q.quizId,
+        createdAt: q.createdAt,
+        updatedAt: q.updatedAt,
+        explanation: q.explanation,
+        // Transform quiz_answer to Answer
+        Answer: q.quiz_answer?.map((a: any) => ({
+          id: a.id,
+          answer: a.answer,
+          is_correct: a.is_correct,
+          questionId: a.questionId,
+          createdAt: a.createdAt,
+          updatedAt: a.updatedAt,
+        })) || [],
+      }));
+    }
+
+    return transformed;
   } catch (error) {
     console.error("Error fetching quiz detail:", error);
     throw error;

@@ -16,6 +16,8 @@ export interface QuizDetail {
   description: string;
   max_attempts: number;
   time_limit: number;
+  open_at: string;
+  close_at: string;
   passing_grade: number;
   xp: number;
   sectionId: number;
