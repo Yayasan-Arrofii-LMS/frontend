@@ -160,6 +160,7 @@ export async function fetchClassDetail(classId: string): Promise<ClassDetail> {
       teacherId: classInfo.teachers[0]?.id || "unknown",
       teacherName: classInfo.teachers[0]?.name || "Unknown Teacher",
       studentCount: classInfo.students.length,
+      students: classInfo.students,
       sections: sectionsWithMaterials,
       createdAt: new Date().toISOString(), // TODO: Get from API when available
       updatedAt: new Date().toISOString(), // TODO: Get from API when available

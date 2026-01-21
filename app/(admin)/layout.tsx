@@ -48,7 +48,7 @@ export default async function DashboardLayout({
     >
       <AppSidebar variant="inset" user={userProfile} />
       <SidebarInset>
-        <SiteHeader user={userProfile} />
+        <SiteHeader user={userProfile} hideUserProfile={true} />
         {children}
       </SidebarInset>
     </SidebarProvider>

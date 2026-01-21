@@ -16,9 +16,10 @@ import { LogoutButton } from "./logout-button";
 
 interface SiteHeaderProps {
   user?: ProfileData | null;
+  hideUserProfile?: boolean;
 }
 
-export function SiteHeader({ user }: SiteHeaderProps) {
+export function SiteHeader({ user, hideUserProfile = false }: SiteHeaderProps) {
   return (
     <header className="sticky top-0 z-40 flex h-(--header-height) shrink-0 items-center gap-2 border-b bg-background transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
       <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
@@ -30,7 +31,7 @@ export function SiteHeader({ user }: SiteHeaderProps) {
         <DynamicHeaderTitle />
         <div className="ml-auto flex items-center gap-2">
           <ModeToggle />
-          {user && (
+          {user && !hideUserProfile && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Avatar className="h-8 w-8 cursor-pointer">

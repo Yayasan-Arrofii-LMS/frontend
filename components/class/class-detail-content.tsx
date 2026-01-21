@@ -13,6 +13,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/error-state";
 import { SectionCard } from "@/components/class/section-card";
 import { AddSectionModal } from "@/components/class/add-section-modal";
+import { StudentsTable } from "@/components/class/students-table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import {
   DndContext,
@@ -46,6 +48,7 @@ export function ClassDetailContent({ classId, basePath = "/course" }: ClassDetai
   const [error, setError] = useState<string | null>(null);
   const [isAddSectionOpen, setIsAddSectionOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<Section | null>(null);
+  const [activeTab, setActiveTab] = useState<string>("content");
   const [triggerModalOpen, setTriggerModalOpen] = useState<{
     type: "addMaterial" | "editMaterial" | "addQuiz";
     sectionId: number;
@@ -225,17 +228,25 @@ export function ClassDetailContent({ classId, basePath = "/course" }: ClassDetai
         </div>
       </div>
 
-      {/* Sections Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold">Daftar Section</h2>
-        <Button onClick={() => setIsAddSectionOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Tambah Section
-        </Button>
-      </div>
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="content">Konten</TabsTrigger>
+          <TabsTrigger value="students">Siswa ({classDetail.students?.length || 0})</TabsTrigger>
+        </TabsList>
 
-      {/* Sections List */}
-      {classDetail.sections.length === 0 ? (
+        <TabsContent value="content" className="space-y-6">
+          {/* Sections Header */}
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold">Daftar Section</h2>
+            <Button onClick={() => setIsAddSectionOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Tambah Section
+            </Button>
+          </div>
+
+          {/* Sections List */}
+          {classDetail.sections.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
             <div className="rounded-full bg-muted p-4 mb-4">
@@ -304,6 +315,12 @@ export function ClassDetailContent({ classId, basePath = "/course" }: ClassDetai
           </DragOverlay>
         </DndContext>
       )}
+        </TabsContent>
+
+        <TabsContent value="students">
+          <StudentsTable students={classDetail.students || []} />
+        </TabsContent>
+      </Tabs>
 
       {/* Add Section Modal */}
       <AddSectionModal

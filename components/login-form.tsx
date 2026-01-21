@@ -61,6 +61,18 @@ export function LoginForm({
     try {
       const response = await login(formData);
 
+      // Check if user needs to reset password
+      if (response.success && response.data?.resetToken) {
+        toast.info(response.message || "Silakan perbarui password Anda");
+        
+        // Store reset token in sessionStorage
+        sessionStorage.setItem("reset_token", response.data.resetToken);
+        
+        // Redirect to reset password page
+        router.push(`/reset-password?token=${response.data.resetToken}`);
+        return;
+      }
+
       if (response.success && response.data?.token) {
         toast.success(response.message || "Login berhasil!");
         

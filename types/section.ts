@@ -351,6 +351,15 @@ export interface Teacher {
   email: string;
 }
 
+// Student from API
+export interface Student {
+  id: string;
+  name: string;
+  email: string;
+  username: string;
+  profileImage: string;
+}
+
 // Class from API
 export interface Class {
   id: number;
@@ -359,7 +368,7 @@ export interface Class {
   image_path: string;
   image_path_relative: string;
   teachers: Teacher[];
-  students: unknown[];
+  students: Student[];
 }
 
 // API Response for class
@@ -379,6 +388,7 @@ export interface ClassDetail {
   teacherName: string;
   studentCount: number;
   sections: Section[];
+  students: Student[];
   createdAt: string;
   updatedAt: string;
 }
