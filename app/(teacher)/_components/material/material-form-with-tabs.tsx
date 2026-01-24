@@ -15,6 +15,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { MaterialFilesManagement } from "@/components/class/material-files-management";
+import { MaterialFile } from "@/types/section";
+import { isYouTubeUrl } from "@/lib/utils/youtube";
 
 export interface StagedFile {
   id: string;
@@ -27,10 +29,12 @@ interface MaterialFormWithTabsProps {
   title: string;
   content: string;
   xp: string;
+  videoLink?: string;
   isSubmitting: boolean;
   onTitleChange: (value: string) => void;
   onContentChange: (value: string) => void;
   onXpChange: (value: string) => void;
+  onVideoLinkChange?: (value: string) => void;
   onSubmit: (e: React.FormEvent, stagedFiles?: StagedFile[]) => void;
   onMinimize: () => void;
   onBack: () => void;
@@ -39,6 +43,7 @@ interface MaterialFormWithTabsProps {
   materialId?: number;
   defaultTab?: "content" | "files";
   onFilesUpdate?: () => void;
+  initialMaterialFiles?: MaterialFile[];
 }
 
 export function MaterialFormWithTabs({
@@ -46,10 +51,12 @@ export function MaterialFormWithTabs({
   title,
   content,
   xp,
+  videoLink = "",
   isSubmitting,
   onTitleChange,
   onContentChange,
   onXpChange,
+  onVideoLinkChange,
   onSubmit,
   onMinimize,
   onBack,
@@ -58,6 +65,7 @@ export function MaterialFormWithTabs({
   materialId,
   defaultTab = "content",
   onFilesUpdate,
+  initialMaterialFiles = [],
 }: MaterialFormWithTabsProps) {
   const [activeTab, setActiveTab] = useState<"content" | "files">(defaultTab);
   const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([]);
@@ -203,6 +211,23 @@ export function MaterialFormWithTabs({
                   </p>
                 </div>
 
+                {onVideoLinkChange && (
+                  <div className="space-y-2">
+                    <Label htmlFor="video-link">Link Video YouTube (Opsional)</Label>
+                    <Input
+                      id="video-link"
+                      type="url"
+                      value={videoLink}
+                      onChange={(e) => onVideoLinkChange(e.target.value)}
+                      placeholder="Contoh: https://youtu.be/Mm3-gk9bdiE atau https://www.youtube.com/watch?v=..."
+                      disabled={isSubmitting}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Hanya link video YouTube yang diperbolehkan
+                    </p>
+                  </div>
+                )}
+
                 <div className="flex justify-end gap-2 pt-4 border-t">
                   <Button
                     type="button"
@@ -228,6 +253,7 @@ export function MaterialFormWithTabs({
                 <MaterialFilesManagement
                   key={`material-files-${materialId}`}
                   materialId={materialId}
+                  initialFiles={initialMaterialFiles}
                 />
               ) : (
                 <div className="space-y-4">

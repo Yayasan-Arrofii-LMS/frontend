@@ -46,12 +46,14 @@ import {
 
 interface MaterialFilesManagementProps {
   materialId: number;
+  initialFiles?: MaterialFile[];
 }
 
 export function MaterialFilesManagement({
   materialId,
+  initialFiles = [],
 }: MaterialFilesManagementProps) {
-  const [files, setFiles] = useState<MaterialFile[]>([]);
+  const [files, setFiles] = useState<MaterialFile[]>(initialFiles);
   const [isLoading, setIsLoading] = useState(true);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -78,12 +80,20 @@ export function MaterialFilesManagement({
   };
 
   useEffect(() => {
+    // If initialFiles are provided, use them first
+    if (initialFiles && initialFiles.length > 0) {
+      console.log('[MaterialFilesManagement] Using initial files:', initialFiles.length);
+      setFiles(initialFiles);
+      setIsLoading(false);
+      return;
+    }
+    
     // Reset files when materialId changes
     setFiles([]);
     setIsLoading(true);
     loadFiles();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [materialId]);
+  }, [materialId, initialFiles]);
 
   const handleEdit = (file: MaterialFile) => {
     setSelectedFile(file);

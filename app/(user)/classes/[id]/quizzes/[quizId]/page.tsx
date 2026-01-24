@@ -86,6 +86,7 @@ export default function QuizPage() {
   const [showReview, setShowReview] = useState(false);
   const [reviewQuestions, setReviewQuestions] = useState<Question[]>([]);
   const questionRefs = useRef<Record<number, HTMLDivElement | null>>({});
+  const lastSubmittedRef = useRef<Record<number, number>>({});
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -226,6 +227,12 @@ export default function QuizPage() {
   const handleAnswerChange = async (questionId: number, answerId: number) => {
     if (!attemptId) return;
 
+    // Prevent duplicate submission for same question/answer
+    if (lastSubmittedRef.current[questionId] === answerId) {
+      return;
+    }
+    lastSubmittedRef.current[questionId] = answerId;
+
     // Update local state
     setAnswers((prev) => ({
       ...prev,
@@ -242,6 +249,8 @@ export default function QuizPage() {
     } catch (error) {
       console.error("Failed to save answer:", error);
       toast.error("Gagal menyimpan jawaban");
+      // Reset ref to allow retry
+      delete lastSubmittedRef.current[questionId];
     }
   };
 
@@ -725,9 +734,13 @@ export default function QuizPage() {
                       {question.answers.map((answer) => (
                         <div
                           key={answer.id}
-                          onClick={() =>
-                            handleAnswerChange(question.id, answer.id)
-                          }
+                          onClick={(e) => {
+                            // Prevent double triggering when clicking label (which triggers radio change)
+                            if ((e.target as HTMLElement).closest("label")) {
+                              return;
+                            }
+                            handleAnswerChange(question.id, answer.id);
+                          }}
                           className="flex items-center space-x-3 border rounded-lg p-4 hover:bg-accent cursor-pointer transition-colors"
                         >
                           <RadioGroupItem

@@ -89,6 +89,22 @@ export async function fetchMaterials(sectionId: number): Promise<Material[]> {
   }
 }
 
+// Fetch a single material by ID
+export async function getMaterial(
+  sectionId: number,
+  materialId: number
+): Promise<Material> {
+  try {
+    const response = await apiCall<MaterialResponse>(
+      `/classes/sections/${sectionId}/materials/${materialId}`
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching material:", error);
+    throw error;
+  }
+}
+
 // Fetch class detail with sections and materials
 export async function fetchClassDetail(classId: string): Promise<ClassDetail> {
   try {

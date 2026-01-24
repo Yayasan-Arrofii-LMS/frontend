@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Material } from "@/types/section";
-import { updateMaterial } from "@/lib/api/sections";
+import { updateMaterial, getMaterial } from "@/lib/api/sections";
 import { MaterialFilesManagement } from "@/components/class/material-files-management";
 import { toast } from "sonner";
 import { Maximize2 } from "lucide-react";
@@ -52,6 +52,8 @@ export function EditMaterialModal({
   const [videoLink, setVideoLink] = useState(material.video_link || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<"content" | "files">(defaultTab);
+  const [isLoading, setIsLoading] = useState(false);
+  const [fetchedMaterial, setFetchedMaterial] = useState<Material | null>(null);
 
   useEffect(() => {
     setTitle(material.title);
@@ -60,6 +62,32 @@ export function EditMaterialModal({
     setVideoLink(material.video_link || "");
     setActiveTab(defaultTab);
   }, [material, defaultTab]);
+
+  // Fetch material data when modal opens
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const fetchMaterialData = async () => {
+      try {
+        setIsLoading(true);
+        const data = await getMaterial(sectionId, material.id);
+        setFetchedMaterial(data);
+        
+        // Update form fields with fetched data
+        setTitle(data.title);
+        setContent(data.content);
+        setXp(data.xp?.toString() || "");
+        setVideoLink(data.video_link || "");
+      } catch (error) {
+        console.error("Failed to fetch material:", error);
+        toast.error("Gagal memuat data materi");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchMaterialData();
+  }, [isOpen, sectionId, material.id]);
 
   useEffect(() => {
     if (isOpen && preference === "fullscreen") {
@@ -276,11 +304,17 @@ export function EditMaterialModal({
           </TabsContent>
 
           <TabsContent value="files" className="flex-1 overflow-y-auto mt-4">
-            {activeTab === "files" && (
+            {activeTab === "files" && !isLoading && (
               <MaterialFilesManagement 
                 key={`material-files-${material.id}`}
-                materialId={material.id} 
+                materialId={material.id}
+                initialFiles={fetchedMaterial?.Material_File || material.Material_File || []}
               />
+            )}
+            {activeTab === "files" && isLoading && (
+              <div className="flex items-center justify-center py-8">
+                <p className="text-muted-foreground">Memuat file materi...</p>
+              </div>
             )}
           </TabsContent>
         </Tabs>

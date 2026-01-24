@@ -1,11 +1,12 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { updateMaterial } from "@/lib/api/sections";
+import { updateMaterial, getMaterial } from "@/lib/api/sections";
 import { toast } from "sonner";
 import { useFullscreenPreference } from "@/hooks/use-fullscreen-preference";
 import { MaterialFormWithTabs } from "./material-form-with-tabs";
+import { Material } from "@/types/section";
 
 interface EditMaterialContainerProps {
   params: Promise<{ id: string }>;
@@ -44,8 +45,33 @@ export function EditMaterialContainer({
     decodeURIComponent(initialContent || "")
   );
   const [xp, setXp] = useState(initialXp ? decodeURIComponent(initialXp) : "");
+  const [videoLink, setVideoLink] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [fetchedMaterial, setFetchedMaterial] = useState<Material | null>(null);
   const defaultTab = openFilesTab === "true" ? "files" : "content";
+
+  // Fetch material data from API
+  useEffect(() => {
+    const fetchMaterialData = async () => {
+      try {
+        setIsLoading(true);
+        const data = await getMaterial(sectionId, materialId);
+        setFetchedMaterial(data);
+        setTitle(data.title);
+        setContent(data.content);
+        setXp(data.xp?.toString() || "");
+        setVideoLink(data.video_link || "");
+      } catch (error) {
+        console.error("Failed to fetch material:", error);
+        toast.error("Gagal memuat data materi");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchMaterialData();
+  }, [sectionId, materialId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,6 +103,7 @@ export function EditMaterialContainer({
         title: title.trim(),
         content: content.trim(),
         xp: xpValue,
+        video_link: videoLink.trim() || undefined,
       });
       toast.success("Materi berhasil diperbarui");
       setPreference("modal");
@@ -101,16 +128,26 @@ export function EditMaterialContainer({
     router.push(`/teacher/my-courses/${classId}`);
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-muted-foreground">Memuat data materi...</p>
+      </div>
+    );
+  }
+
   return (
     <MaterialFormWithTabs
       mode="edit"
       title={title}
       content={content}
       xp={xp}
+      videoLink={videoLink}
       isSubmitting={isSubmitting}
       onTitleChange={setTitle}
       onContentChange={setContent}
       onXpChange={setXp}
+      onVideoLinkChange={setVideoLink}
       onSubmit={handleSubmit}
       onMinimize={handleMinimize}
       onBack={handleBack}
@@ -118,6 +155,7 @@ export function EditMaterialContainer({
       sectionId={sectionId}
       materialId={materialId}
       defaultTab={defaultTab}
+      initialMaterialFiles={fetchedMaterial?.Material_File || []}
     />
   );
 }
