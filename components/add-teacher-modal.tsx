@@ -158,12 +158,6 @@ export function AddTeacherModal({
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-center">Tambah Guru Baru</DialogTitle>
-          <div className="text-sm text-muted-foreground text-center mt-2">
-            <p>
-              Password default akan diset otomatis. Guru dapat mengubah password
-              setelah login pertama.
-            </p>
-          </div>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">

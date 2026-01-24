@@ -23,6 +23,7 @@ export interface LoginData {
   username?: string;
   email?: string;
   name?: string;
+  resetToken?: string;
 }
 
 export interface VerifyOTPData {
