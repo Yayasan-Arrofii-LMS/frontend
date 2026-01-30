@@ -56,10 +56,34 @@ export default function EditMaterialPage({
         setIsLoading(true);
         const data = await getMaterial(sectionId, materialId);
         setFetchedMaterial(data);
-        setTitle(data.title);
-        setContent(data.content);
-        setXp(data.xp?.toString() || "");
-        setVideoLink(data.video_link || "");
+        
+        // Check for draft first, otherwise use fetched data
+        const draftKey = `material-edit-draft-${materialId}`;
+        const savedDraft = sessionStorage.getItem(draftKey);
+        
+        if (savedDraft) {
+          try {
+            const parsed = JSON.parse(savedDraft);
+            setTitle(parsed.title || data.title);
+            setContent(parsed.content || data.content);
+            setXp(parsed.xp || data.xp?.toString() || "");
+            setVideoLink(parsed.videoLink || data.video_link || "");
+            sessionStorage.removeItem(draftKey);
+          } catch (error) {
+            console.error("Failed to parse material draft:", error);
+            // Fallback to fetched data
+            setTitle(data.title);
+            setContent(data.content);
+            setXp(data.xp?.toString() || "");
+            setVideoLink(data.video_link || "");
+          }
+        } else {
+          // Use fetched data
+          setTitle(data.title);
+          setContent(data.content);
+          setXp(data.xp?.toString() || "");
+          setVideoLink(data.video_link || "");
+        }
       } catch (error) {
         console.error("Failed to fetch material:", error);
         toast.error("Gagal memuat data materi");
@@ -115,6 +139,15 @@ export default function EditMaterialPage({
   };
 
   const handleMinimize = () => {
+    // Save draft before minimizing
+    const formData = {
+      title,
+      content,
+      xp,
+      videoLink,
+    };
+    sessionStorage.setItem(`material-edit-draft-${materialId}`, JSON.stringify(formData));
+    
     setPreference("modal");
     router.push(
       `/course/${classId}?openEditMaterial=${materialId}&sectionId=${sectionId}`

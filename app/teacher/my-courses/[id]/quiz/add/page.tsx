@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,6 +64,33 @@ export default function AddQuizPage({
     },
   ]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Load draft from sessionStorage when page loads
+  useEffect(() => {
+    const draftKey = `quiz-draft-${sectionId}`;
+    const savedDraft = sessionStorage.getItem(draftKey);
+    
+    if (savedDraft) {
+      try {
+        const parsed = JSON.parse(savedDraft);
+        setTitle(parsed.title || "");
+        setDescription(parsed.description || "");
+        setMaxAttempts(parsed.maxAttempts?.toString() || "3");
+        setTimeLimit(parsed.timeLimit?.toString() || "60");
+        setOpenAt(parsed.openAt || "");
+        setCloseAt(parsed.closeAt || "");
+        setPassingGrade(parsed.passingGrade?.toString() || "70");
+        setXp(parsed.xp?.toString() || "10");
+        if (parsed.questions && parsed.questions.length > 0) {
+          setQuestions(parsed.questions);
+        }
+        // Clear the draft after loading
+        sessionStorage.removeItem(draftKey);
+      } catch (error) {
+        console.error("Failed to parse quiz draft:", error);
+      }
+    }
+  }, [sectionId]);
 
   const addQuestion = () => {
     const newQuestion: QuestionData = {
@@ -270,6 +297,20 @@ export default function AddQuizPage({
   };
 
   const handleMinimize = () => {
+    // Save draft before minimizing
+    const formData = {
+      title,
+      description,
+      maxAttempts,
+      timeLimit,
+      openAt,
+      closeAt,
+      passingGrade,
+      xp,
+      questions,
+    };
+    sessionStorage.setItem(`quiz-draft-${sectionId}`, JSON.stringify(formData));
+    
     setPreference("modal");
     router.push(`/teacher/my-courses/${classId}?openAddQuiz=${sectionId}`);
   };

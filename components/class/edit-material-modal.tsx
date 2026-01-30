@@ -73,11 +73,33 @@ export function EditMaterialModal({
         const data = await getMaterial(sectionId, material.id);
         setFetchedMaterial(data);
         
-        // Update form fields with fetched data
-        setTitle(data.title);
-        setContent(data.content);
-        setXp(data.xp?.toString() || "");
-        setVideoLink(data.video_link || "");
+        // Check for draft first, otherwise use fetched data
+        const draftKey = `material-edit-draft-${material.id}`;
+        const savedDraft = sessionStorage.getItem(draftKey);
+        
+        if (savedDraft) {
+          try {
+            const parsed = JSON.parse(savedDraft);
+            setTitle(parsed.title || data.title);
+            setContent(parsed.content || data.content);
+            setXp(parsed.xp || data.xp?.toString() || "");
+            setVideoLink(parsed.videoLink || data.video_link || "");
+            sessionStorage.removeItem(draftKey);
+          } catch (error) {
+            console.error("Failed to parse material draft:", error);
+            // Fallback to fetched data
+            setTitle(data.title);
+            setContent(data.content);
+            setXp(data.xp?.toString() || "");
+            setVideoLink(data.video_link || "");
+          }
+        } else {
+          // Use fetched data
+          setTitle(data.title);
+          setContent(data.content);
+          setXp(data.xp?.toString() || "");
+          setVideoLink(data.video_link || "");
+        }
       } catch (error) {
         console.error("Failed to fetch material:", error);
         toast.error("Gagal memuat data materi");
@@ -89,33 +111,16 @@ export function EditMaterialModal({
     fetchMaterialData();
   }, [isOpen, sectionId, material.id]);
 
-  useEffect(() => {
-    if (isOpen && preference === "fullscreen") {
-      onClose();
-      const params = new URLSearchParams({
-        sectionId: sectionId.toString(),
-        materialId: material.id.toString(),
-        title: encodeURIComponent(material.title),
-        content: encodeURIComponent(material.content),
-        ...(material.xp && { xp: material.xp.toString() }),
-        ...(material.video_link && { video_link: encodeURIComponent(material.video_link) }),
-        ...(activeTab === "files" && { openFilesTab: "true" }),
-      });
-      router.push(`${basePath}/${classId}/material/edit?${params}`);
-    }
-  }, [
-    isOpen,
-    preference,
-    classId,
-    sectionId,
-    material,
-    basePath,
-    activeTab,
-    onClose,
-    router,
-  ]);
-
   const handleExpand = () => {
+    // Save draft before expanding
+    const formData = {
+      title,
+      content,
+      xp,
+      videoLink,
+    };
+    sessionStorage.setItem(`material-edit-draft-${material.id}`, JSON.stringify(formData));
+    
     setPreference("fullscreen");
     onClose();
     const params = new URLSearchParams({

@@ -84,12 +84,6 @@ export function EditQuizModal({
     }
   }, [quiz]);
 
-  useEffect(() => {
-    if (isOpen && preference === "fullscreen") {
-      document.documentElement.requestFullscreen?.();
-    }
-  }, [isOpen, preference]);
-
   const handleClose = () => {
     if (!isSubmitting) {
       onClose();

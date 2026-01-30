@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createMaterial } from "@/lib/api/sections";
 import { createMaterialFile } from "@/lib/api/material-files";
@@ -30,6 +30,25 @@ export function AddMaterialContainer({
   const [createdMaterialId, setCreatedMaterialId] = useState<number | null>(
     null
   );
+
+  // Load draft from sessionStorage when page loads
+  useEffect(() => {
+    const draftKey = `material-draft-${sectionId}`;
+    const savedDraft = sessionStorage.getItem(draftKey);
+    
+    if (savedDraft) {
+      try {
+        const parsed = JSON.parse(savedDraft);
+        setTitle(parsed.title || "");
+        setContent(parsed.content || "");
+        setXp(parsed.xp || "");
+        // Clear the draft after loading
+        sessionStorage.removeItem(draftKey);
+      } catch (error) {
+        console.error("Failed to parse material draft:", error);
+      }
+    }
+  }, [sectionId]);
 
   const handleSubmit = async (
     e: React.FormEvent,
@@ -108,6 +127,14 @@ export function AddMaterialContainer({
   };
 
   const handleMinimize = () => {
+    // Save draft before minimizing
+    const formData = {
+      title,
+      content,
+      xp,
+    };
+    sessionStorage.setItem(`material-draft-${sectionId}`, JSON.stringify(formData));
+    
     setPreference("modal");
     router.push(`/teacher/my-courses/${classId}?openAddMaterial=${sectionId}`);
   };

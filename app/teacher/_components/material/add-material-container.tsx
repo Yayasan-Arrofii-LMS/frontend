@@ -1,12 +1,12 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createMaterial } from "@/lib/api/sections";
+import { createMaterialFile } from "@/lib/api/material-files";
 import { toast } from "sonner";
 import { useFullscreenPreference } from "@/hooks/use-fullscreen-preference";
-import { MaterialForm } from "./material-form";
-import { isYouTubeUrl } from "@/lib/utils/youtube";
+import { MaterialFormWithTabs, StagedFile } from "../../../(teacher)/_components/material/material-form-with-tabs";
 
 interface AddMaterialContainerProps {
   params: Promise<{ id: string }>;
@@ -23,10 +23,34 @@ export function AddMaterialContainer({ params, searchParams }: AddMaterialContai
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [xp, setXp] = useState("");
-  const [videoLink, setVideoLink] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [createdMaterialId, setCreatedMaterialId] = useState<number | null>(
+    null
+  );
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Load draft from sessionStorage when page loads
+  useEffect(() => {
+    const draftKey = `material-draft-${sectionId}`;
+    const savedDraft = sessionStorage.getItem(draftKey);
+    
+    if (savedDraft) {
+      try {
+        const parsed = JSON.parse(savedDraft);
+        setTitle(parsed.title || "");
+        setContent(parsed.content || "");
+        setXp(parsed.xp || "");
+        // Clear the draft after loading
+        sessionStorage.removeItem(draftKey);
+      } catch (error) {
+        console.error("Failed to parse material draft:", error);
+      }
+    }
+  }, [sectionId]);
+
+  const handleSubmit = async (
+    e: React.FormEvent,
+    stagedFiles?: StagedFile[]
+  ) => {
     e.preventDefault();
 
     if (!title.trim()) {
@@ -50,23 +74,48 @@ export function AddMaterialContainer({ params, searchParams }: AddMaterialContai
       return;
     }
 
-    if (videoLink.trim() && !isYouTubeUrl(videoLink.trim())) {
-      toast.error("Link video harus berupa URL YouTube yang valid");
-      return;
-    }
-
     setIsSubmitting(true);
     try {
-      await createMaterial(classId, sectionId, {
+      const newMaterial = await createMaterial(classId, sectionId, {
         title: title.trim(),
         content: content.trim(),
         xp: xpValue,
-        video_link: videoLink.trim() || undefined,
       });
-      toast.success("Materi berhasil ditambahkan");
-      setPreference("modal");
-      router.push(`/teacher/my-courses/${classId}`);
-      router.refresh();
+      setCreatedMaterialId(newMaterial.id);
+
+      // Upload staged files if any
+      if (stagedFiles && stagedFiles.length > 0) {
+        let successCount = 0;
+        let failCount = 0;
+
+        for (const stagedFile of stagedFiles) {
+          try {
+            const formData = new FormData();
+            formData.append('file', stagedFile.file);
+            formData.append('title', stagedFile.title);
+            
+            await createMaterialFile(newMaterial.id, formData);
+            successCount++;
+          } catch (error) {
+            console.error("Failed to upload file:", stagedFile.title, error);
+            failCount++;
+          }
+        }
+
+        if (failCount === 0) {
+          toast.success(
+            `Materi berhasil ditambahkan dengan ${successCount} file.`
+          );
+        } else {
+          toast.warning(
+            `Materi berhasil ditambahkan. ${successCount} file berhasil diupload, ${failCount} file gagal.`
+          );
+        }
+      } else {
+        toast.success(
+          "Materi berhasil ditambahkan. Anda dapat menambahkan file sekarang."
+        );
+      }
     } catch {
       toast.error("Gagal menambahkan materi");
     } finally {
@@ -75,6 +124,14 @@ export function AddMaterialContainer({ params, searchParams }: AddMaterialContai
   };
 
   const handleMinimize = () => {
+    // Save draft before minimizing
+    const formData = {
+      title,
+      content,
+      xp,
+    };
+    sessionStorage.setItem(`material-draft-${sectionId}`, JSON.stringify(formData));
+    
     setPreference("modal");
     router.push(`/teacher/my-courses/${classId}?openAddMaterial=${sectionId}`);
   };
@@ -85,20 +142,22 @@ export function AddMaterialContainer({ params, searchParams }: AddMaterialContai
   };
 
   return (
-    <MaterialForm
-      mode="add"
+    <MaterialFormWithTabs
+      mode={createdMaterialId ? "edit" : "add"}
       title={title}
       content={content}
       xp={xp}
-      videoLink={videoLink}
       isSubmitting={isSubmitting}
       onTitleChange={setTitle}
       onContentChange={setContent}
       onXpChange={setXp}
-      onVideoLinkChange={setVideoLink}
       onSubmit={handleSubmit}
       onMinimize={handleMinimize}
       onBack={handleBack}
+      classId={classId}
+      sectionId={sectionId}
+      materialId={createdMaterialId || undefined}
+      defaultTab={createdMaterialId ? "files" : "content"}
     />
   );
 }

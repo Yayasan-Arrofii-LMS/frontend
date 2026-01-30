@@ -78,10 +78,11 @@ export function ClassDetailContent({ classId, basePath = "/course" }: ClassDetai
     const openAddQuiz = searchParams.get("openAddQuiz");
     const sectionIdParam = searchParams.get("sectionId");
     
-    if (openAddMaterial && sectionIdParam) {
+    if (openAddMaterial) {
+      // openAddMaterial contains the sectionId value
       setTriggerModalOpen({
         type: "addMaterial",
-        sectionId: parseInt(sectionIdParam),
+        sectionId: parseInt(openAddMaterial),
       });
       // Clean URL
       router.replace(`${basePath}/${classId}`);
@@ -92,10 +93,11 @@ export function ClassDetailContent({ classId, basePath = "/course" }: ClassDetai
         materialId: parseInt(openEditMaterial),
       });
       router.replace(`${basePath}/${classId}`);
-    } else if (openAddQuiz && sectionIdParam) {
+    } else if (openAddQuiz) {
+      // openAddQuiz contains the sectionId value
       setTriggerModalOpen({
         type: "addQuiz",
-        sectionId: parseInt(sectionIdParam),
+        sectionId: parseInt(openAddQuiz),
       });
       router.replace(`${basePath}/${classId}`);
     }

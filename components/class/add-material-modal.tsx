@@ -48,14 +48,42 @@ export function AddMaterialModal({
   const [activeTab, setActiveTab] = useState<"content" | "files">("content");
   const [materialFiles, setMaterialFiles] = useState<{ file: File; title: string }[]>([]);
 
+  // Load draft from sessionStorage when modal opens
   useEffect(() => {
-    if (isOpen && preference === "fullscreen") {
-      onClose();
-      router.push(`${basePath}/${classId}/material/add?sectionId=${sectionId}`);
+    if (isOpen) {
+      const draftKey = `material-draft-${sectionId}`;
+      const savedDraft = sessionStorage.getItem(draftKey);
+      
+      if (savedDraft) {
+        try {
+          const parsed = JSON.parse(savedDraft);
+          setTitle(parsed.title || "");
+          setContent(parsed.content || "");
+          setXp(parsed.xp || "");
+          setVideoLink(parsed.videoLink || "");
+          // Note: Files cannot be restored from sessionStorage
+          setMaterialFiles([]);
+          // Clear the draft after loading
+          sessionStorage.removeItem(draftKey);
+        } catch (error) {
+          console.error("Failed to parse material draft:", error);
+        }
+      }
     }
-  }, [isOpen, preference, classId, sectionId, basePath, onClose, router]);
+  }, [isOpen, sectionId]);
 
   const handleExpand = () => {
+    // Save draft before expanding
+    const formData = {
+      title,
+      content,
+      xp,
+      videoLink,
+      // Note: materialFiles (File objects) cannot be serialized to sessionStorage
+      // User will need to re-add files in fullscreen mode
+    };
+    sessionStorage.setItem(`material-draft-${sectionId}`, JSON.stringify(formData));
+    
     setPreference("fullscreen");
     onClose();
     router.push(`${basePath}/${classId}/material/add?sectionId=${sectionId}`);

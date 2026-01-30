@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { updateMaterial } from "@/lib/api/sections";
 import { toast } from "sonner";
@@ -42,6 +42,25 @@ export function EditMaterialContainer({ params, searchParams }: EditMaterialCont
   const [xp, setXp] = useState(initialXp ? decodeURIComponent(initialXp) : "");
   const [videoLink, setVideoLink] = useState(initialVideoLink ? decodeURIComponent(initialVideoLink) : "");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Load draft from sessionStorage when page loads
+  useEffect(() => {
+    const draftKey = `material-edit-draft-${materialId}`;
+    const savedDraft = sessionStorage.getItem(draftKey);
+    
+    if (savedDraft) {
+      try {
+        const parsed = JSON.parse(savedDraft);
+        setTitle(parsed.title || decodeURIComponent(initialTitle || ""));
+        setContent(parsed.content || decodeURIComponent(initialContent || ""));
+        setXp(parsed.xp || (initialXp ? decodeURIComponent(initialXp) : ""));
+        setVideoLink(parsed.videoLink || (initialVideoLink ? decodeURIComponent(initialVideoLink) : ""));
+        sessionStorage.removeItem(draftKey);
+      } catch (error) {
+        console.error("Failed to parse material draft:", error);
+      }
+    }
+  }, [materialId, initialTitle, initialContent, initialXp, initialVideoLink]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,6 +111,15 @@ export function EditMaterialContainer({ params, searchParams }: EditMaterialCont
   };
 
   const handleMinimize = () => {
+    // Save draft before minimizing
+    const formData = {
+      title,
+      content,
+      xp,
+      videoLink,
+    };
+    sessionStorage.setItem(`material-edit-draft-${materialId}`, JSON.stringify(formData));
+    
     setPreference("modal");
     router.push(`/teacher/my-courses/${classId}?openEditMaterial=${materialId}&sectionId=${sectionId}`);
   };

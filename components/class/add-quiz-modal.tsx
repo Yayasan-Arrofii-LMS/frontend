@@ -66,13 +66,39 @@ export function AddQuizModal({
   const [questions, setQuestions] = useState<QuestionData[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Initialize with one empty question
+  // Load draft data from sessionStorage when modal opens
   useEffect(() => {
-    if (isOpen && questions.length === 0) {
-      addQuestion();
+    if (isOpen) {
+      const draftKey = `quiz-draft-${sectionId}`;
+      const savedDraft = sessionStorage.getItem(draftKey);
+      
+      if (savedDraft) {
+        try {
+          const formData = JSON.parse(savedDraft);
+          setTitle(formData.title || "");
+          setDescription(formData.description || "");
+          setMaxAttempts(formData.maxAttempts || "3");
+          setTimeLimit(formData.timeLimit || "60");
+          setOpenAt(formData.openAt || "");
+          setCloseAt(formData.closeAt || "");
+          setPassingGrade(formData.passingGrade || "70");
+          setXp(formData.xp || "10");
+          setQuestions(formData.questions || []);
+          
+          // Clear draft after loading
+          sessionStorage.removeItem(draftKey);
+        } catch (error) {
+          console.error("Failed to load quiz draft:", error);
+        }
+      }
+      
+      // Initialize with one empty question if no questions loaded
+      if (questions.length === 0) {
+        addQuestion();
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen]);
+  }, [isOpen, sectionId]);
 
   const addQuestion = () => {
     const newQuestion: QuestionData = {
@@ -154,14 +180,21 @@ export function AddQuizModal({
     );
   };
 
-  useEffect(() => {
-    if (isOpen && preference === "fullscreen") {
-      onClose();
-      router.push(`${basePath}/${classId}/quiz/add?sectionId=${sectionId}`);
-    }
-  }, [isOpen, preference, classId, sectionId, basePath, onClose, router]);
-
   const handleExpand = () => {
+    // Save current form data to sessionStorage
+    const formData = {
+      title,
+      description,
+      maxAttempts,
+      timeLimit,
+      openAt,
+      closeAt,
+      passingGrade,
+      xp,
+      questions,
+    };
+    sessionStorage.setItem(`quiz-draft-${sectionId}`, JSON.stringify(formData));
+    
     setPreference("fullscreen");
     onClose();
     router.push(`${basePath}/${classId}/quiz/add?sectionId=${sectionId}`);
