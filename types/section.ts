@@ -241,6 +241,19 @@ export interface CreateQuizInput {
   xp?: number;
 }
 
+// Quiz Bulk Create (dengan pertanyaan sekaligus)
+export interface BulkCreateQuizInput {
+  title: string;
+  description: string;
+  max_attempts: number;
+  time_limit: number;
+  open_at: string;
+  close_at: string;
+  passing_grade: number;
+  xp?: number;
+  questions: CreateQuestionInput[];
+}
+
 export interface UpdateQuizInput {
   title?: string;
   description?: string;

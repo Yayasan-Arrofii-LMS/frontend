@@ -6,10 +6,27 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { createQuiz } from "@/lib/api/quizzes";
+import { bulkCreateQuiz } from "@/lib/api/quizzes";
 import { toast } from "sonner";
-import { ArrowLeft, Minimize2 } from "lucide-react";
+import { ArrowLeft, Minimize2, Plus, Trash2, MinusCircle } from "lucide-react";
 import { useFullscreenPreference } from "@/hooks/use-fullscreen-preference";
+import { Card, CardContent } from "@/components/ui/card";
+
+interface Choice {
+  id: string;
+  text: string;
+  label: string;
+}
+
+interface QuestionData {
+  id: string;
+  question: string;
+  choices: Choice[];
+  correctAnswer: string;
+  points: number;
+}
+
+const CHOICE_LABELS = ["A", "B", "C", "D", "E"];
 
 export default function AddQuizPage({
   params,
@@ -32,7 +49,101 @@ export default function AddQuizPage({
   const [closeAt, setCloseAt] = useState("");
   const [passingGrade, setPassingGrade] = useState("70");
   const [xp, setXp] = useState("10");
+  const [questions, setQuestions] = useState<QuestionData[]>([
+    {
+      id: Math.random().toString(36).substr(2, 9),
+      question: "",
+      choices: [
+        { id: "0", text: "", label: "A" },
+        { id: "1", text: "", label: "B" },
+        { id: "2", text: "", label: "C" },
+        { id: "3", text: "", label: "D" },
+      ],
+      correctAnswer: "0",
+      points: 10,
+    },
+  ]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const addQuestion = () => {
+    const newQuestion: QuestionData = {
+      id: Math.random().toString(36).substr(2, 9),
+      question: "",
+      choices: [
+        { id: "0", text: "", label: "A" },
+        { id: "1", text: "", label: "B" },
+        { id: "2", text: "", label: "C" },
+        { id: "3", text: "", label: "D" },
+      ],
+      correctAnswer: "0",
+      points: 10,
+    };
+    setQuestions([...questions, newQuestion]);
+  };
+
+  const removeQuestion = (questionId: string) => {
+    if (questions.length === 1) {
+      toast.error("Minimal harus ada 1 pertanyaan");
+      return;
+    }
+    setQuestions(questions.filter((q) => q.id !== questionId));
+  };
+
+  const updateQuestion = (questionId: string, field: string, value: string) => {
+    setQuestions(
+      questions.map((q) =>
+        q.id === questionId ? { ...q, [field]: value } : q
+      )
+    );
+  };
+
+  const updateChoice = (questionId: string, choiceId: string, text: string) => {
+    setQuestions(
+      questions.map((q) =>
+        q.id === questionId
+          ? {
+              ...q,
+              choices: q.choices.map((c) =>
+                c.id === choiceId ? { ...c, text } : c
+              ),
+            }
+          : q
+      )
+    );
+  };
+
+  const addChoice = (questionId: string) => {
+    setQuestions(
+      questions.map((q) => {
+        if (q.id === questionId && q.choices.length < 5) {
+          const newChoice: Choice = {
+            id: q.choices.length.toString(),
+            text: "",
+            label: CHOICE_LABELS[q.choices.length],
+          };
+          return { ...q, choices: [...q.choices, newChoice] };
+        }
+        return q;
+      })
+    );
+  };
+
+  const removeChoice = (questionId: string) => {
+    setQuestions(
+      questions.map((q) => {
+        if (q.id === questionId && q.choices.length > 2) {
+          const newChoices = q.choices.slice(0, -1);
+          // Reset correct answer if it was the removed choice
+          const correctAnswer =
+            q.correctAnswer === (q.choices.length - 1).toString()
+              ? "0"
+              : q.correctAnswer;
+          return { ...q, choices: newChoices, correctAnswer };
+        }
+        return q;
+      })
+    );
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,6 +156,31 @@ export default function AddQuizPage({
     if (!description.trim()) {
       toast.error("Deskripsi quiz wajib diisi");
       return;
+    }
+
+    // Validate questions
+    if (questions.length === 0) {
+      toast.error("Minimal harus ada 1 pertanyaan");
+      return;
+    }
+
+    for (let i = 0; i < questions.length; i++) {
+      const q = questions[i];
+      if (!q.question.trim()) {
+        toast.error(`Pertanyaan ${i + 1}: Pertanyaan wajib diisi`);
+        return;
+      }
+      
+      const emptyChoices = q.choices.filter(c => !c.text.trim());
+      if (emptyChoices.length > 0) {
+        toast.error(`Pertanyaan ${i + 1}: Semua pilihan jawaban harus diisi`);
+        return;
+      }
+
+      if (!q.correctAnswer && q.correctAnswer !== "0") {
+        toast.error(`Pertanyaan ${i + 1}: Pilih jawaban yang benar`);
+        return;
+      }
     }
 
     const maxAttemptsNum = parseInt(maxAttempts);
@@ -92,7 +228,24 @@ export default function AddQuizPage({
 
     setIsSubmitting(true);
     try {
-      await createQuiz(sectionId, {
+      // Convert questions to API format
+      const questionsData = questions.map((q) => {
+        const correctAnswerIndex = parseInt(q.correctAnswer);
+        const answers = q.choices.map((choice, index) => ({
+          answer: choice.text.trim(),
+          is_correct: index === correctAnswerIndex,
+        }));
+
+        return {
+          question: q.question.trim(),
+          type: "MultipleChoice" as const,
+          points: q.points,
+          answers: answers,
+        };
+      });
+
+      // Bulk create quiz dengan pertanyaan sekaligus
+      await bulkCreateQuiz(sectionId, {
         title: title.trim(),
         description: description.trim(),
         max_attempts: maxAttemptsNum,
@@ -101,9 +254,10 @@ export default function AddQuizPage({
         close_at: new Date(closeAt).toISOString(),
         passing_grade: passingGradeNum,
         xp: xpNum,
+        questions: questionsData,
       });
 
-      toast.success("Quiz berhasil ditambahkan");
+      toast.success("Quiz dan pertanyaan berhasil ditambahkan");
       setPreference("modal");
       router.push(`/class/${classId}`);
       router.refresh();
@@ -273,6 +427,136 @@ export default function AddQuizPage({
                 disabled={isSubmitting}
               />
             </div>
+          </div>
+
+          {/* Questions Section */}
+          <div className="space-y-4 border-t pt-6">
+            <div className="flex items-center justify-between">
+              <Label className="text-lg font-semibold">Pertanyaan</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addQuestion}
+                disabled={isSubmitting}
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Tambah Pertanyaan
+              </Button>
+            </div>
+
+            {questions.map((question, qIndex) => (
+              <Card key={question.id} className="relative">
+                <CardContent className="pt-6 space-y-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 space-y-2">
+                      <Label htmlFor={`question-${question.id}`}>
+                        Pertanyaan {qIndex + 1} <span className="text-destructive">*</span>
+                      </Label>
+                      <Textarea
+                        id={`question-${question.id}`}
+                        placeholder="Masukkan pertanyaan..."
+                        value={question.question}
+                        onChange={(e) =>
+                          updateQuestion(question.id, "question", e.target.value)
+                        }
+                        disabled={isSubmitting}
+                        rows={3}
+                      />
+                    </div>
+                    {questions.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeQuestion(question.id)}
+                        disabled={isSubmitting}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label>Pilihan Jawaban</Label>
+                      <div className="flex gap-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeChoice(question.id)}
+                          disabled={isSubmitting || question.choices.length <= 2}
+                          title="Kurangi pilihan"
+                        >
+                          <MinusCircle className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => addChoice(question.id)}
+                          disabled={isSubmitting || question.choices.length >= 5}
+                          title="Tambah pilihan"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {question.choices.map((choice) => (
+                      <div key={choice.id} className="flex items-center gap-2">
+                        <input
+                          type="radio"
+                          id={`correct-${question.id}-${choice.id}`}
+                          name={`correct-${question.id}`}
+                          checked={question.correctAnswer === choice.id}
+                          onChange={() =>
+                            updateQuestion(question.id, "correctAnswer", choice.id)
+                          }
+                          disabled={isSubmitting}
+                          className="h-4 w-4"
+                        />
+                        <Label
+                          htmlFor={`correct-${question.id}-${choice.id}`}
+                          className="font-semibold min-w-[24px]"
+                        >
+                          {choice.label}.
+                        </Label>
+                        <Input
+                          placeholder={`Pilihan ${choice.label}`}
+                          value={choice.text}
+                          onChange={(e) =>
+                            updateChoice(question.id, choice.id, e.target.value)
+                          }
+                          disabled={isSubmitting}
+                          className="flex-1"
+                        />
+                      </div>
+                    ))}
+                    <p className="text-xs text-muted-foreground">
+                      Pilih radio button untuk menandai jawaban yang benar
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor={`points-${question.id}`}>Poin</Label>
+                    <Input
+                      id={`points-${question.id}`}
+                      type="number"
+                      min="1"
+                      value={question.points}
+                      onChange={(e) =>
+                        updateQuestion(question.id, "points", e.target.value)
+                      }
+                      disabled={isSubmitting}
+                      className="w-32"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
 
           <div className="flex justify-end gap-2 pt-4 border-t">

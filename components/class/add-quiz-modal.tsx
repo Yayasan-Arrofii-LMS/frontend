@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { createQuiz, createQuestion } from "@/lib/api/quizzes";
+import { bulkCreateQuiz } from "@/lib/api/quizzes";
 import { Maximize2, Plus, Trash2, MinusCircle } from "lucide-react";
 import { useFullscreenPreference } from "@/hooks/use-fullscreen-preference";
 import { Card, CardContent } from "@/components/ui/card";
@@ -251,8 +251,24 @@ export function AddQuizModal({
 
     setIsSubmitting(true);
     try {
-      // Create quiz first
-      const quiz = await createQuiz(sectionId, {
+      // Convert questions to API format
+      const questionsData = questions.map((q) => {
+        const correctAnswerIndex = parseInt(q.correctAnswer);
+        const answers = q.choices.map((choice, index) => ({
+          answer: choice.text.trim(),
+          is_correct: index === correctAnswerIndex,
+        }));
+
+        return {
+          question: q.question.trim(),
+          type: "MultipleChoice" as const,
+          points: q.points,
+          answers: answers,
+        };
+      });
+
+      // Bulk create quiz dengan pertanyaan sekaligus
+      await bulkCreateQuiz(sectionId, {
         title: title.trim(),
         description: description.trim(),
         max_attempts: maxAttemptsNum,
@@ -261,26 +277,8 @@ export function AddQuizModal({
         close_at: new Date(closeAt).toISOString(),
         passing_grade: passingGradeNum,
         xp: xpNum,
+        questions: questionsData,
       });
-
-      // Create all questions
-      for (let i = 0; i < questions.length; i++) {
-        const q = questions[i];
-        const correctAnswerIndex = parseInt(q.correctAnswer);
-        
-        // Convert choices to answers format
-        const answers = q.choices.map((choice, index) => ({
-          answer: choice.text.trim(),
-          is_correct: index === correctAnswerIndex,
-        }));
-
-        await createQuestion(sectionId, quiz.id, {
-          question: q.question.trim(),
-          type: "MultipleChoice",
-          points: q.points,
-          answers: answers,
-        });
-      }
 
       toast.success("Quiz dan pertanyaan berhasil ditambahkan");
       onAdd();

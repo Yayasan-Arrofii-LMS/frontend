@@ -13,6 +13,7 @@ import {
   SavedAnswersResponse,
   SavedAnswersData,
   CreateQuizInput,
+  BulkCreateQuizInput,
   UpdateQuizInput,
   CreateQuestionInput,
   UpdateQuestionInput,
@@ -218,6 +219,29 @@ export async function createQuiz(
     return response.data;
   } catch (error) {
     console.error("Error creating quiz:", error);
+    throw error;
+  }
+}
+
+/**
+ * Bulk create quiz dengan pertanyaan sekaligus
+ * POST /classes/sections/:sectionId/quizzes/bulk-create
+ */
+export async function bulkCreateQuiz(
+  sectionId: number,
+  data: BulkCreateQuizInput
+): Promise<Quiz> {
+  try {
+    const response = await apiCall<QuizResponse>(
+      `/classes/sections/${sectionId}/quizzes/bulk-create`,
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error bulk creating quiz:", error);
     throw error;
   }
 }
