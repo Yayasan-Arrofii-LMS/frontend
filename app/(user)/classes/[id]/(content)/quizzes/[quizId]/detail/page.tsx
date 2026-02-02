@@ -22,9 +22,19 @@ import {
   XCircle,
   PlayCircle,
   Calendar,
+  ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { fetchQuizDetail, QuizDetail } from "@/lib/api/quiz-detail";
+import { fetchStudentClassDetail } from "@/lib/api/classes";
 import { toast } from "sonner";
+
+interface ContentItem {
+  id: number;
+  type: "material" | "quiz";
+  sectionId: number;
+}
 
 export default function QuizDetailPage() {
   const params = useParams();
@@ -34,11 +44,32 @@ export default function QuizDetailPage() {
 
   const [quizData, setQuizData] = useState<QuizDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [contentItems, setContentItems] = useState<ContentItem[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(-1);
 
   useEffect(() => {
     async function loadQuizDetail() {
       try {
         setIsLoading(true);
+
+        // Build content items list
+        const classData = await fetchStudentClassDetail(classId);
+        const items: ContentItem[] = [];
+        classData.sections.forEach((section) => {
+          section.materials.forEach((material) => {
+            items.push({ id: material.id, type: "material", sectionId: section.id });
+          });
+          section.quizzes.forEach((quiz) => {
+            items.push({ id: quiz.id, type: "quiz", sectionId: section.id });
+          });
+        });
+        setContentItems(items);
+
+        // Find current item index
+        const index = items.findIndex(
+          (item) => item.type === "quiz" && item.id === quizId
+        );
+        setCurrentIndex(index);
 
         // Extract sectionId from URL or get from state
         // For now, we'll need to pass it through the URL
@@ -79,6 +110,28 @@ export default function QuizDetailPage() {
     router.push(
       `/classes/${classId}/quizzes/${quizId}?sectionId=${quizData.sectionId}&attemptId=${quizData.ongoingAttempt.id}`
     );
+  };
+
+  const handlePrevious = () => {
+    if (currentIndex > 0) {
+      const prevItem = contentItems[currentIndex - 1];
+      if (prevItem.type === "material") {
+        router.push(`/classes/${classId}/materials/${prevItem.id}`);
+      } else {
+        router.push(`/classes/${classId}/quizzes/${prevItem.id}/detail?sectionId=${prevItem.sectionId}`);
+      }
+    }
+  };
+
+  const handleNext = () => {
+    if (currentIndex < contentItems.length - 1) {
+      const nextItem = contentItems[currentIndex + 1];
+      if (nextItem.type === "material") {
+        router.push(`/classes/${classId}/materials/${nextItem.id}`);
+      } else {
+        router.push(`/classes/${classId}/quizzes/${nextItem.id}/detail?sectionId=${nextItem.sectionId}`);
+      }
+    }
   };
 
   if (isLoading) {
@@ -150,8 +203,23 @@ export default function QuizDetailPage() {
   const isBestScorePassed = bestScoreAttempt?.isPassed ?? 
     (quizData.bestScore !== null ? quizData.bestScore >= quizData.passing_grade : false);
 
+  const hasPrevious = currentIndex > 0;
+  const hasNext = currentIndex < contentItems.length - 1;
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
+      {/* Mobile Back Button */}
+      <div className="lg:hidden mb-4">
+        <Button
+          variant="ghost"
+          onClick={() => router.push(`/classes/${classId}`)}
+          className="gap-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Kembali ke Kelas
+        </Button>
+      </div>
+
       {/* Quiz Header */}
       <Card className="mb-6">
         <CardHeader>
@@ -462,6 +530,27 @@ export default function QuizDetailPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Navigation Buttons - Mobile Only */}
+      <div className="lg:hidden mt-6 flex gap-3">
+        <Button
+          variant="outline"
+          onClick={handlePrevious}
+          disabled={!hasPrevious}
+          className="flex-1"
+        >
+          <ChevronLeft className="h-4 w-4 mr-2" />
+          Sebelumnya
+        </Button>
+        <Button
+          onClick={handleNext}
+          disabled={!hasNext}
+          className="flex-1"
+        >
+          Selanjutnya
+          <ChevronRight className="h-4 w-4 ml-2" />
+        </Button>
+      </div>
     </div>
   );
 }

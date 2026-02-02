@@ -18,7 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { login, setAuthToken } from "@/lib/api/auth";
 import { toast } from "sonner";
 
@@ -27,6 +27,7 @@ export function LoginForm({
   ...props
 }: React.ComponentProps<"div">) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     usernameoremail: "",
@@ -84,10 +85,14 @@ export function LoginForm({
           role: response.data.role,
         });
 
-        // Redirect based on role
+        // Get redirect URL from query params or default based on role
+        const from = searchParams.get("from");
         const role = response.data.role?.toLowerCase();
 
-        if (role === "admin") {
+        if (from && from !== "/login") {
+          // Redirect to the page user was trying to access
+          router.push(from);
+        } else if (role === "admin") {
           router.push("/dashboard");
         } else if (role === "teacher") {
           router.push("/class");

@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-// Routes yang memerlukan autentikasi
-const protectedRoutes = ["/dashboard", "/course", "/teacher"];
+// Routes admin/teacher yang akan menampilkan 404 jika tidak ada token (untuk keamanan)
+const adminTeacherRoutes = ["/dashboard", "/course", "/teacher"];
+
+// Routes user yang akan redirect ke login jika tidak ada token
+const userProtectedRoutes = ["/classes", "/my-classes"];
 
 // Routes yang hanya bisa diakses ketika belum login
 const authRoutes = [
@@ -19,18 +22,29 @@ export function middleware(request: NextRequest) {
   // Get token from cookie or check if it exists in localStorage (client-side)
   const token = request.cookies.get("auth_token")?.value;
 
-  // Check if accessing protected route
-  const isProtectedRoute = protectedRoutes.some((route) =>
+  // Check if accessing admin/teacher route
+  const isAdminTeacherRoute = adminTeacherRoutes.some((route) =>
+    pathname.startsWith(route)
+  );
+
+  // Check if accessing user protected route
+  const isUserProtectedRoute = userProtectedRoutes.some((route) =>
     pathname.startsWith(route)
   );
 
   // Check if accessing auth route
   const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route));
 
-  // Return 404 if accessing protected route without token (untuk keamanan)
-  // Tidak redirect ke login agar tidak mengekspos bahwa route tersebut ada
-  if (isProtectedRoute && !token) {
+  // Return 404 for admin/teacher routes without token (untuk keamanan)
+  if (isAdminTeacherRoute && !token) {
     return NextResponse.rewrite(new URL("/not-found", request.url));
+  }
+
+  // Redirect to login for user routes without token
+  if (isUserProtectedRoute && !token) {
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("from", pathname);
+    return NextResponse.redirect(loginUrl);
   }
 
   // Redirect to dashboard if accessing auth route with token

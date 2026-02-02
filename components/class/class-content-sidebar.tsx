@@ -154,37 +154,6 @@ export function ClassContentSidebar({
 
   return (
     <>
-      {/* Mobile Header */}
-      <div className="lg:hidden sticky top-0 z-10 bg-background border-b">
-        <div className="flex items-center justify-between px-2 py-2">
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-80 p-0">
-              <SheetTitle className="sr-only">Daftar Isi Kelas</SheetTitle>
-              <SidebarContent
-                sections={sections}
-                currentItemId={currentItemId}
-                currentItemType={currentItemType}
-                expandedSections={expandedSections}
-                onToggleSection={onToggleSection}
-              />
-            </SheetContent>
-          </Sheet>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.push(`/classes/${classId}`)}
-            className="ml-auto"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-        </div>
-      </div>
-
       {/* Desktop Sidebar */}
       <div
         className={cn(

@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
-import { Award, FileDown, Eye, Download } from "lucide-react";
+import { Award, FileDown, Eye, Download, ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { fetchStudentClassDetail } from "@/lib/api/classes";
 import {
   fetchSectionMaterials,
@@ -17,6 +17,12 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { extractYouTubeVideoId, getYouTubeEmbedUrl } from "@/lib/utils/youtube";
 
+interface ContentItem {
+  id: number;
+  type: "material" | "quiz";
+  sectionId: number;
+}
+
 export default function MaterialDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -27,6 +33,8 @@ export default function MaterialDetailPage() {
     useState<StudentMaterial | null>(null);
   const [materialFiles, setMaterialFiles] = useState<StudentMaterialFile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [contentItems, setContentItems] = useState<ContentItem[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(-1);
 
   const handlePreviewFile = async (fileUrl: string, fileName: string) => {
     try {
@@ -96,6 +104,24 @@ export default function MaterialDetailPage() {
 
         const classData = await fetchStudentClassDetail(classId);
 
+        // Build content items list (all materials and quizzes in order)
+        const items: ContentItem[] = [];
+        classData.sections.forEach((section) => {
+          section.materials.forEach((material) => {
+            items.push({ id: material.id, type: "material", sectionId: section.id });
+          });
+          section.quizzes.forEach((quiz) => {
+            items.push({ id: quiz.id, type: "quiz", sectionId: section.id });
+          });
+        });
+        setContentItems(items);
+
+        // Find current item index
+        const index = items.findIndex(
+          (item) => item.type === "material" && item.id === materialId
+        );
+        setCurrentIndex(index);
+
         let currentSectionId: number | null = null;
         for (const section of classData.sections) {
           const material = section.materials.find((m) => m.id === materialId);
@@ -139,6 +165,28 @@ export default function MaterialDetailPage() {
     loadData();
   }, [classId, materialId, router]);
 
+  const handlePrevious = () => {
+    if (currentIndex > 0) {
+      const prevItem = contentItems[currentIndex - 1];
+      if (prevItem.type === "material") {
+        router.push(`/classes/${classId}/materials/${prevItem.id}`);
+      } else {
+        router.push(`/classes/${classId}/quizzes/${prevItem.id}/detail?sectionId=${prevItem.sectionId}`);
+      }
+    }
+  };
+
+  const handleNext = () => {
+    if (currentIndex < contentItems.length - 1) {
+      const nextItem = contentItems[currentIndex + 1];
+      if (nextItem.type === "material") {
+        router.push(`/classes/${classId}/materials/${nextItem.id}`);
+      } else {
+        router.push(`/classes/${classId}/quizzes/${nextItem.id}/detail?sectionId=${nextItem.sectionId}`);
+      }
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 sm:py-8 space-y-4">
@@ -154,8 +202,23 @@ export default function MaterialDetailPage() {
     return null;
   }
 
+  const hasPrevious = currentIndex > 0;
+  const hasNext = currentIndex < contentItems.length - 1;
+
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
+      {/* Mobile Back Button */}
+      <div className="lg:hidden mb-4">
+        <Button
+          variant="ghost"
+          onClick={() => router.push(`/classes/${classId}`)}
+          className="gap-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Kembali ke Kelas
+        </Button>
+      </div>
+
       <article className="prose prose-slate dark:prose-invert max-w-none">
         <h1 className="text-2xl sm:text-4xl font-bold mb-4">
           {currentMaterial.title}
@@ -256,6 +319,27 @@ export default function MaterialDetailPage() {
           </>
         )}
       </article>
+
+      {/* Navigation Buttons - Mobile Only */}
+      <div className="lg:hidden mt-8 flex gap-3">
+        <Button
+          variant="outline"
+          onClick={handlePrevious}
+          disabled={!hasPrevious}
+          className="flex-1"
+        >
+          <ChevronLeft className="h-4 w-4 mr-2" />
+          Sebelumnya
+        </Button>
+        <Button
+          onClick={handleNext}
+          disabled={!hasNext}
+          className="flex-1"
+        >
+          Selanjutnya
+          <ChevronRight className="h-4 w-4 ml-2" />
+        </Button>
+      </div>
     </div>
   );
 }
