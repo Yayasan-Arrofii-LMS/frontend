@@ -86,7 +86,7 @@ export function TeacherManagementContent() {
                 Password default untuk akun guru baru:
               </span>
               <code className="px-2 py-1 bg-blue-100 dark:bg-blue-900 rounded text-sm font-mono text-blue-900 dark:text-blue-100">
-                {showPassword ? "Password@123" : "••••••••••••"}
+                {showPassword ? "password123" : "••••••••••••"}
               </code>
             </div>
             <Button

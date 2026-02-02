@@ -21,6 +21,11 @@ const nextConfig: NextConfig = {
         hostname: "api.lms-sekolahalam.my.id",
         pathname: "/files/public/**",
       },
+      {
+        protocol: "https",
+        hostname: "api.sekolahalam.co",
+        pathname: "/files/public/**",
+      },
     ],
     minimumCacheTTL: 60,
     dangerouslyAllowSVG: true,

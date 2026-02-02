@@ -27,7 +27,7 @@ export function TeacherHeader({ totalItems }: TeacherHeaderProps) {
         <p className="text-muted-foreground text-sm flex items-center gap-2">
           Password default: 
           <span className="font-mono">
-            {showPassword ? "Password@123" : "••••••••••••"}
+            {showPassword ? "password123" : "••••••••••••"}
           </span>
           <button
             onClick={() => setShowPassword(!showPassword)}
