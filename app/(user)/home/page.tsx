@@ -35,6 +35,7 @@ export default function HomePage() {
   const [classes, setClasses] = useState<Class[]>([]);
   const [isLoadingClasses, setIsLoadingClasses] = useState(true);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
+  const [showTeacherPortalDialog, setShowTeacherPortalDialog] = useState(false);
   const router = useRouter();
 
   const handleClassClick = (classId: string, e: React.MouseEvent) => {
@@ -54,6 +55,33 @@ export default function HomePage() {
   const handleLoginRedirect = () => {
     setShowLoginDialog(false);
     router.push("/login");
+  };
+
+  const handleTeacherPortalClick = () => {
+    setShowTeacherPortalDialog(true);
+  };
+
+  const handleTeacherLogin = () => {
+    setShowTeacherPortalDialog(false);
+    router.push("/login");
+  };
+
+  const handleTeacherRegister = () => {
+    setShowTeacherPortalDialog(false);
+    window.location.href =
+      "mailto:umartaufiq8284@ugm.ac.id?subject=Pendaftaran Akun Guru LMS Sekolah Alam&body=Halo, saya ingin mendaftar sebagai guru di LMS Sekolah Alam.%0D%0A%0D%0ANama:%0D%0AEmail:%0D%0ANomor Telepon:%0D%0A%0D%0ATerima kasih.";
+  };
+
+  const handleStudentDashboardClick = () => {
+    if (isLoading) {
+      return;
+    }
+
+    if (!isAuthenticated) {
+      setShowLoginDialog(true);
+    } else {
+      router.push("/classes");
+    }
   };
 
   useEffect(() => {
@@ -225,19 +253,11 @@ export default function HomePage() {
         <div className="mx-auto max-w-6xl">
           <h2 className="mb-12 text-center text-3xl font-bold">Fitur Utama</h2>
 
-          <div className="grid gap-8 md:grid-cols-3">
-            <div className="flex flex-col items-center text-center">
-              <div className="mb-4 rounded-full bg-primary/10 p-4">
-                <BookOpen className="h-8 w-8 text-primary" />
-              </div>
-              <h3 className="mb-2 text-xl font-semibold">Manajemen Kursus</h3>
-              <p className="text-muted-foreground">
-                Buat, atur, dan kelola kursus Anda dengan mudah menggunakan
-                antarmuka yang intuitif.
-              </p>
-            </div>
-
-            <div className="flex flex-col items-center text-center">
+          <div className="grid gap-8 md:grid-cols-2">
+            <div
+              className="flex flex-col items-center text-center cursor-pointer transition-all hover:scale-105 p-6 rounded-lg hover:bg-primary/5"
+              onClick={handleTeacherPortalClick}
+            >
               <div className="mb-4 rounded-full bg-primary/10 p-4">
                 <Users className="h-8 w-8 text-primary" />
               </div>
@@ -248,7 +268,10 @@ export default function HomePage() {
               </p>
             </div>
 
-            <div className="flex flex-col items-center text-center">
+            <div
+              className="flex flex-col items-center text-center cursor-pointer transition-all hover:scale-105 p-6 rounded-lg hover:bg-primary/5"
+              onClick={handleStudentDashboardClick}
+            >
               <div className="mb-4 rounded-full bg-primary/10 p-4">
                 <GraduationCap className="h-8 w-8 text-primary" />
               </div>
@@ -282,6 +305,38 @@ export default function HomePage() {
             <AlertDialogAction onClick={handleLoginRedirect}>
               Login
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={showTeacherPortalDialog}
+        onOpenChange={setShowTeacherPortalDialog}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Portal Guru</AlertDialogTitle>
+            <AlertDialogDescription>
+              Apakah Anda sudah memiliki akun guru atau ingin mendaftar sebagai
+              guru baru?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex flex-col gap-3 py-4">
+            <Button onClick={handleTeacherLogin} className="w-full">
+              Sudah Punya Akun (Login)
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleTeacherRegister}
+              className="w-full"
+            >
+              Belum Punya Akun (Daftar via Email)
+            </Button>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="w-full sm:w-auto">
+              Batal
+            </AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

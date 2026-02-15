@@ -102,7 +102,7 @@ export function MaterialFormWithTabs({
 
   const handleUpdateStagedFileTitle = (id: string, newTitle: string) => {
     setStagedFiles((prev) =>
-      prev.map((f) => (f.id === id ? { ...f, title: newTitle } : f))
+      prev.map((f) => (f.id === id ? { ...f, title: newTitle } : f)),
     );
   };
 
@@ -213,7 +213,9 @@ export function MaterialFormWithTabs({
 
                 {onVideoLinkChange && (
                   <div className="space-y-2">
-                    <Label htmlFor="video-link">Link Video YouTube (Opsional)</Label>
+                    <Label htmlFor="video-link">
+                      Link Video YouTube (Opsional)
+                    </Label>
                     <Input
                       id="video-link"
                       type="url"
@@ -241,8 +243,8 @@ export function MaterialFormWithTabs({
                     {isSubmitting
                       ? "Menyimpan..."
                       : mode === "add"
-                      ? "Tambah Materi"
-                      : "Simpan Perubahan"}
+                        ? "Tambah Materi"
+                        : "Simpan Perubahan"}
                   </Button>
                 </div>
               </form>
@@ -305,7 +307,7 @@ export function MaterialFormWithTabs({
                                   onChange={(e) =>
                                     handleUpdateStagedFileTitle(
                                       stagedFile.id,
-                                      e.target.value
+                                      e.target.value,
                                     )
                                   }
                                   placeholder="Judul file"
@@ -314,7 +316,7 @@ export function MaterialFormWithTabs({
                                 <p className="text-xs text-muted-foreground">
                                   {stagedFile.file.name} (
                                   {(stagedFile.file.size / 1024 / 1024).toFixed(
-                                    2
+                                    2,
                                   )}{" "}
                                   MB)
                                 </p>

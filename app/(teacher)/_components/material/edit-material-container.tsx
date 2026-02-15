@@ -3,6 +3,7 @@
 import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { updateMaterial, getMaterial } from "@/lib/api/sections";
+import { UpdateMaterialInput } from "@/types/section";
 import { toast } from "sonner";
 import { useFullscreenPreference } from "@/hooks/use-fullscreen-preference";
 import { MaterialFormWithTabs } from "./material-form-with-tabs";
@@ -42,7 +43,7 @@ export function EditMaterialContainer({
 
   const [title, setTitle] = useState(decodeURIComponent(initialTitle || ""));
   const [content, setContent] = useState(
-    decodeURIComponent(initialContent || "")
+    decodeURIComponent(initialContent || ""),
   );
   const [xp, setXp] = useState(initialXp ? decodeURIComponent(initialXp) : "");
   const [videoLink, setVideoLink] = useState("");
@@ -58,11 +59,11 @@ export function EditMaterialContainer({
         setIsLoading(true);
         const data = await getMaterial(sectionId, materialId);
         setFetchedMaterial(data);
-        
+
         // Check for draft first, otherwise use fetched data
         const draftKey = `material-edit-draft-${materialId}`;
         const savedDraft = sessionStorage.getItem(draftKey);
-        
+
         if (savedDraft) {
           try {
             const parsed = JSON.parse(savedDraft);
@@ -123,12 +124,22 @@ export function EditMaterialContainer({
 
     setIsSubmitting(true);
     try {
-      await updateMaterial(classId, sectionId, materialId, {
+      const materialData: UpdateMaterialInput = {
         title: title.trim(),
         content: content.trim(),
-        xp: xpValue,
-        video_link: videoLink.trim() || undefined,
-      });
+      };
+
+      // Only include xp if it has a value
+      if (xpValue !== undefined) {
+        materialData.xp = xpValue;
+      }
+
+      // Only include video_link if it's not empty
+      if (videoLink.trim()) {
+        materialData.video_link = videoLink.trim();
+      }
+
+      await updateMaterial(classId, sectionId, materialId, materialData);
       toast.success("Materi berhasil diperbarui");
       setPreference("modal");
       router.push(`/teacher/my-courses/${classId}`);
@@ -148,11 +159,14 @@ export function EditMaterialContainer({
       xp,
       videoLink,
     };
-    sessionStorage.setItem(`material-edit-draft-${materialId}`, JSON.stringify(formData));
-    
+    sessionStorage.setItem(
+      `material-edit-draft-${materialId}`,
+      JSON.stringify(formData),
+    );
+
     setPreference("modal");
     router.push(
-      `/teacher/my-courses/${classId}?openEditMaterial=${materialId}&sectionId=${sectionId}`
+      `/teacher/my-courses/${classId}?openEditMaterial=${materialId}&sectionId=${sectionId}`,
     );
   };
 

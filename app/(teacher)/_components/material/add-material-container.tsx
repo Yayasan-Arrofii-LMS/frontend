@@ -4,6 +4,7 @@ import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createMaterial } from "@/lib/api/sections";
 import { createMaterialFile } from "@/lib/api/material-files";
+import { CreateMaterialInput } from "@/types/section";
 import { toast } from "sonner";
 import { useFullscreenPreference } from "@/hooks/use-fullscreen-preference";
 import { MaterialFormWithTabs, StagedFile } from "./material-form-with-tabs";
@@ -28,14 +29,14 @@ export function AddMaterialContainer({
   const [xp, setXp] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createdMaterialId, setCreatedMaterialId] = useState<number | null>(
-    null
+    null,
   );
 
   // Load draft from sessionStorage when page loads
   useEffect(() => {
     const draftKey = `material-draft-${sectionId}`;
     const savedDraft = sessionStorage.getItem(draftKey);
-    
+
     if (savedDraft) {
       try {
         const parsed = JSON.parse(savedDraft);
@@ -52,7 +53,7 @@ export function AddMaterialContainer({
 
   const handleSubmit = async (
     e: React.FormEvent,
-    stagedFiles?: StagedFile[]
+    stagedFiles?: StagedFile[],
   ) => {
     e.preventDefault();
 
@@ -79,11 +80,21 @@ export function AddMaterialContainer({
 
     setIsSubmitting(true);
     try {
-      const newMaterial = await createMaterial(classId, sectionId, {
+      const materialData: CreateMaterialInput = {
         title: title.trim(),
         content: content.trim(),
-        xp: xpValue,
-      });
+      };
+
+      // Only include xp if it has a value
+      if (xpValue !== undefined) {
+        materialData.xp = xpValue;
+      }
+
+      const newMaterial = await createMaterial(
+        classId,
+        sectionId,
+        materialData,
+      );
       setCreatedMaterialId(newMaterial.id);
 
       // Upload staged files if any
@@ -94,9 +105,9 @@ export function AddMaterialContainer({
         for (const stagedFile of stagedFiles) {
           try {
             const formData = new FormData();
-            formData.append('file', stagedFile.file);
-            formData.append('title', stagedFile.title);
-            
+            formData.append("file", stagedFile.file);
+            formData.append("title", stagedFile.title);
+
             await createMaterialFile(newMaterial.id, formData);
             successCount++;
           } catch (error) {
@@ -107,16 +118,16 @@ export function AddMaterialContainer({
 
         if (failCount === 0) {
           toast.success(
-            `Materi berhasil ditambahkan dengan ${successCount} file.`
+            `Materi berhasil ditambahkan dengan ${successCount} file.`,
           );
         } else {
           toast.warning(
-            `Materi berhasil ditambahkan. ${successCount} file berhasil diupload, ${failCount} file gagal.`
+            `Materi berhasil ditambahkan. ${successCount} file berhasil diupload, ${failCount} file gagal.`,
           );
         }
       } else {
         toast.success(
-          "Materi berhasil ditambahkan. Anda dapat menambahkan file sekarang."
+          "Materi berhasil ditambahkan. Anda dapat menambahkan file sekarang.",
         );
       }
     } catch {
@@ -133,8 +144,11 @@ export function AddMaterialContainer({
       content,
       xp,
     };
-    sessionStorage.setItem(`material-draft-${sectionId}`, JSON.stringify(formData));
-    
+    sessionStorage.setItem(
+      `material-draft-${sectionId}`,
+      JSON.stringify(formData),
+    );
+
     setPreference("modal");
     router.push(`/teacher/my-courses/${classId}?openAddMaterial=${sectionId}`);
   };

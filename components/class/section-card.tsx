@@ -78,6 +78,7 @@ interface SectionCardProps {
 
 interface MaterialItemProps {
   material: Material;
+  sectionId: number;
   onEdit: (material: Material) => void;
   onDelete: (materialId: number) => void;
 }
@@ -167,6 +168,7 @@ const QuizItem = memo(function QuizItem({
 
 const MaterialItem = memo(function MaterialItem({
   material,
+  sectionId,
   onEdit,
   onDelete,
 }: MaterialItemProps) {
@@ -265,7 +267,7 @@ export function SectionCard({
     "content" | "files"
   >("content");
   const [deletingMaterialId, setDeletingMaterialId] = useState<number | null>(
-    null
+    null,
   );
   const [isDeletingMaterial, setIsDeletingMaterial] = useState(false);
   const [localMaterials, setLocalMaterials] = useState(section.Material);
@@ -334,7 +336,7 @@ export function SectionCard({
         triggerModalOpen.materialId
       ) {
         const material = section.Material.find(
-          (m) => m.id === triggerModalOpen.materialId
+          (m) => m.id === triggerModalOpen.materialId,
         );
         if (material) {
           setEditingMaterial(material);
@@ -349,7 +351,7 @@ export function SectionCard({
       transform: CSS.Transform.toString(transform),
       transition,
     }),
-    [transform, transition]
+    [transform, transition],
   );
 
   const sensors = useSensors(
@@ -360,7 +362,7 @@ export function SectionCard({
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    })
+    }),
   );
 
   const handleDelete = useCallback(async () => {
@@ -390,7 +392,7 @@ export function SectionCard({
         setIsDeletingMaterial(false);
       }
     },
-    [classId, section.id, onUpdate]
+    [classId, section.id, onUpdate],
   );
 
   const handleEditQuiz = useCallback(
@@ -405,7 +407,7 @@ export function SectionCard({
         console.error("Kesalahan saat memuat quiz:", error);
       }
     },
-    [section.id]
+    [section.id],
   );
 
   const handleDeleteQuiz = useCallback(
@@ -422,7 +424,7 @@ export function SectionCard({
         setIsDeletingQuiz(false);
       }
     },
-    [section.id, onUpdate]
+    [section.id, onUpdate],
   );
 
   const handleManageQuestions = useCallback(
@@ -430,7 +432,7 @@ export function SectionCard({
       setSelectedQuizForQuestions({ quizId, quizTitle });
       setIsManageQuestionsOpen(true);
     },
-    []
+    [],
   );
 
   const handleMaterialDragStart = useCallback(
@@ -441,7 +443,7 @@ export function SectionCard({
         setActiveMaterial(material);
       }
     },
-    [localMaterials]
+    [localMaterials],
   );
 
   const handleMaterialDragEnd = useCallback(
@@ -477,7 +479,7 @@ export function SectionCard({
             classId,
             section.id,
             materialOrders,
-            originalOrders
+            originalOrders,
           );
           toast.success("Urutan materi berhasil diubah");
           // Don't call onUpdate() to avoid re-fetching and skeleton loading
@@ -488,12 +490,12 @@ export function SectionCard({
         }
       }
     },
-    [localMaterials, classId, section.id, section.Material]
+    [localMaterials, classId, section.id, section.Material],
   );
 
   const materialIds = useMemo(
     () => localMaterials.map((m) => m.id),
-    [localMaterials]
+    [localMaterials],
   );
 
   return (
@@ -593,6 +595,7 @@ export function SectionCard({
                         <MaterialItem
                           key={material.id}
                           material={material}
+                          sectionId={section.id}
                           onEdit={setEditingMaterial}
                           onDelete={setDeletingMaterialId}
                         />

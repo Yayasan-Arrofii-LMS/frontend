@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { createMaterial } from "@/lib/api/sections";
+import { CreateMaterialInput } from "@/types/section";
 import { toast } from "sonner";
 import { Maximize2 } from "lucide-react";
 import { useFullscreenPreference } from "@/hooks/use-fullscreen-preference";
@@ -46,14 +47,16 @@ export function AddMaterialModal({
   const [videoLink, setVideoLink] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<"content" | "files">("content");
-  const [materialFiles, setMaterialFiles] = useState<{ file: File; title: string }[]>([]);
+  const [materialFiles, setMaterialFiles] = useState<
+    { file: File; title: string }[]
+  >([]);
 
   // Load draft from sessionStorage when modal opens
   useEffect(() => {
     if (isOpen) {
       const draftKey = `material-draft-${sectionId}`;
       const savedDraft = sessionStorage.getItem(draftKey);
-      
+
       if (savedDraft) {
         try {
           const parsed = JSON.parse(savedDraft);
@@ -82,8 +85,11 @@ export function AddMaterialModal({
       // Note: materialFiles (File objects) cannot be serialized to sessionStorage
       // User will need to re-add files in fullscreen mode
     };
-    sessionStorage.setItem(`material-draft-${sectionId}`, JSON.stringify(formData));
-    
+    sessionStorage.setItem(
+      `material-draft-${sectionId}`,
+      JSON.stringify(formData),
+    );
+
     setPreference("fullscreen");
     onClose();
     router.push(`${basePath}/${classId}/material/add?sectionId=${sectionId}`);
@@ -121,17 +127,31 @@ export function AddMaterialModal({
     setIsSubmitting(true);
     try {
       // Step 1: Create material first
-      const newMaterial = await createMaterial(classId, sectionId, {
+      const materialData: CreateMaterialInput = {
         title: title.trim(),
         content: content.trim(),
-        xp: xpValue,
-        video_link: videoLink.trim() || undefined,
-      });
+      };
+
+      // Only include xp if it has a value
+      if (xpValue !== undefined) {
+        materialData.xp = xpValue;
+      }
+
+      // Only include video_link if it's not empty
+      if (videoLink.trim()) {
+        materialData.video_link = videoLink.trim();
+      }
+
+      const newMaterial = await createMaterial(
+        classId,
+        sectionId,
+        materialData,
+      );
 
       // Step 2: Upload files if any
       if (materialFiles.length > 0) {
         const { createMaterialFile } = await import("@/lib/api/material-files");
-        
+
         let successCount = 0;
         let failCount = 0;
 
@@ -140,7 +160,7 @@ export function AddMaterialModal({
             const formData = new FormData();
             formData.append("file", item.file);
             formData.append("title", item.title || item.file.name);
-            
+
             await createMaterialFile(newMaterial.id, formData);
             successCount++;
           } catch (error) {
@@ -151,17 +171,15 @@ export function AddMaterialModal({
 
         if (failCount > 0) {
           toast.warning(
-            `Materi berhasil ditambahkan. ${successCount} file berhasil diupload, ${failCount} file gagal.`
+            `Materi berhasil ditambahkan. ${successCount} file berhasil diupload, ${failCount} file gagal.`,
           );
         } else {
-          toast.success(
-            `Materi dan ${successCount} file berhasil ditambahkan`
-          );
+          toast.success(`Materi dan ${successCount} file berhasil ditambahkan`);
         }
       } else {
         toast.success("Materi berhasil ditambahkan");
       }
-      
+
       // Refresh data and close modal
       await onAdd();
       handleClose();
@@ -196,7 +214,7 @@ export function AddMaterialModal({
 
   const handleUpdateFileTitle = (index: number, title: string) => {
     setMaterialFiles((prev) =>
-      prev.map((item, i) => (i === index ? { ...item, title } : item))
+      prev.map((item, i) => (i === index ? { ...item, title } : item)),
     );
   };
 
@@ -229,7 +247,8 @@ export function AddMaterialModal({
                 Isi konten materi dan tambahkan file jika diperlukan.
                 {materialFiles.length > 0 && (
                   <span className="text-primary font-medium">
-                    {" "}({materialFiles.length} file siap diupload)
+                    {" "}
+                    ({materialFiles.length} file siap diupload)
                   </span>
                 )}
               </DialogDescription>
@@ -245,7 +264,8 @@ export function AddMaterialModal({
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="content">Konten Materi</TabsTrigger>
             <TabsTrigger value="files">
-              File Materi {materialFiles.length > 0 && `(${materialFiles.length})`}
+              File Materi{" "}
+              {materialFiles.length > 0 && `(${materialFiles.length})`}
             </TabsTrigger>
           </TabsList>
 
@@ -285,7 +305,8 @@ export function AddMaterialModal({
                     rows={8}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Konten bisa berupa teks, link YouTube, link gambar, link PDF, dll.
+                    Konten bisa berupa teks, link YouTube, link gambar, link
+                    PDF, dll.
                   </p>
                 </div>
 
@@ -306,7 +327,9 @@ export function AddMaterialModal({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="material-video-link">Link Video YouTube (Opsional)</Label>
+                  <Label htmlFor="material-video-link">
+                    Link Video YouTube (Opsional)
+                  </Label>
                   <Input
                     id="material-video-link"
                     type="url"
@@ -340,9 +363,7 @@ export function AddMaterialModal({
           <TabsContent value="files" className="flex-1 overflow-y-auto mt-4">
             <div className="space-y-4 px-1">
               <div className="space-y-2">
-                <Label htmlFor="material-files">
-                  Tambah File (Opsional)
-                </Label>
+                <Label htmlFor="material-files">Tambah File (Opsional)</Label>
                 <Input
                   id="material-files"
                   type="file"
@@ -351,13 +372,16 @@ export function AddMaterialModal({
                   disabled={isSubmitting}
                 />
                 <p className="text-xs text-muted-foreground">
-                  File akan diupload setelah materi berhasil dibuat. Anda bisa menambahkan beberapa file sekaligus.
+                  File akan diupload setelah materi berhasil dibuat. Anda bisa
+                  menambahkan beberapa file sekaligus.
                 </p>
               </div>
 
               {materialFiles.length > 0 && (
                 <div className="space-y-2">
-                  <Label>File yang akan diupload ({materialFiles.length})</Label>
+                  <Label>
+                    File yang akan diupload ({materialFiles.length})
+                  </Label>
                   <div className="space-y-3">
                     {materialFiles.map((item, index) => (
                       <div
@@ -411,14 +435,19 @@ export function AddMaterialModal({
                           </Button>
                         </div>
                         <div className="space-y-1">
-                          <Label htmlFor={`file-title-${index}`} className="text-xs">
+                          <Label
+                            htmlFor={`file-title-${index}`}
+                            className="text-xs"
+                          >
                             Judul File
                           </Label>
                           <Input
                             id={`file-title-${index}`}
                             placeholder="Masukkan judul file"
                             value={item.title}
-                            onChange={(e) => handleUpdateFileTitle(index, e.target.value)}
+                            onChange={(e) =>
+                              handleUpdateFileTitle(index, e.target.value)
+                            }
                             disabled={isSubmitting}
                           />
                         </div>

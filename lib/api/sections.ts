@@ -28,7 +28,7 @@ function getAuthToken(): string {
 // Helper function for API calls
 async function apiCall<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
 ): Promise<T> {
   const token = getAuthToken();
   const headers: HeadersInit = {
@@ -67,8 +67,9 @@ export async function fetchClass(classId: string): Promise<Class> {
 export async function fetchSections(classId: string): Promise<Section[]> {
   try {
     const response = await apiCall<SectionsResponse>(
-      `/classes/${classId}/sections`
+      `/classes/${classId}/sections`,
     );
+    console.log("[fetchSections] Raw response:", response.data);
     return response.data;
   } catch (error) {
     console.error("Error fetching sections:", error);
@@ -80,7 +81,7 @@ export async function fetchSections(classId: string): Promise<Section[]> {
 export async function fetchMaterials(sectionId: number): Promise<Material[]> {
   try {
     const response = await apiCall<MaterialsResponse>(
-      `/classes/sections/${sectionId}/materials`
+      `/classes/sections/${sectionId}/materials`,
     );
     return response.data;
   } catch (error) {
@@ -92,11 +93,11 @@ export async function fetchMaterials(sectionId: number): Promise<Material[]> {
 // Fetch a single material by ID
 export async function getMaterial(
   sectionId: number,
-  materialId: number
+  materialId: number,
 ): Promise<Material> {
   try {
     const response = await apiCall<MaterialResponse>(
-      `/classes/sections/${sectionId}/materials/${materialId}`
+      `/classes/sections/${sectionId}/materials/${materialId}`,
     );
     return response.data;
   } catch (error) {
@@ -119,16 +120,33 @@ export async function fetchClassDetail(classId: string): Promise<ClassDetail> {
       sections.map(async (section) => {
         try {
           // If backend already returned materials in the section object, use it
-          const sectionWithMaterial = section as Section & { Material?: unknown[] };
-          if (Array.isArray(sectionWithMaterial.Material) && sectionWithMaterial.Material.length >= 0) {
+          const sectionWithMaterial = section as Section & {
+            Material?: unknown[];
+          };
+          if (
+            Array.isArray(sectionWithMaterial.Material) &&
+            sectionWithMaterial.Material.length >= 0
+          ) {
             // Ensure Material_File exists on each material (fallback to empty array)
-            const safeMaterials = sectionWithMaterial.Material.map((m: unknown) => {
-              const material = m as Record<string, unknown>;
-              return {
-                ...material,
-                Material_File: Array.isArray(material.Material_File) ? material.Material_File : [],
-              } as Material;
-            });
+            const safeMaterials = sectionWithMaterial.Material.map(
+              (m: unknown) => {
+                const material = m as Record<string, unknown>;
+                const safeMaterial = {
+                  ...material,
+                  Material_File: Array.isArray(material.Material_File)
+                    ? material.Material_File
+                    : [],
+                  // Ensure optional fields are preserved even if undefined
+                  xp: material.xp ?? undefined,
+                  video_link: material.video_link ?? undefined,
+                } as Material;
+                console.log(
+                  "[fetchClassDetail] Mapped material:",
+                  safeMaterial,
+                );
+                return safeMaterial;
+              },
+            );
 
             return {
               ...section,
@@ -138,14 +156,16 @@ export async function fetchClassDetail(classId: string): Promise<ClassDetail> {
 
           // Otherwise fetch materials for this section from API
           const materialsResponse = await apiCall<MaterialsResponse>(
-            `/classes/${classId}/sections/${section.id}/materials`
+            `/classes/${classId}/sections/${section.id}/materials`,
           );
 
           const materials = materialsResponse.data.map((m: unknown) => {
             const material = m as Record<string, unknown>;
             return {
               ...material,
-              Material_File: Array.isArray(material.Material_File) ? material.Material_File : [],
+              Material_File: Array.isArray(material.Material_File)
+                ? material.Material_File
+                : [],
             } as Material;
           });
 
@@ -156,7 +176,7 @@ export async function fetchClassDetail(classId: string): Promise<ClassDetail> {
         } catch (error) {
           console.error(
             `Error fetching materials for section ${section.id}:`,
-            error
+            error,
           );
           // Return section with empty materials on error
           return {
@@ -164,7 +184,7 @@ export async function fetchClassDetail(classId: string): Promise<ClassDetail> {
             Material: [],
           };
         }
-      })
+      }),
     );
 
     // Map API response to ClassDetail format
@@ -192,7 +212,7 @@ export async function fetchClassDetail(classId: string): Promise<ClassDetail> {
 // Create a new section
 export async function createSection(
   classId: string,
-  data: CreateSectionInput
+  data: CreateSectionInput,
 ): Promise<Section> {
   try {
     const response = await apiCall<SectionResponse>(
@@ -200,7 +220,7 @@ export async function createSection(
       {
         method: "POST",
         body: JSON.stringify(data),
-      }
+      },
     );
     return response.data;
   } catch (error) {
@@ -213,7 +233,7 @@ export async function createSection(
 export async function updateSection(
   classId: string,
   sectionId: number,
-  data: UpdateSectionInput
+  data: UpdateSectionInput,
 ): Promise<Section> {
   try {
     const response = await apiCall<SectionResponse>(
@@ -221,7 +241,7 @@ export async function updateSection(
       {
         method: "PATCH",
         body: JSON.stringify(data),
-      }
+      },
     );
     return response.data;
   } catch (error) {
@@ -233,14 +253,14 @@ export async function updateSection(
 // Delete a section
 export async function deleteSection(
   classId: string,
-  sectionId: number
+  sectionId: number,
 ): Promise<void> {
   try {
     await apiCall<{ success: boolean; message: string }>(
       `/classes/${classId}/sections/${sectionId}`,
       {
         method: "DELETE",
-      }
+      },
     );
   } catch (error) {
     console.error("Error deleting section:", error);
@@ -252,16 +272,18 @@ export async function deleteSection(
 export async function createMaterial(
   classId: string,
   sectionId: number,
-  data: CreateMaterialInput
+  data: CreateMaterialInput,
 ): Promise<Material> {
   try {
+    console.log("[createMaterial] Sending data:", data);
     const response = await apiCall<MaterialResponse>(
       `/classes/sections/${sectionId}/materials`,
       {
         method: "POST",
         body: JSON.stringify(data),
-      }
+      },
     );
+    console.log("[createMaterial] Response:", response.data);
     return response.data;
   } catch (error) {
     console.error("Error creating material:", error);
@@ -274,16 +296,18 @@ export async function updateMaterial(
   classId: string,
   sectionId: number,
   materialId: number,
-  data: UpdateMaterialInput
+  data: UpdateMaterialInput,
 ): Promise<Material> {
   try {
+    console.log("[updateMaterial] Sending data:", data);
     const response = await apiCall<MaterialResponse>(
       `/classes/sections/${sectionId}/materials/${materialId}`,
       {
         method: "PATCH",
         body: JSON.stringify(data),
-      }
+      },
     );
+    console.log("[updateMaterial] Response:", response.data);
     return response.data;
   } catch (error) {
     console.error("Error updating material:", error);
@@ -295,14 +319,14 @@ export async function updateMaterial(
 export async function deleteMaterial(
   classId: string,
   sectionId: number,
-  materialId: number
+  materialId: number,
 ): Promise<void> {
   try {
     await apiCall<{ success: boolean; message: string }>(
       `/classes/sections/${sectionId}/materials/${materialId}`,
       {
         method: "DELETE",
-      }
+      },
     );
   } catch (error) {
     console.error("Error deleting material:", error);
@@ -314,7 +338,7 @@ export async function deleteMaterial(
 export async function reorderSections(
   classId: string,
   sectionOrders: { id: number; order: number }[],
-  originalOrders?: { id: number; order: number }[]
+  originalOrders?: { id: number; order: number }[],
 ): Promise<void> {
   try {
     // If original orders provided, only update sections that changed
@@ -331,15 +355,15 @@ export async function reorderSections(
       // Update only changed sections
       await Promise.all(
         changedSections.map((item) =>
-          updateSection(classId, item.id, { order: item.order })
-        )
+          updateSection(classId, item.id, { order: item.order }),
+        ),
       );
     } else {
       // Update all sections if no original orders provided
       await Promise.all(
         sectionOrders.map((item) =>
-          updateSection(classId, item.id, { order: item.order })
-        )
+          updateSection(classId, item.id, { order: item.order }),
+        ),
       );
     }
   } catch (error) {
@@ -353,7 +377,7 @@ export async function reorderMaterials(
   classId: string,
   sectionId: number,
   materialOrders: { id: number; order: number }[],
-  originalOrders?: { id: number; order: number }[]
+  originalOrders?: { id: number; order: number }[],
 ): Promise<void> {
   try {
     // If original orders provided, only update materials that changed
@@ -373,8 +397,8 @@ export async function reorderMaterials(
           apiCall(`/classes/sections/${sectionId}/materials/${item.id}`, {
             method: "PATCH",
             body: JSON.stringify({ order: item.order }),
-          })
-        )
+          }),
+        ),
       );
     } else {
       // Update all materials if no original orders provided
@@ -383,8 +407,8 @@ export async function reorderMaterials(
           apiCall(`/classes/sections/${sectionId}/materials/${item.id}`, {
             method: "PATCH",
             body: JSON.stringify({ order: item.order }),
-          })
-        )
+          }),
+        ),
       );
     }
   } catch (error) {

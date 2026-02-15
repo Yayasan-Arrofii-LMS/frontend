@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Material } from "@/types/section";
+import { Material, UpdateMaterialInput } from "@/types/section";
 import { updateMaterial, getMaterial } from "@/lib/api/sections";
 import { MaterialFilesManagement } from "@/components/class/material-files-management";
 import { toast } from "sonner";
@@ -72,11 +72,11 @@ export function EditMaterialModal({
         setIsLoading(true);
         const data = await getMaterial(sectionId, material.id);
         setFetchedMaterial(data);
-        
+
         // Check for draft first, otherwise use fetched data
         const draftKey = `material-edit-draft-${material.id}`;
         const savedDraft = sessionStorage.getItem(draftKey);
-        
+
         if (savedDraft) {
           try {
             const parsed = JSON.parse(savedDraft);
@@ -119,8 +119,11 @@ export function EditMaterialModal({
       xp,
       videoLink,
     };
-    sessionStorage.setItem(`material-edit-draft-${material.id}`, JSON.stringify(formData));
-    
+    sessionStorage.setItem(
+      `material-edit-draft-${material.id}`,
+      JSON.stringify(formData),
+    );
+
     setPreference("fullscreen");
     onClose();
     const params = new URLSearchParams({
@@ -129,7 +132,9 @@ export function EditMaterialModal({
       title: encodeURIComponent(material.title),
       content: encodeURIComponent(material.content),
       ...(material.xp && { xp: material.xp.toString() }),
-      ...(material.video_link && { video_link: encodeURIComponent(material.video_link) }),
+      ...(material.video_link && {
+        video_link: encodeURIComponent(material.video_link),
+      }),
       ...(activeTab === "files" && { openFilesTab: "true" }),
     });
     router.push(`${basePath}/${classId}/material/edit?${params}`);
@@ -166,12 +171,22 @@ export function EditMaterialModal({
 
     setIsSubmitting(true);
     try {
-      await updateMaterial(classId, sectionId, material.id, {
+      const materialData: UpdateMaterialInput = {
         title: title.trim(),
         content: content.trim(),
-        xp: xpValue,
-        video_link: videoLink.trim() || undefined,
-      });
+      };
+
+      // Only include xp if it has a value
+      if (xpValue !== undefined) {
+        materialData.xp = xpValue;
+      }
+
+      // Only include video_link if it's not empty
+      if (videoLink.trim()) {
+        materialData.video_link = videoLink.trim();
+      }
+
+      await updateMaterial(classId, sectionId, material.id, materialData);
       toast.success("Materi berhasil diperbarui");
       onUpdate();
       onClose();
@@ -277,7 +292,9 @@ export function EditMaterialModal({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="edit-material-video-link">Link Video YouTube (Opsional)</Label>
+                  <Label htmlFor="edit-material-video-link">
+                    Link Video YouTube (Opsional)
+                  </Label>
                   <Input
                     id="edit-material-video-link"
                     type="url"
@@ -310,10 +327,12 @@ export function EditMaterialModal({
 
           <TabsContent value="files" className="flex-1 overflow-y-auto mt-4">
             {activeTab === "files" && !isLoading && (
-              <MaterialFilesManagement 
+              <MaterialFilesManagement
                 key={`material-files-${material.id}`}
                 materialId={material.id}
-                initialFiles={fetchedMaterial?.Material_File || material.Material_File || []}
+                initialFiles={
+                  fetchedMaterial?.Material_File || material.Material_File || []
+                }
               />
             )}
             {activeTab === "files" && isLoading && (
