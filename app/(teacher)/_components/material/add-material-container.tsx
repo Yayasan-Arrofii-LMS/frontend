@@ -28,9 +28,6 @@ export function AddMaterialContainer({
   const [content, setContent] = useState("");
   const [xp, setXp] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [createdMaterialId, setCreatedMaterialId] = useState<number | null>(
-    null,
-  );
 
   // Load draft from sessionStorage when page loads
   useEffect(() => {
@@ -95,7 +92,6 @@ export function AddMaterialContainer({
         sectionId,
         materialData,
       );
-      setCreatedMaterialId(newMaterial.id);
 
       // Upload staged files if any
       if (stagedFiles && stagedFiles.length > 0) {
@@ -118,7 +114,7 @@ export function AddMaterialContainer({
 
         if (failCount === 0) {
           toast.success(
-            `Materi berhasil ditambahkan dengan ${successCount} file.`,
+            `Materi dan ${successCount} file berhasil ditambahkan`,
           );
         } else {
           toast.warning(
@@ -126,10 +122,12 @@ export function AddMaterialContainer({
           );
         }
       } else {
-        toast.success(
-          "Materi berhasil ditambahkan. Anda dapat menambahkan file sekarang.",
-        );
+        toast.success("Materi berhasil ditambahkan");
       }
+
+      // Redirect back to class page
+      setPreference("modal");
+      router.push(`/teacher/my-courses/${classId}`);
     } catch {
       toast.error("Gagal menambahkan materi");
     } finally {
@@ -160,7 +158,7 @@ export function AddMaterialContainer({
 
   return (
     <MaterialFormWithTabs
-      mode={createdMaterialId ? "edit" : "add"}
+      mode="add"
       title={title}
       content={content}
       xp={xp}
@@ -173,8 +171,6 @@ export function AddMaterialContainer({
       onBack={handleBack}
       classId={classId}
       sectionId={sectionId}
-      materialId={createdMaterialId || undefined}
-      defaultTab={createdMaterialId ? "files" : "content"}
     />
   );
 }

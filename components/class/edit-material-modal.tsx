@@ -13,8 +13,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { MaterialEditor } from "@/components/material-editor";
 import { Material, UpdateMaterialInput } from "@/types/section";
 import { updateMaterial, getMaterial } from "@/lib/api/sections";
 import { MaterialFilesManagement } from "@/components/class/material-files-management";
@@ -259,19 +259,14 @@ export function EditMaterialModal({
                   <Label htmlFor="edit-material-content">
                     Konten Materi <span className="text-destructive">*</span>
                   </Label>
-                  <Textarea
-                    id="edit-material-content"
-                    placeholder="Tulis konten materi pembelajaran di sini... Bisa berupa penjelasan, link video, link dokumen, dll."
+                  <MaterialEditor
                     value={content}
-                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                      setContent(e.target.value)
-                    }
+                    onChange={setContent}
                     disabled={isSubmitting}
-                    rows={8}
+                    placeholder="Tulis konten materi pembelajaran di sini... Bisa berupa penjelasan, link, gambar, dll."
                   />
                   <p className="text-xs text-muted-foreground">
-                    Konten bisa berupa teks, link YouTube, link gambar, link
-                    PDF, dll.
+                    Gunakan toolbar di atas untuk memformat teks, menambahkan link, gambar, list, dan lainnya.
                   </p>
                 </div>
 

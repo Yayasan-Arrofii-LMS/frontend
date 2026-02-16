@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { MaterialEditor } from "@/components/material-editor";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Minimize2, Upload, X, FileIcon } from "lucide-react";
@@ -183,15 +183,15 @@ export function MaterialFormWithTabs({
                   <Label htmlFor="content">
                     Konten Materi <span className="text-destructive">*</span>
                   </Label>
-                  <Textarea
-                    id="content"
+                  <MaterialEditor
                     value={content}
-                    onChange={(e) => onContentChange(e.target.value)}
-                    placeholder="Masukkan konten materi"
+                    onChange={onContentChange}
                     disabled={isSubmitting}
-                    rows={12}
-                    className="resize-none"
+                    placeholder="Masukkan konten materi pembelajaran. Gunakan toolbar untuk memformat teks, menambahkan link, gambar, list, dan lainnya."
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Gunakan toolbar di atas untuk memformat teks, menambahkan link, gambar, list, dan lainnya.
+                  </p>
                 </div>
 
                 <div className="space-y-2">
