@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { MaterialEditor } from "@/components/material-editor";
 import { bulkCreateQuiz } from "@/lib/api/quizzes";
 import { toast } from "sonner";
 import { ArrowLeft, Minimize2, Plus, Trash2, MinusCircle } from "lucide-react";
@@ -494,15 +495,13 @@ export default function AddQuizPage({
                       <Label htmlFor={`question-${question.id}`}>
                         Pertanyaan {qIndex + 1} <span className="text-destructive">*</span>
                       </Label>
-                      <Textarea
-                        id={`question-${question.id}`}
-                        placeholder="Masukkan pertanyaan..."
-                        value={question.question}
-                        onChange={(e) =>
-                          updateQuestion(question.id, "question", e.target.value)
-                        }
-                        disabled={isSubmitting}
-                        rows={3}
+                        <MaterialEditor
+                          value={question.question}
+                          onChange={(value) =>
+                            updateQuestion(question.id, "question", value)
+                          }
+                          disabled={isSubmitting}
+                          placeholder="Tulis pertanyaan quiz di sini..."
                       />
                     </div>
                     {questions.length > 1 && (
@@ -598,6 +597,20 @@ export default function AddQuizPage({
                 </CardContent>
               </Card>
             ))}
+
+            {/* Button to add question at bottom */}
+            <div className="flex justify-center pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addQuestion}
+                disabled={isSubmitting}
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Tambah Pertanyaan
+              </Button>
+            </div>
           </div>
 
           <div className="flex justify-end gap-2 pt-4 border-t">

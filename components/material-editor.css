@@ -1,7 +1,42 @@
 /* Material Editor Custom Styles */
+.material-editor-wrapper {
+  max-width: 100%;
+  overflow: hidden;
+  width: 100%;
+}
+
+.material-editor-wrapper .tiptap-toolbar {
+  flex-wrap: wrap !important;
+  padding: 0.5rem;
+  gap: 0.5rem;
+  min-height: auto;
+  overflow-x: visible !important;
+  overflow-y: visible;
+  position: relative !important;
+  height: auto !important;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.material-editor-wrapper .tiptap-toolbar-group {
+  flex-wrap: nowrap;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.material-editor-wrapper .tiptap-separator {
+  flex-shrink: 0;
+  height: 1.5rem;
+  align-self: center;
+}
+
 .material-editor-wrapper .ProseMirror {
   outline: none;
   min-height: 200px;
+  max-width: 100%;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .material-editor-wrapper .ProseMirror img {
@@ -19,6 +54,18 @@
 .material-editor-wrapper .ProseMirror img.ProseMirror-selectednode {
   outline: 2px solid hsl(var(--primary));
   outline-offset: 2px;
+}
+
+.material-editor-wrapper .ProseMirror iframe,
+.material-editor-wrapper .ProseMirror video {
+  max-width: 100%;
+  height: auto;
+}
+
+.material-editor-wrapper .ProseMirror table {
+  max-width: 100%;
+  overflow-x: auto;
+  display: block;
 }
 
 .material-editor-wrapper .ProseMirror p {
@@ -64,4 +111,122 @@
 .material-editor-wrapper .ProseMirror a {
   color: hsl(var(--primary));
   text-decoration: underline;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .material-editor-wrapper .tiptap-toolbar {
+    padding: 0.375rem !important;
+    gap: 0.375rem !important;
+    flex-wrap: wrap !important;
+  }
+
+  .material-editor-wrapper .tiptap-toolbar-group {
+    gap: 0.125rem;
+  }
+
+  .material-editor-wrapper .tiptap-separator {
+    margin: 0 0.125rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .material-editor-wrapper .tiptap-toolbar {
+    padding: 0.375rem !important;
+    gap: 0.25rem !important;
+    flex-wrap: wrap !important;
+    justify-content: flex-start !important;
+  }
+
+  .material-editor-wrapper .tiptap-toolbar-group {
+    flex-shrink: 1;
+    min-width: fit-content;
+  }
+
+  /* Make text-align group take full width on mobile to prevent overlap */
+  .material-editor-wrapper .text-align-group {
+    flex-basis: 100% !important;
+    width: 100% !important;
+  }
+
+  /* Hide button text on mobile, show icon only */
+  .material-editor-wrapper .tiptap-button-text {
+    display: none !important;
+  }
+
+  .material-editor-wrapper .tiptap-toolbar button,
+  .material-editor-wrapper .tiptap-toolbar [role="button"] {
+    min-width: 2rem;
+    width: 2rem;
+    height: 2rem;
+    padding: 0.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .material-editor-wrapper .tiptap-toolbar {
+    padding: 0.25rem !important;
+    gap: 0.25rem !important;
+    flex-wrap: wrap !important;
+    position: relative !important;
+    height: auto !important;
+    border-top: none !important;
+    min-height: auto !important;
+  }
+
+  .material-editor-wrapper .tiptap-toolbar-group {
+    flex-shrink: 1;
+    gap: 0.125rem;
+  }
+
+  .material-editor-wrapper .tiptap-separator {
+    display: none;
+  }
+
+  .material-editor-wrapper .tiptap-toolbar button,
+  .material-editor-wrapper .tiptap-toolbar [role="button"] {
+    min-width: 1.75rem;
+    width: 1.75rem;
+    height: 1.75rem;
+    padding: 0.125rem;
+    font-size: 0.875rem;
+  }
+
+  .material-editor-wrapper .tiptap-toolbar button svg,
+  .material-editor-wrapper .tiptap-toolbar [role="button"] svg {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .material-editor-wrapper .ProseMirror {
+    min-height: 150px;
+    font-size: 0.9375rem;
+    padding: 0.75rem;
+  }
+}
+
+/* Extra small mobile devices */
+@media (max-width: 380px) {
+  .material-editor-wrapper .tiptap-toolbar {
+    padding: 0.25rem !important;
+    gap: 0.125rem !important;
+  }
+
+  .material-editor-wrapper .tiptap-toolbar button,
+  .material-editor-wrapper .tiptap-toolbar [role="button"] {
+    min-width: 1.5rem;
+    width: 1.5rem;
+    height: 1.5rem;
+    padding: 0.125rem;
+  }
+
+  .material-editor-wrapper .tiptap-toolbar button svg,
+  .material-editor-wrapper .tiptap-toolbar [role="button"] svg {
+    width: 0.875rem;
+    height: 0.875rem;
+  }
+
+  .material-editor-wrapper .tiptap-toolbar-group {
+    gap: 0.0625rem;
+  }
 }

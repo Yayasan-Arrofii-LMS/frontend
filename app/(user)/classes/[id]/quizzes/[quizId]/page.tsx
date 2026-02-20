@@ -389,8 +389,8 @@ export default function QuizPage() {
                         {index + 1}
                       </Badge>
                       <div className="flex-1">
-                        <CardTitle className="text-lg font-medium">
-                          {question.question}
+                        <CardTitle className="text-lg font-medium prose prose-slate dark:prose-invert max-w-none">
+                          <div dangerouslySetInnerHTML={{ __html: question.question }} />
                         </CardTitle>
                         <CardDescription className="mt-1">
                           {question.points} poin
@@ -693,8 +693,8 @@ export default function QuizPage() {
                       {index + 1}
                     </Badge>
                     <div className="flex-1">
-                      <CardTitle className="text-lg font-medium">
-                        {question.question}
+                      <CardTitle className="text-lg font-medium prose prose-slate dark:prose-invert max-w-none">
+                        <div dangerouslySetInnerHTML={{ __html: question.question }} />
                       </CardTitle>
                       <CardDescription className="mt-1">
                         {question.points} poin

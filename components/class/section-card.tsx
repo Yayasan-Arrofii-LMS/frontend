@@ -27,6 +27,7 @@ import {
   GripVertical,
   Clock,
   ClipboardList,
+  Eye,
 } from "lucide-react";
 import { EditSectionModal } from "@/components/class/edit-section-modal";
 import { AddMaterialModal } from "@/components/class/add-material-modal";
@@ -34,6 +35,8 @@ import { EditMaterialModal } from "@/components/class/edit-material-modal";
 import { AddQuizModal } from "@/components/class/add-quiz-modal";
 import { EditQuizModal } from "@/components/class/edit-quiz-modal";
 import { ManageQuestionsModal } from "@/components/class/manage-questions-modal";
+import { ViewMaterialModal } from "@/components/class/view-material-modal";
+import { processHtmlForPreview } from "@/lib/utils/html-utils";
 import {
   deleteSection,
   deleteMaterial,
@@ -81,6 +84,7 @@ interface MaterialItemProps {
   sectionId: number;
   onEdit: (material: Material) => void;
   onDelete: (materialId: number) => void;
+  onView: (material: Material) => void;
 }
 
 interface QuizItemProps {
@@ -171,6 +175,7 @@ const MaterialItem = memo(function MaterialItem({
   sectionId,
   onEdit,
   onDelete,
+  onView,
 }: MaterialItemProps) {
   const {
     attributes,
@@ -180,6 +185,8 @@ const MaterialItem = memo(function MaterialItem({
     transition,
     isDragging,
   } = useSortable({ id: material.id });
+
+  const previewContent = processHtmlForPreview(material.content);
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -218,7 +225,7 @@ const MaterialItem = memo(function MaterialItem({
               )}
             </div>
             <p className="text-sm text-muted-foreground break-all line-clamp-2">
-              {material.content}
+              {previewContent}
             </p>
           </div>
         </div>
@@ -229,6 +236,10 @@ const MaterialItem = memo(function MaterialItem({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => onView(material)}>
+              <Eye className="h-4 w-4 mr-2" />
+              Lihat Materi
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => onEdit(material)}>
               <Pencil className="h-4 w-4 mr-2" />
               Edit Materi
@@ -263,6 +274,7 @@ export function SectionCard({
   const [isAddMaterialOpen, setIsAddMaterialOpen] = useState(false);
   const [isAddQuizOpen, setIsAddQuizOpen] = useState(false);
   const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
+  const [viewingMaterial, setViewingMaterial] = useState<Material | null>(null);
   const [editMaterialDefaultTab, setEditMaterialDefaultTab] = useState<
     "content" | "files"
   >("content");
@@ -598,6 +610,7 @@ export function SectionCard({
                           sectionId={section.id}
                           onEdit={setEditingMaterial}
                           onDelete={setDeletingMaterialId}
+                          onView={setViewingMaterial}
                         />
                       ))}
                     </div>
@@ -622,7 +635,7 @@ export function SectionCard({
                               )}
                             </div>
                             <p className="text-sm text-muted-foreground break-all line-clamp-2">
-                              {activeMaterial.content}
+                              {processHtmlForPreview(activeMaterial.content)}
                             </p>
                           </div>
                         </div>
@@ -847,6 +860,13 @@ export function SectionCard({
           quizTitle={selectedQuizForQuestions.quizTitle}
         />
       )}
+
+      {/* View Material Modal */}
+      <ViewMaterialModal
+        material={viewingMaterial}
+        open={viewingMaterial !== null}
+        onOpenChange={(open: boolean) => !open && setViewingMaterial(null)}
+      />
     </>
   );
 }

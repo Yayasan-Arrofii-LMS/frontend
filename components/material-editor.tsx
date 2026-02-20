@@ -150,7 +150,7 @@ export function MaterialEditor({
 
   return (
     <EditorContext.Provider value={{ editor }}>
-      <div className="border rounded-md overflow-hidden material-editor-wrapper">
+      <div className="border rounded-md overflow-hidden material-editor-wrapper w-full max-w-full">
         <Toolbar className="border-b bg-muted/50">
           <ToolbarGroup>
             <UndoRedoButton action="undo" />
@@ -176,6 +176,11 @@ export function MaterialEditor({
             <MarkButton type="strike" />
             <MarkButton type="code" />
             <MarkButton type="underline" />
+          </ToolbarGroup>
+
+          <ToolbarSeparator />
+
+          <ToolbarGroup>
             <ColorHighlightPopover />
             <LinkPopover />
           </ToolbarGroup>
@@ -190,16 +195,16 @@ export function MaterialEditor({
           <ToolbarSeparator />
 
           <ToolbarGroup>
-            <TextAlignButton align="left" />
-            <TextAlignButton align="center" />
-            <TextAlignButton align="right" />
-            <TextAlignButton align="justify" />
+            <ImageUploadButton text="Image" />
           </ToolbarGroup>
 
           <ToolbarSeparator />
 
-          <ToolbarGroup>
-            <ImageUploadButton text="Image" />
+          <ToolbarGroup className="text-align-group">
+            <TextAlignButton align="left" />
+            <TextAlignButton align="center" />
+            <TextAlignButton align="right" />
+            <TextAlignButton align="justify" />
           </ToolbarGroup>
         </Toolbar>
 

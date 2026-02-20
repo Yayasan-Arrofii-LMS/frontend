@@ -2,12 +2,12 @@
 
 import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { updateMaterial } from "@/lib/api/sections";
+import { updateMaterial, getMaterial } from "@/lib/api/sections";
 import { UpdateMaterialInput } from "@/types/section";
 import { toast } from "sonner";
 import { useFullscreenPreference } from "@/hooks/use-fullscreen-preference";
-import { MaterialForm } from "./material-form";
-import { isYouTubeUrl } from "@/lib/utils/youtube";
+import { MaterialFormWithTabs } from "../../../(teacher)/_components/material/material-form-with-tabs";
+import { Material } from "@/types/section";
 
 interface EditMaterialContainerProps {
   params: Promise<{ id: string }>;
@@ -50,28 +50,54 @@ export function EditMaterialContainer({
     initialVideoLink ? decodeURIComponent(initialVideoLink) : "",
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [fetchedMaterial, setFetchedMaterial] = useState<Material | null>(null);
 
-  // Load draft from sessionStorage when page loads
+  // Fetch material data from API
   useEffect(() => {
-    const draftKey = `material-edit-draft-${materialId}`;
-    const savedDraft = sessionStorage.getItem(draftKey);
-
-    if (savedDraft) {
+    const fetchMaterialData = async () => {
       try {
-        const parsed = JSON.parse(savedDraft);
-        setTitle(parsed.title || decodeURIComponent(initialTitle || ""));
-        setContent(parsed.content || decodeURIComponent(initialContent || ""));
-        setXp(parsed.xp || (initialXp ? decodeURIComponent(initialXp) : ""));
-        setVideoLink(
-          parsed.videoLink ||
-            (initialVideoLink ? decodeURIComponent(initialVideoLink) : ""),
-        );
-        sessionStorage.removeItem(draftKey);
+        setIsLoading(true);
+        const data = await getMaterial(sectionId, materialId);
+        setFetchedMaterial(data);
+
+        // Check for draft first, otherwise use fetched data
+        const draftKey = `material-edit-draft-${materialId}`;
+        const savedDraft = sessionStorage.getItem(draftKey);
+
+        if (savedDraft) {
+          try {
+            const parsed = JSON.parse(savedDraft);
+            setTitle(parsed.title || data.title);
+            setContent(parsed.content || data.content);
+            setXp(parsed.xp || data.xp?.toString() || "");
+            setVideoLink(parsed.videoLink || data.video_link || "");
+            sessionStorage.removeItem(draftKey);
+          } catch (error) {
+            console.error("Failed to parse material draft:", error);
+            // Fallback to fetched data
+            setTitle(data.title);
+            setContent(data.content);
+            setXp(data.xp?.toString() || "");
+            setVideoLink(data.video_link || "");
+          }
+        } else {
+          // Use fetched data
+          setTitle(data.title);
+          setContent(data.content);
+          setXp(data.xp?.toString() || "");
+          setVideoLink(data.video_link || "");
+        }
       } catch (error) {
-        console.error("Failed to parse material draft:", error);
+        console.error("Failed to fetch material:", error);
+        toast.error("Gagal memuat data materi");
+      } finally {
+        setIsLoading(false);
       }
-    }
-  }, [materialId, initialTitle, initialContent, initialXp, initialVideoLink]);
+    };
+
+    fetchMaterialData();
+  }, [sectionId, materialId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,11 +120,6 @@ export function EditMaterialContainer({
     const xpValue = xp ? parseInt(xp) : undefined;
     if (xp && (isNaN(xpValue!) || xpValue! < 0)) {
       toast.error("XP harus berupa angka positif");
-      return;
-    }
-
-    if (videoLink.trim() && !isYouTubeUrl(videoLink.trim())) {
-      toast.error("Link video harus berupa URL YouTube yang valid");
       return;
     }
 
@@ -155,8 +176,16 @@ export function EditMaterialContainer({
     router.push(`/teacher/my-courses/${classId}`);
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-muted-foreground">Memuat data materi...</p>
+      </div>
+    );
+  }
+
   return (
-    <MaterialForm
+    <MaterialFormWithTabs
       mode="edit"
       title={title}
       content={content}
@@ -170,6 +199,10 @@ export function EditMaterialContainer({
       onSubmit={handleSubmit}
       onMinimize={handleMinimize}
       onBack={handleBack}
+      classId={classId}
+      sectionId={sectionId}
+      materialId={materialId}
+      initialMaterialFiles={fetchedMaterial?.Material_File || []}
     />
   );
 }

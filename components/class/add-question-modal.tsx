@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { MaterialEditor } from "@/components/material-editor";
 import {
   Select,
   SelectContent,
@@ -187,7 +187,7 @@ export function AddQuestionModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <div>
@@ -213,15 +213,15 @@ export function AddQuestionModal({
               <Label htmlFor="question">
                 Pertanyaan <span className="text-destructive">*</span>
               </Label>
-              <Textarea
-                id="question"
-                placeholder="Masukkan pertanyaan"
+              <MaterialEditor
                 value={question}
-                onChange={(e) => setQuestion(e.target.value)}
+                onChange={setQuestion}
                 disabled={isSubmitting}
-                rows={3}
-                required
+                placeholder="Tulis pertanyaan quiz di sini... Bisa menggunakan format teks, gambar, link, dll."
               />
+              <p className="text-xs text-muted-foreground">
+                Gunakan toolbar di atas untuk memformat pertanyaan.
+              </p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">

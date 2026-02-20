@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { MaterialEditor } from "@/components/material-editor";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   AlertDialog,
@@ -411,17 +411,16 @@ export function ManageQuestionsModal({
                           <CardContent className="space-y-4">
                             <div className="space-y-2">
                               <Label>Pertanyaan</Label>
-                              <Textarea
+                              <MaterialEditor
                                 value={question.question}
-                                onChange={(e) =>
+                                onChange={(value) =>
                                   updateQuestionField(
                                     actualIndex,
                                     "question",
-                                    e.target.value
+                                    value
                                   )
                                 }
                                 placeholder="Masukkan pertanyaan"
-                                rows={2}
                               />
                             </div>
 
