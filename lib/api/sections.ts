@@ -133,6 +133,7 @@ export async function fetchClassDetail(classId: string): Promise<ClassDetail> {
                 const material = m as Record<string, unknown>;
                 const safeMaterial = {
                   ...material,
+                  sectionId: section.id,
                   Material_File: Array.isArray(material.Material_File)
                     ? material.Material_File
                     : [],
@@ -163,6 +164,7 @@ export async function fetchClassDetail(classId: string): Promise<ClassDetail> {
             const material = m as Record<string, unknown>;
             return {
               ...material,
+              sectionId: section.id,
               Material_File: Array.isArray(material.Material_File)
                 ? material.Material_File
                 : [],

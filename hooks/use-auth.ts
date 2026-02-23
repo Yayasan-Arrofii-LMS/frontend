@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { getAuthToken, removeAuthToken, getUserInfo } from "@/lib/api/auth";
 
 export interface User {
@@ -17,7 +16,6 @@ export function useAuth() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
-  const router = useRouter();
 
   useEffect(() => {
     checkAuth();
@@ -86,7 +84,8 @@ export function useAuth() {
     removeAuthToken();
     setIsAuthenticated(false);
     setUser(null);
-    router.push("/login");
+    // Use window.location to force a full page reload and clear all cached state
+    window.location.href = "/login";
   };
 
   return {
