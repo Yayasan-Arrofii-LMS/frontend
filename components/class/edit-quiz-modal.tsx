@@ -17,6 +17,8 @@ import { toast } from "sonner";
 import { updateQuiz } from "@/lib/api/quizzes";
 import { Maximize2 } from "lucide-react";
 import { useFullscreenPreference } from "@/hooks/use-fullscreen-preference";
+import { syncMaterialImageUsage } from "@/lib/api/material-images";
+import { extractImageUrlsFromHtml } from "@/lib/tiptap-utils";
 
 interface Quiz {
   id: number;
@@ -162,6 +164,13 @@ export function EditQuizModal({
       console.log("ID Seksi:", sectionId, "ID Quiz:", quiz.id);
 
       await updateQuiz(sectionId, quiz.id, updateData);
+
+      try {
+        const imageUrls = extractImageUrlsFromHtml(description);
+        await syncMaterialImageUsage(imageUrls);
+      } catch (syncError) {
+        console.warn("Failed to sync image usage:", syncError);
+      }
 
       toast.success("Quiz berhasil diperbarui");
       onUpdate();

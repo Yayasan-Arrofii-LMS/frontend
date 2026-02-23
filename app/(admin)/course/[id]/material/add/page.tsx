@@ -11,6 +11,8 @@ import {
   MaterialFormWithTabs,
   StagedFile,
 } from "@/app/(teacher)/_components/material/material-form-with-tabs";
+import { syncMaterialImageUsage } from "@/lib/api/material-images";
+import { extractImageUrlsFromHtml } from "@/lib/tiptap-utils";
 
 export default function AddMaterialPage({
   params,
@@ -93,6 +95,13 @@ export default function AddMaterialPage({
         sectionId,
         materialData,
       );
+
+      try {
+        const imageUrls = extractImageUrlsFromHtml(content);
+        await syncMaterialImageUsage(imageUrls);
+      } catch (syncError) {
+        console.warn("Failed to sync image usage:", syncError);
+      }
 
       // Upload staged files if any
       if (stagedFiles && stagedFiles.length > 0) {

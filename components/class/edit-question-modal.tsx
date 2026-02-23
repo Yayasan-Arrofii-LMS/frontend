@@ -26,6 +26,8 @@ import { updateQuestion } from "@/lib/api/quizzes";
 import { Maximize2, Plus, Trash2 } from "lucide-react";
 import { useFullscreenPreference } from "@/hooks/use-fullscreen-preference";
 import { Question, UpdateQuestionInput } from "@/types/section";
+import { syncMaterialImageUsage } from "@/lib/api/material-images";
+import { extractImageUrlsFromHtml } from "@/lib/tiptap-utils";
 
 interface EditQuestionModalProps {
   isOpen: boolean;
@@ -176,6 +178,13 @@ export function EditQuestionModal({
       }
 
       await updateQuestion(sectionId, initialQuestion.id, questionData as UpdateQuestionInput);
+
+      try {
+        const imageUrls = extractImageUrlsFromHtml(question);
+        await syncMaterialImageUsage(imageUrls);
+      } catch (syncError) {
+        console.warn("Failed to sync image usage:", syncError);
+      }
 
       toast.success("Pertanyaan berhasil diperbarui");
       onUpdate();

@@ -8,6 +8,8 @@ import { toast } from "sonner";
 import { useFullscreenPreference } from "@/hooks/use-fullscreen-preference";
 import { MaterialFormWithTabs } from "../../../(teacher)/_components/material/material-form-with-tabs";
 import { Material } from "@/types/section";
+import { syncMaterialImageUsage } from "@/lib/api/material-images";
+import { extractImageUrlsFromHtml } from "@/lib/tiptap-utils";
 
 interface EditMaterialContainerProps {
   params: Promise<{ id: string }>;
@@ -141,6 +143,14 @@ export function EditMaterialContainer({
       }
 
       await updateMaterial(classId, sectionId, materialId, materialData);
+
+      try {
+        const imageUrls = extractImageUrlsFromHtml(content);
+        await syncMaterialImageUsage(imageUrls);
+      } catch (syncError) {
+        console.warn("Failed to sync image usage:", syncError);
+      }
+
       toast.success("Materi berhasil diperbarui");
       setPreference("modal");
       router.push(`/teacher/my-courses/${classId}`);

@@ -26,6 +26,8 @@ import { createQuestion } from "@/lib/api/quizzes";
 import { CreateQuestionInput } from "@/types/section";
 import { Maximize2, Plus, Trash2 } from "lucide-react";
 import { useFullscreenPreference } from "@/hooks/use-fullscreen-preference";
+import { syncMaterialImageUsage } from "@/lib/api/material-images";
+import { extractImageUrlsFromHtml } from "@/lib/tiptap-utils";
 
 interface AddQuestionModalProps {
   isOpen: boolean;
@@ -159,6 +161,13 @@ export function AddQuestionModal({
       }
 
       await createQuestion(sectionId, quizId, questionData as CreateQuestionInput);
+
+      try {
+        const imageUrls = extractImageUrlsFromHtml(question);
+        await syncMaterialImageUsage(imageUrls);
+      } catch (syncError) {
+        console.warn("Failed to sync image usage:", syncError);
+      }
 
       toast.success("Pertanyaan berhasil ditambahkan");
       onAdd();

@@ -12,6 +12,7 @@ import {
   type Editor,
   type NodeWithPos,
 } from "@tiptap/react"
+import { uploadMaterialImage } from "@/lib/api/material-images"
 
 export const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 
@@ -379,51 +380,57 @@ export const handleImageUpload = async (
     throw new Error("Only image files are allowed")
   }
 
-  // Simulate upload progress
-  return new Promise<string>((resolve, reject) => {
-    if (abortSignal?.aborted) {
-      reject(new Error("Upload cancelled"))
-      return
-    }
+  if (abortSignal?.aborted) {
+    throw new Error("Upload cancelled")
+  }
 
-    const reader = new FileReader()
-    
-    // Simulate progress
-    let progress = 0
-    const progressInterval = setInterval(() => {
-      if (abortSignal?.aborted) {
-        clearInterval(progressInterval)
-        reject(new Error("Upload cancelled"))
-        return
-      }
-      
-      progress += 10
-      onProgress?.({ progress: Math.min(progress, 90) })
-      
-      if (progress >= 90) {
-        clearInterval(progressInterval)
-      }
-    }, 100)
+  onProgress?.({ progress: 10 })
 
-    reader.onload = (e) => {
-      clearInterval(progressInterval)
-      const result = e.target?.result
-      
-      if (typeof result === 'string') {
-        onProgress?.({ progress: 100 })
-        resolve(result) // Return base64 data URL
-      } else {
-        reject(new Error("Failed to read file"))
-      }
-    }
-
-    reader.onerror = () => {
-      clearInterval(progressInterval)
-      reject(new Error("Failed to read file"))
-    }
-
-    reader.readAsDataURL(file)
+  const result = await uploadMaterialImage(file, {
+    title: file.name || "Rich Text Image",
   })
+
+  onProgress?.({ progress: 100 })
+  return result.url
+}
+
+export function extractImageUrlsFromHtml(html: string): string[] {
+  if (!html) return []
+  if (typeof window === "undefined") return []
+
+  const parser = new DOMParser()
+  const doc = parser.parseFromString(html, "text/html")
+  const images = Array.from(doc.querySelectorAll("img"))
+  return images
+    .map((img) => img.getAttribute("src") || "")
+    .filter(Boolean)
+}
+
+export function filterManagedImageUrls(urls: string[]): string[] {
+  return urls.filter(
+    (url) =>
+      !!url &&
+      !url.startsWith("data:") &&
+      !url.startsWith("blob:") &&
+      !url.startsWith("about:")
+  )
+}
+
+export function uniqueImageUrls(urls: string[]): string[] {
+  return Array.from(new Set(urls))
+}
+
+export function diffImageUrls(prev: string[], next: string[]) {
+  const prevSet = new Set(prev)
+  const nextSet = new Set(next)
+  const removed = prev.filter((url) => !nextSet.has(url))
+  const added = next.filter((url) => !prevSet.has(url))
+  return { removed, added }
+}
+
+export function extractImageUrlsFromHtmlList(htmlList: string[]): string[] {
+  const merged = htmlList.flatMap((html) => extractImageUrlsFromHtml(html))
+  return uniqueImageUrls(merged)
 }
 
 type ProtocolOptions = {

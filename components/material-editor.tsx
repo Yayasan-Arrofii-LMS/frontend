@@ -1,11 +1,11 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { EditorContent, EditorContext, useEditor } from "@tiptap/react"
 
 // --- Tiptap Core Extensions ---
 import { StarterKit } from "@tiptap/starter-kit"
-import { Image } from "@tiptap/extension-image"
+import { ImageUploadExtension } from "@/components/tiptap-node/image-node/image-upload-extension"
 import { Link } from "@tiptap/extension-link"
 import { TaskItem, TaskList } from "@tiptap/extension-list"
 import { TextAlign } from "@tiptap/extension-text-align"
@@ -46,7 +46,15 @@ import { TextAlignButton } from "@/components/tiptap-ui/text-align-button"
 import { UndoRedoButton } from "@/components/tiptap-ui/undo-redo-button"
 
 // --- Lib ---
-import { handleImageUpload, MAX_FILE_SIZE } from "@/lib/tiptap-utils"
+import {
+  diffImageUrls,
+  extractImageUrlsFromHtml,
+  filterManagedImageUrls,
+  handleImageUpload,
+  MAX_FILE_SIZE,
+  uniqueImageUrls,
+} from "@/lib/tiptap-utils"
+import { deleteMaterialImages } from "@/lib/api/material-images"
 
 // --- Styles ---
 import "@/components/tiptap-templates/simple/simple-editor.scss"
@@ -57,6 +65,8 @@ interface MaterialEditorProps {
   onChange: (value: string) => void
   disabled?: boolean
   placeholder?: string
+  cleanupImagesOnUpdate?: boolean
+  onImageUrlsChange?: (urls: string[]) => void
 }
 
 export function MaterialEditor({
@@ -64,7 +74,12 @@ export function MaterialEditor({
   onChange,
   disabled = false,
   placeholder = "Tulis konten materi di sini...",
+  cleanupImagesOnUpdate = true,
+  onImageUrlsChange,
 }: MaterialEditorProps) {
+  const previousImageUrlsRef = useRef<string[]>(
+    filterManagedImageUrls(extractImageUrlsFromHtml(value || ""))
+  )
   const editor = useEditor({
     immediatelyRender: false,
     editable: !disabled,
@@ -93,12 +108,19 @@ export function MaterialEditor({
       TaskList,
       TaskItem.configure({ nested: true }),
       Highlight.configure({ multicolor: true }),
-      Image.configure({
+      ImageUploadExtension.configure({
         inline: true,
-        allowBase64: true,
         HTMLAttributes: {
-          class: 'rounded-md',
-          style: 'max-width: 100%; max-height: min(500px, 60vh); width: auto; height: auto; object-fit: contain;',
+          class: "rounded-md",
+          style:
+            "max-width: 100%; max-height: min(500px, 60vh); width: auto; height: auto; object-fit: contain;",
+        },
+        onError: (error) => {
+          console.error("Upload failed:", error)
+          alert(`Upload gagal: ${error.message}`)
+        },
+        onSuccess: (url) => {
+          console.log("Upload success:", url)
         },
       }),
       Typography,
@@ -123,6 +145,20 @@ export function MaterialEditor({
     onUpdate: ({ editor }) => {
       const html = editor.getHTML()
       onChange(html)
+
+      const currentUrls = uniqueImageUrls(
+        filterManagedImageUrls(extractImageUrlsFromHtml(html))
+      )
+      const { removed } = diffImageUrls(previousImageUrlsRef.current, currentUrls)
+
+      if (cleanupImagesOnUpdate && removed.length > 0) {
+        deleteMaterialImages(removed).catch((error) => {
+          console.warn("Failed to cleanup removed images:", error)
+        })
+      }
+
+      previousImageUrlsRef.current = currentUrls
+      onImageUrlsChange?.(currentUrls)
     },
   })
 
@@ -134,8 +170,14 @@ export function MaterialEditor({
       if (currentContent !== value) {
         editor.commands.setContent(value || "", { emitUpdate: false })
       }
+
+      const nextUrls = uniqueImageUrls(
+        filterManagedImageUrls(extractImageUrlsFromHtml(value || ""))
+      )
+      previousImageUrlsRef.current = nextUrls
+      onImageUrlsChange?.(nextUrls)
     }
-  }, [value, editor])
+  }, [value, editor, onImageUrlsChange])
 
   // Update editable state when disabled prop changes
   useEffect(() => {

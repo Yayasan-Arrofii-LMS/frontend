@@ -21,6 +21,8 @@ import { toast } from "sonner";
 import { Maximize2 } from "lucide-react";
 import { useFullscreenPreference } from "@/hooks/use-fullscreen-preference";
 import { isYouTubeUrl } from "@/lib/utils/youtube";
+import { syncMaterialImageUsage } from "@/lib/api/material-images";
+import { extractImageUrlsFromHtml } from "@/lib/tiptap-utils";
 
 interface AddMaterialModalProps {
   isOpen: boolean;
@@ -147,6 +149,13 @@ export function AddMaterialModal({
         sectionId,
         materialData,
       );
+
+      try {
+        const imageUrls = extractImageUrlsFromHtml(content);
+        await syncMaterialImageUsage(imageUrls);
+      } catch (syncError) {
+        console.warn("Failed to sync image usage:", syncError);
+      }
 
       // Step 2: Upload files if any
       if (materialFiles.length > 0) {

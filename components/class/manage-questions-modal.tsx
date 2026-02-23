@@ -33,6 +33,8 @@ import {
 import { CreateQuestionInput, UpdateQuestionInput } from "@/types/section";
 import { Plus, Trash2, Save, GripVertical, MinusCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { syncMaterialImageUsage } from "@/lib/api/material-images";
+import { extractImageUrlsFromHtmlList } from "@/lib/tiptap-utils";
 
 interface ManageQuestionsModalProps {
   isOpen: boolean;
@@ -322,6 +324,15 @@ export function ManageQuestionsModal({
 
           await updateQuestion(sectionId, q.id, questionData as UpdateQuestionInput);
         }
+      }
+
+      try {
+        const imageUrls = extractImageUrlsFromHtmlList(
+          questions.filter((q) => !q.isDeleted).map((q) => q.question)
+        );
+        await syncMaterialImageUsage(imageUrls);
+      } catch (syncError) {
+        console.warn("Failed to sync image usage:", syncError);
       }
 
       toast.success("Semua pertanyaan berhasil disimpan");

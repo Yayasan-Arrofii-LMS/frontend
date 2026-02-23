@@ -12,6 +12,8 @@ import { toast } from "sonner";
 import { ArrowLeft, Minimize2, Plus, Trash2, MinusCircle } from "lucide-react";
 import { useFullscreenPreference } from "@/hooks/use-fullscreen-preference";
 import { Card, CardContent } from "@/components/ui/card";
+import { syncMaterialImageUsage } from "@/lib/api/material-images";
+import { extractImageUrlsFromHtmlList } from "@/lib/tiptap-utils";
 
 interface Choice {
   id: string;
@@ -284,6 +286,16 @@ export default function AddQuizPage({
         xp: xpNum,
         questions: questionsData,
       });
+
+      try {
+        const imageUrls = extractImageUrlsFromHtmlList([
+          description,
+          ...questions.map((q) => q.question),
+        ]);
+        await syncMaterialImageUsage(imageUrls);
+      } catch (syncError) {
+        console.warn("Failed to sync image usage:", syncError);
+      }
 
       toast.success("Quiz dan pertanyaan berhasil ditambahkan");
       setPreference("modal");

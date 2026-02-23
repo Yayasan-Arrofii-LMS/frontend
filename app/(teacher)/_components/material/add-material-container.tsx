@@ -8,6 +8,8 @@ import { CreateMaterialInput } from "@/types/section";
 import { toast } from "sonner";
 import { useFullscreenPreference } from "@/hooks/use-fullscreen-preference";
 import { MaterialFormWithTabs, StagedFile } from "./material-form-with-tabs";
+import { syncMaterialImageUsage } from "@/lib/api/material-images";
+import { extractImageUrlsFromHtml } from "@/lib/tiptap-utils";
 
 interface AddMaterialContainerProps {
   params: Promise<{ id: string }>;
@@ -92,6 +94,13 @@ export function AddMaterialContainer({
         sectionId,
         materialData,
       );
+
+      try {
+        const imageUrls = extractImageUrlsFromHtml(content);
+        await syncMaterialImageUsage(imageUrls);
+      } catch (syncError) {
+        console.warn("Failed to sync image usage:", syncError);
+      }
 
       // Upload staged files if any
       if (stagedFiles && stagedFiles.length > 0) {
