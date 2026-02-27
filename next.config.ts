@@ -26,6 +26,11 @@ const nextConfig: NextConfig = {
         hostname: "api.sekolahalam.co",
         pathname: "/files/public/**",
       },
+      {
+        protocol: "https",
+        hostname: "romantic-raises-specifications-coffee.trycloudflare.com",
+        pathname: "/files/public/**",
+      },
     ],
     minimumCacheTTL: 60,
     dangerouslyAllowSVG: true,

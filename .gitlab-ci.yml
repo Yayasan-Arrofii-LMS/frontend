@@ -14,7 +14,7 @@ variables:
 .base_rules: &base_rules
   only:
     - main
-    # - dev-deploy
+    - dev-deploy
 
 Install:
   <<: *base_rules
