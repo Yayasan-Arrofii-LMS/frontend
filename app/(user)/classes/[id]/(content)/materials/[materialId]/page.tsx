@@ -234,9 +234,10 @@ export default function MaterialDetailPage() {
 
         <Separator className="my-6" />
 
-        <div className="whitespace-pre-wrap leading-relaxed">
-          {currentMaterial.content}
-        </div>
+        <div 
+          className="leading-relaxed"
+          dangerouslySetInnerHTML={{ __html: currentMaterial.content }}
+        />
 
         {currentMaterial.video_link && (
           <>
