@@ -36,6 +36,7 @@ export function PublicNavbar() {
   const navLinks = [
     { href: "/home", label: "Beranda" },
     { href: "/classes", label: "Kelas" },
+    { href: "/workshops", label: "Workshop" },
     ...(isAuthenticated ? [{ href: "/my-classes", label: "Kelas Saya" }] : []),
     { href: "/about", label: "Tentang Kami" },
   ];
