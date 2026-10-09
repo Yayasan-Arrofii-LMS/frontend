@@ -31,6 +31,7 @@ import {
 
 export default function ClassesPage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("Semua");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [classes, setClasses] = useState<Class[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -95,24 +96,55 @@ export default function ClassesPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-7xl overflow-x-hidden\">
-      <div className="mb-8">
-        <h1 className="mb-3 text-4xl font-bold">Semua Kelas</h1>
-        <p className="text-lg text-muted-foreground">
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-7xl overflow-x-hidden">
+      {/* Heading */}
+      <div className="mb-6 text-center">
+        <h1 className="mb-2 text-3xl sm:text-4xl font-bold tracking-tight">
+          Semua Kelas
+        </h1>
+        <p className="text-base sm:text-lg text-muted-foreground">
           Jelajahi dan temukan semua kursus yang tersedia
         </p>
       </div>
 
-      <div className="mb-8">
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      {/* Search Bar (Full Rounded & Centered) */}
+      <div className="mb-8 flex justify-center">
+        <div className="relative w-full max-w-2xl flex items-center rounded-full bg-card border-2 border-muted-foreground/20 hover:border-primary/40 focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/10 shadow-md transition-all px-4 py-1">
+          <Search className="h-5 w-5 text-muted-foreground shrink-0 ml-1" />
           <Input
             type="text"
-            placeholder="Cari kelas..."
+            placeholder="Cari kelas yang ingin dipelajari..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
+            className="h-11 border-0 bg-transparent text-base shadow-none focus-visible:ring-0 placeholder:text-muted-foreground/70"
           />
+        </div>
+      </div>
+
+      {/* Category Filter */}
+      <div className="mb-8 flex justify-center">
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          {[
+            "Semua",
+            "Sains Alam",
+            "Keterampilan Hidup",
+            "Kewirausahaan",
+            "Budaya",
+          ].map((category) => (
+            <Button
+              key={category}
+              variant={selectedCategory === category ? "default" : "outline"}
+              size="sm"
+              onClick={() => setSelectedCategory(category)}
+              className={
+                selectedCategory === category
+                  ? "font-bold shadow-xs"
+                  : "font-normal text-foreground"
+              }
+            >
+              {category}
+            </Button>
+          ))}
         </div>
       </div>
 
