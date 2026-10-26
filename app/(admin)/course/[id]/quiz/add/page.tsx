@@ -72,7 +72,7 @@ export default function AddQuizPage({
   useEffect(() => {
     const draftKey = `quiz-draft-${sectionId}`;
     const savedDraft = sessionStorage.getItem(draftKey);
-    
+
     if (savedDraft) {
       try {
         const parsed = JSON.parse(savedDraft);
@@ -200,7 +200,7 @@ export default function AddQuizPage({
         toast.error(`Pertanyaan ${i + 1}: Pertanyaan wajib diisi`);
         return;
       }
-      
+
       const emptyChoices = q.choices.filter(c => !c.text.trim());
       if (emptyChoices.length > 0) {
         toast.error(`Pertanyaan ${i + 1}: Semua pilihan jawaban harus diisi`);
@@ -323,7 +323,7 @@ export default function AddQuizPage({
       questions,
     };
     sessionStorage.setItem(`quiz-draft-${sectionId}`, JSON.stringify(formData));
-    
+
     setPreference("modal");
     router.push(`/course/${classId}?openAddQuiz=${sectionId}`);
   };

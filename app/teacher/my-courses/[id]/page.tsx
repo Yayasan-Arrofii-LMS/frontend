@@ -6,7 +6,7 @@ export default async function CourseDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  
+
   return (
     <PageContainer>
       <ClassDetailContainer classId={id} />

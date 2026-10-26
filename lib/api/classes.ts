@@ -5,6 +5,7 @@ import {
   UpdateClassRequest,
 } from "@/types/class";
 import { ApiError, handleApiError } from "@/lib/errors";
+import { normalizeImageUrl } from "@/lib/utils";
 
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001/api/v1";
@@ -24,7 +25,8 @@ async function getToken(): Promise<string | null> {
 
 export async function fetchClasses(
   page: number = 1,
-  search?: string
+  search?: string,
+  category?: string | number
 ): Promise<{
   classes: Class[];
   meta: ClassesApiResponse["meta"];
@@ -41,6 +43,9 @@ export async function fetchClasses(
     url.searchParams.append("page", page.toString());
     if (search && search.trim() !== "") {
       url.searchParams.append("search", search.trim());
+    }
+    if (category && category !== "Semua") {
+      url.searchParams.append("category", category.toString());
     }
 
     const response = await fetch(url.toString(), {
@@ -70,16 +75,20 @@ export async function fetchClasses(
         description: string;
         image_path: string;
         image_path_relative: string;
+        categoryId?: number | null;
+        category?: { id: number; name: string } | string | null;
       }) => ({
         id: apiClass.id.toString(),
         title: apiClass.name,
         description: apiClass.description,
-        coverImage: apiClass.image_path_relative,
+        coverImage: normalizeImageUrl(apiClass.image_path_relative || apiClass.image_path),
         teacherId: "teacher-1", // TODO: Get from API when available
         teacherName: "Unknown Teacher", // TODO: Get from API when available
         createdAt: new Date().toISOString(), // TODO: Get from API when available
         updatedAt: new Date().toISOString(), // TODO: Get from API when available
         studentCount: 0, // TODO: Get from API when available
+        categoryId: apiClass.categoryId ?? null,
+        category: (typeof apiClass.category === "object" && apiClass.category !== null) ? apiClass.category.name : (apiClass.category || null),
       })
     );
 
@@ -110,6 +119,9 @@ export async function createClass(data: CreateClassRequest): Promise<Class> {
     const formData = new FormData();
     formData.append("name", data.title);
     formData.append("description", data.description);
+    if (data.categoryId !== undefined && data.categoryId !== null) {
+      formData.append("categoryId", data.categoryId.toString());
+    }
 
     // Jika ada cover image, tambahkan ke form data dengan nama field "file" sesuai backend
     if (data.coverImage) {
@@ -146,12 +158,14 @@ export async function createClass(data: CreateClassRequest): Promise<Class> {
       id: apiClass.id.toString(),
       title: apiClass.name,
       description: apiClass.description,
-      coverImage: apiClass.image_path_relative || apiClass.image_path || "",
+      coverImage: normalizeImageUrl(apiClass.image_path_relative || apiClass.image_path),
       teacherId: "teacher-1", // TODO: Get from API when available
       teacherName: "Unknown Teacher", // TODO: Get from API when available
       createdAt: new Date().toISOString(), // TODO: Get from API when available
       updatedAt: new Date().toISOString(), // TODO: Get from API when available
       studentCount: 0, // TODO: Get from API when available
+        categoryId: apiClass.categoryId ?? null,
+        category: (typeof apiClass.category === "object" && apiClass.category !== null) ? apiClass.category.name : (apiClass.category || null),
     };
 
     return newClass;
@@ -178,6 +192,9 @@ export async function updateClass(
     }
     if (data.description) {
       formData.append("description", data.description);
+    }
+    if (data.categoryId !== undefined) {
+      formData.append("categoryId", data.categoryId === null ? "" : data.categoryId.toString());
     }
     if (data.coverImage) {
       formData.append("file", data.coverImage);
@@ -212,12 +229,14 @@ export async function updateClass(
       id: apiClass.id.toString(),
       title: apiClass.name,
       description: apiClass.description,
-      coverImage: apiClass.image_path_relative || apiClass.image_path || "",
+      coverImage: normalizeImageUrl(apiClass.image_path_relative || apiClass.image_path),
       teacherId: "teacher-1",
       teacherName: "Unknown Teacher",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       studentCount: 0,
+      categoryId: apiClass.categoryId ?? null,
+      category: (typeof apiClass.category === "object" && apiClass.category !== null) ? apiClass.category.name : (apiClass.category || null),
     };
 
     return updatedClass;
@@ -294,12 +313,14 @@ export async function getClassById(id: string): Promise<Class> {
       id: apiClass.id.toString(),
       title: apiClass.name,
       description: apiClass.description,
-      coverImage: apiClass.image_path_relative || apiClass.image_path || "",
+      coverImage: normalizeImageUrl(apiClass.image_path_relative || apiClass.image_path),
       teacherId: "teacher-1",
       teacherName: "Unknown Teacher",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       studentCount: 0,
+      categoryId: apiClass.categoryId ?? null,
+      category: (typeof apiClass.category === "object" && apiClass.category !== null) ? apiClass.category.name : (apiClass.category || null),
     };
 
     return classData;
@@ -314,7 +335,8 @@ export async function getClassById(id: string): Promise<Class> {
  */
 export async function fetchPublicClasses(
   page: number = 1,
-  search?: string
+  search?: string,
+  category?: string | number
 ): Promise<{
   classes: Class[];
   meta: {
@@ -329,6 +351,9 @@ export async function fetchPublicClasses(
     url.searchParams.append("page", page.toString());
     if (search && search.trim() !== "") {
       url.searchParams.append("search", search.trim());
+    }
+    if (category && category !== "Semua") {
+      url.searchParams.append("category", category.toString());
     }
 
     const response = await fetch(url.toString(), {
@@ -351,23 +376,19 @@ export async function fetchPublicClasses(
     }
 
     // Transform API response to frontend format
-    const classes: Class[] = responseData.data.classes.map(
-      (apiClass: {
-        id: number;
-        name: string;
-        description: string;
-        image_path: string;
-        image_path_relative: string;
-      }) => ({
+    const classes: Class[] = (responseData.data.classes || []).map(
+      (apiClass: any) => ({
         id: apiClass.id.toString(),
         title: apiClass.name,
         description: apiClass.description,
-        coverImage: apiClass.image_path_relative,
+        coverImage: normalizeImageUrl(apiClass.image_path_relative || apiClass.image_path),
         teacherId: "",
         teacherName: "",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        studentCount: 0,
+        createdAt: apiClass.createdAt || new Date().toISOString(),
+        updatedAt: apiClass.updatedAt || new Date().toISOString(),
+        studentCount: apiClass._count?.students || 0,
+        categoryId: apiClass.categoryId,
+        category: apiClass.category?.name || apiClass.category || null,
       })
     );
 
@@ -427,12 +448,14 @@ export async function fetchPublicClassDetail(classId: string): Promise<{
       id: apiClass.id.toString(),
       title: apiClass.name,
       description: apiClass.description,
-      coverImage: apiClass.image_path_relative || apiClass.image_path,
+      coverImage: normalizeImageUrl(apiClass.image_path_relative || apiClass.image_path),
       teacherId: "",
       teacherName: "",
       createdAt: apiClass.createdAt || new Date().toISOString(),
       updatedAt: apiClass.updatedAt || new Date().toISOString(),
       studentCount: 0,
+      categoryId: apiClass.categoryId ?? null,
+      category: (typeof apiClass.category === "object" && apiClass.category !== null) ? apiClass.category.name : (apiClass.category || null),
     };
 
     // Transform sections from API format
@@ -527,12 +550,14 @@ export async function fetchStudentClassDetail(classId: string): Promise<{
       id: apiClass.id.toString(),
       title: apiClass.name,
       description: apiClass.description,
-      coverImage: apiClass.image_path_relative || apiClass.image_path,
+      coverImage: normalizeImageUrl(apiClass.image_path_relative || apiClass.image_path),
       teacherId: "",
       teacherName: "",
       createdAt: apiClass.createdAt || new Date().toISOString(),
       updatedAt: apiClass.updatedAt || new Date().toISOString(),
       studentCount: 0,
+      categoryId: apiClass.categoryId ?? null,
+      category: (typeof apiClass.category === "object" && apiClass.category !== null) ? apiClass.category.name : (apiClass.category || null),
     };
 
     // Transform sections from API format

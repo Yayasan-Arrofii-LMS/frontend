@@ -1,4 +1,7 @@
-import { getAuthToken, removeAuthToken } from "./auth";
+﻿import { getAuthToken, removeAuthToken } from "./auth";
+import { ApiError, handleApiError } from "@/lib/errors";
+
+export { ApiError, handleApiError };
 
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001/api/v1";
@@ -7,17 +10,7 @@ export interface ApiResponse<T = unknown> {
   success: boolean;
   message: string;
   data: T;
-}
-
-export class ApiError extends Error {
-  constructor(
-    message: string,
-    public statusCode?: number,
-    public response?: unknown
-  ) {
-    super(message);
-    this.name = "ApiError";
-  }
+  meta?: unknown;
 }
 
 /**
@@ -29,9 +22,11 @@ export async function authenticatedFetch<T = unknown>(
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> {
   const token = getAuthToken();
+  const isFormData =
+    typeof FormData !== "undefined" && options.body instanceof FormData;
 
-  const headers = {
-    "Content-Type": "application/json",
+  const headers: HeadersInit = {
+    ...(!isFormData && { "Content-Type": "application/json" }),
     ...(token && { Authorization: `Bearer ${token}` }),
     ...options.headers,
   };
@@ -90,6 +85,17 @@ export async function authenticatedFetch<T = unknown>(
 }
 
 /**
+ * Helper to perform authenticated request and directly return the unwrapped data payload
+ */
+export async function apiRequest<T = unknown>(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<T> {
+  const response = await authenticatedFetch<T>(endpoint, options);
+  return response.data;
+}
+
+/**
  * GET request
  */
 export async function get<T = unknown>(endpoint: string): Promise<ApiResponse<T>> {
@@ -107,7 +113,7 @@ export async function post<T = unknown>(
 ): Promise<ApiResponse<T>> {
   return authenticatedFetch<T>(endpoint, {
     method: "POST",
-    body: JSON.stringify(data),
+    body: data instanceof FormData ? data : JSON.stringify(data),
   });
 }
 
@@ -119,8 +125,8 @@ export async function put<T = unknown>(
   data?: unknown
 ): Promise<ApiResponse<T>> {
   return authenticatedFetch<T>(endpoint, {
-    method: "PATCH",
-    body: JSON.stringify(data),
+    method: "PUT",
+    body: data instanceof FormData ? data : JSON.stringify(data),
   });
 }
 
@@ -142,6 +148,6 @@ export async function patch<T = unknown>(
 ): Promise<ApiResponse<T>> {
   return authenticatedFetch<T>(endpoint, {
     method: "PATCH",
-    body: JSON.stringify(data),
+    body: data instanceof FormData ? data : JSON.stringify(data),
   });
 }

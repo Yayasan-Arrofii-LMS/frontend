@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, use } from "react";
+import { useState, use, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -16,6 +16,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import { normalizeImageUrl, isWorkshopPast } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -50,13 +52,15 @@ export default function WorkshopDetailPage({
   const workshopId = resolvedParams.id;
 
   const router = useRouter();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const {
     getWorkshop,
     updateWorkshop,
     deleteWorkshop,
     registerWorkshop,
     cancelRegistration,
+    isLoading: workshopLoading,
+    isSubmitting,
   } = useWorkshops();
 
   const workshop = getWorkshop(workshopId);
@@ -67,6 +71,40 @@ export default function WorkshopDetailPage({
   const [isParticipantsModalOpen, setIsParticipantsModalOpen] = useState(false);
   const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [imgSrc, setImgSrc] = useState<string>(
+    normalizeImageUrl(workshop?.thumbnail)
+  );
+
+  useEffect(() => {
+    if (workshop?.thumbnail) {
+      setImgSrc(normalizeImageUrl(workshop.thumbnail));
+    }
+  }, [workshop?.thumbnail]);
+
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      toast.error("Silakan login terlebih dahulu untuk mengakses workshop ini");
+      router.push(`/login?from=/workshops/${workshopId}`);
+    }
+  }, [authLoading, isAuthenticated, router, workshopId]);
+
+  if (authLoading || !isAuthenticated || workshopLoading) {
+    return (
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 max-w-7xl">
+        <Skeleton className="h-10 w-48 mb-6" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-6">
+            <Skeleton className="aspect-video w-full rounded-2xl" />
+            <Skeleton className="h-8 w-3/4" />
+            <Skeleton className="h-24 w-full" />
+          </div>
+          <div className="space-y-6">
+            <Skeleton className="h-64 w-full rounded-2xl" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!workshop) {
     return (
@@ -98,6 +136,7 @@ export default function WorkshopDetailPage({
       (p) => p.userId === user.id && p.status === "Terdaftar"
     );
 
+  const isPast = isWorkshopPast(workshop.date, workshop.endTime);
   const isFull = workshop.registeredCount >= workshop.quota;
   const remainingQuota = Math.max(0, workshop.quota - workshop.registeredCount);
   const quotaPercent = Math.min(
@@ -112,7 +151,7 @@ export default function WorkshopDetailPage({
     year: "numeric",
   });
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (!isAuthenticated) {
       setShowLoginPrompt(true);
       return;
@@ -120,12 +159,7 @@ export default function WorkshopDetailPage({
 
     if (!user) return;
 
-    const res = registerWorkshop(workshop.id, {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      avatar: user.profilePicture,
-    });
+    const res = await registerWorkshop(workshop.id);
 
     if (res.success) {
       toast.success(res.message);
@@ -134,9 +168,9 @@ export default function WorkshopDetailPage({
     }
   };
 
-  const handleConfirmCancel = () => {
+  const handleConfirmCancel = async () => {
     if (!user) return;
-    const res = cancelRegistration(workshop.id, user.id);
+    const res = await cancelRegistration(workshop.id);
     if (res.success) {
       toast.success(res.message);
     } else {
@@ -145,15 +179,20 @@ export default function WorkshopDetailPage({
     setIsCancelConfirmOpen(false);
   };
 
-  const handleFormSubmit = (data: WorkshopFormData) => {
-    updateWorkshop(workshop.id, data);
-    toast.success("Workshop berhasil diperbarui!");
+  const handleFormSubmit = async (data: WorkshopFormData) => {
+    const res = await updateWorkshop(workshop.id, data);
+    if (res.success) {
+      toast.success(res.message);
+      setIsFormOpen(false);
+    }
   };
 
-  const handleConfirmDelete = () => {
-    deleteWorkshop(workshop.id);
-    toast.success("Workshop berhasil dihapus.");
-    router.push("/workshops");
+  const handleConfirmDelete = async () => {
+    const res = await deleteWorkshop(workshop.id);
+    if (res.success) {
+      toast.success(res.message);
+      router.push("/workshops");
+    }
   };
 
   const handleShare = () => {
@@ -220,12 +259,14 @@ export default function WorkshopDetailPage({
           {/* Banner Thumbnail */}
           <div className="relative aspect-video w-full rounded-2xl overflow-hidden border bg-muted shadow-sm">
             <Image
-              src={workshop.thumbnail || "/placeholder.svg"}
+              src={imgSrc}
               alt={workshop.title}
               fill
               className="object-cover"
               priority
               sizes="(max-width: 1024px) 100vw, 66vw"
+              onError={() => setImgSrc("/placeholder.svg")}
+              unoptimized={!imgSrc.startsWith("/") && !imgSrc.includes("images.unsplash.com")}
             />
             <div className="absolute top-4 left-4 flex gap-2">
               <Badge className="bg-background/90 text-foreground backdrop-blur-md text-xs font-semibold">
@@ -249,12 +290,17 @@ export default function WorkshopDetailPage({
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight">
               {workshop.title}
             </h1>
-            {isRegistered && (
+            {isPast ? (
+              <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 text-sm font-semibold">
+                <AlertCircle className="h-4 w-4" />
+                Workshop ini telah selesai dilaksanakan pada {formattedDate}
+              </div>
+            ) : isRegistered ? (
               <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-sm font-semibold">
                 <CheckCircle2 className="h-4 w-4" />
                 Anda telah terdaftar sebagai peserta pada workshop ini
               </div>
-            )}
+            ) : null}
           </div>
 
           <Separator />
@@ -262,7 +308,6 @@ export default function WorkshopDetailPage({
           {/* Description */}
           <div className="space-y-3">
             <h2 className="text-xl font-bold flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" />
               Deskripsi & Rincian Kegiatan
             </h2>
             <div className="prose prose-slate dark:prose-invert max-w-none text-muted-foreground whitespace-pre-line leading-relaxed text-sm sm:text-base">
@@ -412,7 +457,21 @@ export default function WorkshopDetailPage({
 
               {/* Action Button */}
               <div className="pt-2">
-                {isRegistered ? (
+                {isPast ? (
+                  <div className="space-y-2">
+                    <Button
+                      disabled
+                      size="lg"
+                      className="w-full font-bold cursor-not-allowed opacity-60 bg-muted text-muted-foreground border"
+                    >
+                      <AlertCircle className="h-4 w-4 mr-2" />
+                      Workshop Telah Selesai
+                    </Button>
+                    <p className="text-[11px] text-center text-muted-foreground">
+                      Jadwal pelaksanaan telah terlewat sehingga pendaftaran sudah ditutup.
+                    </p>
+                  </div>
+                ) : isRegistered ? (
                   <div className="space-y-2">
                     <Button
                       variant="outline"

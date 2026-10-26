@@ -26,8 +26,10 @@ import {
   WorkshopCategory,
   WorkshopType,
 } from "@/types/workshop";
-import { Video, MapPin, Sparkles } from "lucide-react";
+import { Video, MapPin, Sparkles, Users } from "lucide-react";
 import { toast } from "sonner";
+import { normalizeImageUrl } from "@/lib/utils";
+import { useCategories } from "@/hooks/use-categories";
 
 interface WorkshopFormModalProps {
   open: boolean;
@@ -46,11 +48,6 @@ const CATEGORIES: WorkshopCategory[] = [
 
 const DEFAULT_THUMBNAILS = [
   "https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=800&q=80",
-  "https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?auto=format&fit=crop&w=800&q=80",
-  "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&w=800&q=80",
-  "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=800&q=80",
-  "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80",
-  "https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&w=800&q=80",
 ];
 
 export function WorkshopFormModal({
@@ -60,9 +57,12 @@ export function WorkshopFormModal({
   onSubmit,
 }: WorkshopFormModalProps) {
   const isEditing = !!workshopToEdit;
+  const { categories: backendCategories } = useCategories();
 
   const [formData, setFormData] = useState<WorkshopFormData>({
     title: "",
+    instructorName: "",
+    instructorId: "",
     description: "",
     thumbnail: DEFAULT_THUMBNAILS[0],
     category: "Sains Alam",
@@ -81,6 +81,8 @@ export function WorkshopFormModal({
     if (workshopToEdit) {
       setFormData({
         title: workshopToEdit.title,
+        instructorName: workshopToEdit.instructorName || "",
+        instructorId: workshopToEdit.instructorId || "",
         description: workshopToEdit.description,
         thumbnail: workshopToEdit.thumbnail || DEFAULT_THUMBNAILS[0],
         category: workshopToEdit.category,
@@ -95,6 +97,8 @@ export function WorkshopFormModal({
     } else {
       setFormData({
         title: "",
+        instructorName: "",
+        instructorId: "",
         description: "",
         thumbnail: DEFAULT_THUMBNAILS[Math.floor(Math.random() * DEFAULT_THUMBNAILS.length)],
         category: "Sains Alam",
@@ -115,6 +119,9 @@ export function WorkshopFormModal({
 
     if (!formData.title.trim()) {
       errs.title = "Judul workshop wajib diisi";
+    }
+    if (!formData.instructorName?.trim()) {
+      errs.instructorName = "Nama instruktur / penyelenggara wajib diisi";
     }
     if (!formData.description.trim()) {
       errs.description = "Deskripsi workshop wajib diisi";
@@ -151,7 +158,14 @@ export function WorkshopFormModal({
       return;
     }
 
-    onSubmit(formData);
+    const finalData: WorkshopFormData = {
+      ...formData,
+      thumbnail: formData.thumbnailFile
+        ? formData.thumbnail
+        : normalizeImageUrl(formData.thumbnail),
+    };
+
+    onSubmit(finalData);
     onOpenChange(false);
   };
 
@@ -184,6 +198,24 @@ export function WorkshopFormModal({
             {errors.title && <p className="text-xs text-red-500">{errors.title}</p>}
           </div>
 
+          {/* Instruktur / Penyelenggara */}
+          <div className="space-y-1.5">
+            <Label htmlFor="instructorName" className="text-sm font-semibold flex items-center gap-1.5">
+              <Users className="h-4 w-4 text-primary" />
+              Nama Instruktur / Penyelenggara <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="instructorName"
+              placeholder="Contoh: Kak Danang / Dr. Siti Aminah"
+              value={formData.instructorName || ""}
+              onChange={(e) => setFormData({ ...formData, instructorName: e.target.value })}
+              className={errors.instructorName ? "border-red-500" : ""}
+            />
+            {errors.instructorName && (
+              <p className="text-xs text-red-500">{errors.instructorName}</p>
+            )}
+          </div>
+
           {/* Kategori & Tipe */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
@@ -200,11 +232,19 @@ export function WorkshopFormModal({
                   <SelectValue placeholder="Pilih Kategori" />
                 </SelectTrigger>
                 <SelectContent>
-                  {CATEGORIES.map((cat) => (
-                    <SelectItem key={cat} value={cat}>
-                      {cat}
-                    </SelectItem>
-                  ))}
+                  {backendCategories.length > 0 ? (
+                    backendCategories.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.name}>
+                        {cat.name}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    CATEGORIES.map((cat) => (
+                      <SelectItem key={cat} value={cat}>
+                        {cat}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -344,14 +384,39 @@ export function WorkshopFormModal({
 
             <div className="space-y-1.5">
               <Label htmlFor="thumbnail" className="text-sm font-semibold">
-                URL Gambar / Thumbnail
+                Gambar / Thumbnail
               </Label>
-              <Input
-                id="thumbnail"
-                placeholder="https://..."
-                value={formData.thumbnail}
-                onChange={(e) => setFormData({ ...formData, thumbnail: e.target.value })}
-              />
+              <div className="space-y-2">
+                <Input
+                  id="thumbnailFile"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setFormData({
+                        ...formData,
+                        thumbnailFile: file,
+                        thumbnail: URL.createObjectURL(file),
+                      });
+                    }
+                  }}
+                  className="cursor-pointer file:cursor-pointer"
+                />
+                <Input
+                  id="thumbnail"
+                  placeholder="Atau masukkan URL gambar (https://...)"
+                  value={formData.thumbnail}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      thumbnail: e.target.value,
+                      thumbnailFile: null,
+                    })
+                  }
+                  className="text-xs text-muted-foreground"
+                />
+              </div>
             </div>
           </div>
 

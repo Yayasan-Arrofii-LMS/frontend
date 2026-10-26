@@ -1,11 +1,12 @@
-export type WorkshopType = "Online" | "Offline";
+﻿export type WorkshopType = "Online" | "Offline";
 
 export type WorkshopCategory =
   | "Sains Alam"
   | "Keterampilan Hidup"
   | "Kewirausahaan"
   | "Budaya"
-  | "Teknologi & Lingkungan";
+  | "Teknologi & Lingkungan"
+  | (string & {});
 
 export type WorkshopStatus = "Upcoming" | "Ongoing" | "Completed" | "Cancelled";
 
@@ -50,6 +51,7 @@ export interface WorkshopFormData {
   title: string;
   description: string;
   thumbnail: string;
+  thumbnailFile?: File | null;
   category: WorkshopCategory;
   date: string;
   startTime: string;
@@ -58,4 +60,6 @@ export interface WorkshopFormData {
   location?: string;
   meetingLink?: string;
   quota: number;
+  instructorName?: string;
+  instructorId?: string;
 }

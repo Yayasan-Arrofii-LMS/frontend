@@ -2,10 +2,10 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 // Routes admin/teacher yang akan menampilkan 404 jika tidak ada token (untuk keamanan)
-const adminTeacherRoutes = ["/dashboard", "/course", "/teacher"];
+const adminTeacherRoutes = ["/dashboard", "/course", "/teacher", "/workshop"];
 
 // Routes user yang akan redirect ke login jika tidak ada token
-const userProtectedRoutes = ["/classes", "/my-classes"];
+const userProtectedRoutes = ["/my-classes", "/workshops"];
 
 // Routes yang hanya bisa diakses ketika belum login
 const authRoutes = [
@@ -16,6 +16,11 @@ const authRoutes = [
   "/otp",
 ];
 
+// Helper to check exact route or subpath match (prevents /workshop from matching /workshops)
+function matchesRoute(pathname: string, route: string): boolean {
+  return pathname === route || pathname.startsWith(`${route}/`);
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -24,16 +29,18 @@ export function middleware(request: NextRequest) {
 
   // Check if accessing admin/teacher route
   const isAdminTeacherRoute = adminTeacherRoutes.some((route) =>
-    pathname.startsWith(route)
+    matchesRoute(pathname, route)
   );
 
   // Check if accessing user protected route
   const isUserProtectedRoute = userProtectedRoutes.some((route) =>
-    pathname.startsWith(route)
+    matchesRoute(pathname, route)
   );
 
   // Check if accessing auth route
-  const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route));
+  const isAuthRoute = authRoutes.some((route) =>
+    matchesRoute(pathname, route)
+  );
 
   // Return 404 for admin/teacher routes without token (untuk keamanan)
   if (isAdminTeacherRoute && !token) {

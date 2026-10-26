@@ -1,0 +1,45 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" width="800" height="500">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f1f5f9" />
+      <stop offset="50%" stop-color="#e2e8f0" />
+      <stop offset="100%" stop-color="#cbd5e1" />
+    </linearGradient>
+    <linearGradient id="leafGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#16a34a" />
+      <stop offset="100%" stop-color="#15803d" />
+    </linearGradient>
+    <linearGradient id="circleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.8" />
+      <stop offset="100%" stop-color="#f8fafc" stop-opacity="0.5" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="800" height="500" fill="url(#bgGrad)" />
+  
+  <!-- Subtle decorative circles -->
+  <circle cx="400" cy="220" r="140" fill="url(#circleGrad)" stroke="#e2e8f0" stroke-width="2" />
+  <circle cx="400" cy="220" r="105" fill="#ffffff" fill-opacity="0.6" />
+
+  <!-- Nature / Landscape Illustration -->
+  <g transform="translate(352, 172)">
+    <!-- Mountain / Hills back -->
+    <path d="M8 80 L35 45 L60 75 L75 55 L92 80 Z" fill="#94a3b8" opacity="0.4" />
+    <!-- Leaf Icon -->
+    <path d="M48 10 C25 10 15 32 18 52 C21 68 34 82 48 86 C62 82 75 68 78 52 C81 32 71 10 48 10 Z" fill="url(#leafGrad)" />
+    <!-- Leaf Vein -->
+    <path d="M48 20 C48 40 48 65 48 82" stroke="#dcfce7" stroke-width="3" stroke-linecap="round" />
+    <path d="M48 38 C56 34 62 30 65 26" stroke="#dcfce7" stroke-width="2" stroke-linecap="round" />
+    <path d="M48 52 C40 48 34 44 31 40" stroke="#dcfce7" stroke-width="2" stroke-linecap="round" />
+    <path d="M48 64 C56 60 61 56 64 52" stroke="#dcfce7" stroke-width="2" stroke-linecap="round" />
+  </g>
+
+  <!-- Brand / Text -->
+  <text x="400" y="380" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="600" fill="#475569" letter-spacing="0.5">
+    Sekolah Alam
+  </text>
+  <text x="400" y="405" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="400" fill="#94a3b8">
+    Gambar Belum Tersedia
+  </text>
+</svg>

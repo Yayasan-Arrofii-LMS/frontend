@@ -76,7 +76,7 @@ export function TeacherManagementContent() {
             )}
           </p>
         </div>
-        
+
         {/* Password Default Info */}
         <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
           <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />

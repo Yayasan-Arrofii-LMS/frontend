@@ -23,7 +23,7 @@ export function useThemeTransition() {
     // Only apply transition if theme actually changed after hydration
     if (previousTheme.current && previousTheme.current !== resolvedTheme) {
       const root = document.documentElement;
-      
+
       // Add transition class
       root.classList.add("theme-transition");
 

@@ -87,7 +87,7 @@ export function MaterialFilesManagement({
       setIsLoading(false);
       return;
     }
-    
+
     // Reset files when materialId changes
     setFiles([]);
     setIsLoading(true);

@@ -1,9 +1,5 @@
-import { ClassListContainer, PageContainer } from "../_components";
+﻿import { redirect } from "next/navigation";
 
 export default function ClassPage() {
-  return (
-    <PageContainer>
-      <ClassListContainer />
-    </PageContainer>
-  );
+  redirect("/teacher/my-courses");
 }

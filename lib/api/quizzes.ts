@@ -19,57 +19,15 @@ import {
   UpdateQuestionInput,
   SaveAnswerInput,
 } from "@/types/section";
+import { authenticatedFetch } from "./client";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001/api/v1";
-
-// Helper function to get auth token
-function getAuthToken(): string {
-  if (typeof window !== "undefined") {
-    return localStorage.getItem("auth_token") || "";
-  }
-  return "";
-}
-
-// Helper function for API calls
 async function apiCall<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const token = getAuthToken();
-  const headers: HeadersInit = {
-    "Content-Type": "application/json",
-    ...(token && { Authorization: `Bearer ${token}` }),
-    ...options.headers,
-  };
-
-  const url = `${API_BASE_URL}${endpoint}`;
-  console.log(`API Call: ${options.method || "GET"} ${url}`);
-
-  const response = await fetch(url, {
-    ...options,
-    headers,
-  });
-
-  console.log(`Response status: ${response.status}`);
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error("API Error response:", errorText);
-
-    let error;
-    try {
-      error = JSON.parse(errorText);
-    } catch {
-      error = { message: errorText || "An error occurred" };
-    }
-
-    throw new Error(error.message || `HTTP error! status: ${response.status}`);
-  }
-
-  return response.json();
+  const result = await authenticatedFetch(endpoint, options);
+  return result as unknown as T;
 }
-
 // ============================================
 // QUIZ CRUD OPERATIONS (Teacher/Admin)
 // ============================================
@@ -82,7 +40,7 @@ export async function fetchQuizzes(sectionId: number): Promise<Quiz[]> {
     const response = await apiCall<QuizzesResponse>(
       `/classes/sections/${sectionId}/quizzes`
     );
-    
+
     // Transform API response from snake_case to camelCase
     const quizzes = response.data.map((quiz: any) => {
       const transformed: Quiz = {
@@ -145,7 +103,7 @@ export async function fetchQuizDetail(
     const response = await apiCall<QuizResponse>(
       `/classes/sections/${sectionId}/quizzes/${quizId}`
     );
-    
+
     const quiz = response.data as any;
     const transformed: Quiz = {
       id: quiz.id,

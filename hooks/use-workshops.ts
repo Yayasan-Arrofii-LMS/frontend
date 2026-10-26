@@ -1,121 +1,189 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { Workshop, WorkshopFormData } from "@/types/workshop";
 import {
-  Workshop,
-  WorkshopFormData,
-  WorkshopCategory,
-  WorkshopType,
-} from "@/types/workshop";
-import {
-  getStoredWorkshops,
-  getWorkshopById,
-  createWorkshop as createStoredWorkshop,
-  updateWorkshop as updateStoredWorkshop,
-  deleteWorkshop as deleteStoredWorkshop,
-  registerWorkshop as registerStoredWorkshop,
-  cancelRegistration as cancelStoredRegistration,
-  getMyRegistrations as getStoredMyRegistrations,
-} from "@/lib/mock/workshops";
+  getWorkshopsApi,
+  getWorkshopByIdApi,
+  createWorkshopApi,
+  updateWorkshopApi,
+  deleteWorkshopApi,
+  registerWorkshopApi,
+  cancelWorkshopRegistrationApi,
+  WorkshopFilterParams,
+} from "@/lib/api/workshop";
+import { toast } from "sonner";
 
-export function useWorkshops() {
+export function useWorkshops(initialFilters?: WorkshopFilterParams) {
   const [workshops, setWorkshops] = useState<Workshop[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const loadWorkshops = useCallback(() => {
-    try {
-      setIsLoading(true);
-      const data = getStoredWorkshops();
-      setWorkshops(data);
-    } catch (err) {
-      console.error("Gagal mengambil data workshops:", err);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const loadWorkshops = useCallback(
+    async (filters?: WorkshopFilterParams) => {
+      try {
+        setIsLoading(true);
+        const data = await getWorkshopsApi(filters || initialFilters);
+        setWorkshops(data || []);
+      } catch (err: unknown) {
+        console.error("Gagal mengambil data workshops dari backend:", err);
+        const msg =
+          err instanceof Error
+            ? err.message
+            : "Gagal memuat data workshop dari server";
+        toast.error(msg);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [initialFilters]
+  );
 
   useEffect(() => {
     loadWorkshops();
-
-    const handleDataChange = () => {
-      loadWorkshops();
-    };
-
-    window.addEventListener("workshop-data-changed", handleDataChange);
-    return () => {
-      window.removeEventListener("workshop-data-changed", handleDataChange);
-    };
   }, [loadWorkshops]);
 
-  const getWorkshop = useCallback((id: string): Workshop | null => {
-    return getWorkshopById(id);
-  }, []);
+  const getWorkshop = useCallback(
+    (id: string): Workshop | null => {
+      return workshops.find((w) => String(w.id) === String(id)) || null;
+    },
+    [workshops]
+  );
+
+  const fetchWorkshopById = useCallback(
+    async (id: string): Promise<Workshop | null> => {
+      try {
+        const data = await getWorkshopByIdApi(id);
+        return data;
+      } catch (err: unknown) {
+        console.error(`Gagal mengambil detail workshop ${id}:`, err);
+        return null;
+      }
+    },
+    []
+  );
 
   const createNewWorkshop = useCallback(
-    (
+    async (
       formData: WorkshopFormData,
-      instructor: { id: string; name: string; avatar?: string | null; bio?: string }
+      _instructor?: { id: string; name: string; avatar?: string | null; bio?: string }
     ) => {
-      const created = createStoredWorkshop(formData, instructor);
-      loadWorkshops();
-      return created;
+      try {
+        setIsSubmitting(true);
+        const created = await createWorkshopApi(formData);
+        await loadWorkshops();
+        return { success: true, message: "Workshop baru berhasil dibuat!", data: created };
+      } catch (err: unknown) {
+        const msg =
+          err instanceof Error ? err.message : "Gagal membuat workshop baru";
+        toast.error(msg);
+        return { success: false, message: msg };
+      } finally {
+        setIsSubmitting(false);
+      }
     },
     [loadWorkshops]
   );
 
   const updateExistingWorkshop = useCallback(
-    (id: string, formData: Partial<WorkshopFormData>) => {
-      const updated = updateStoredWorkshop(id, formData);
-      loadWorkshops();
-      return updated;
+    async (id: string, formData: Partial<WorkshopFormData>) => {
+      try {
+        setIsSubmitting(true);
+        const updated = await updateWorkshopApi(id, formData);
+        await loadWorkshops();
+        return { success: true, message: "Workshop berhasil diperbarui!", data: updated };
+      } catch (err: unknown) {
+        const msg =
+          err instanceof Error ? err.message : "Gagal memperbarui workshop";
+        toast.error(msg);
+        return { success: false, message: msg };
+      } finally {
+        setIsSubmitting(false);
+      }
     },
     [loadWorkshops]
   );
 
   const deleteExistingWorkshop = useCallback(
-    (id: string) => {
-      const success = deleteStoredWorkshop(id);
-      loadWorkshops();
-      return success;
+    async (id: string) => {
+      try {
+        setIsSubmitting(true);
+        await deleteWorkshopApi(id);
+        await loadWorkshops();
+        return { success: true, message: "Workshop telah berhasil dihapus." };
+      } catch (err: unknown) {
+        const msg =
+          err instanceof Error ? err.message : "Gagal menghapus workshop";
+        toast.error(msg);
+        return { success: false, message: msg };
+      } finally {
+        setIsSubmitting(false);
+      }
     },
     [loadWorkshops]
   );
 
   const registerUserToWorkshop = useCallback(
-    (
+    async (
       workshopId: string,
-      user: { id: string; name: string; email: string; avatar?: string | null }
+      _user?: { id: string; name: string; email: string; avatar?: string | null },
+      notes?: string
     ) => {
-      const result = registerStoredWorkshop(workshopId, user);
-      loadWorkshops();
-      return result;
+      try {
+        setIsSubmitting(true);
+        const updated = await registerWorkshopApi(workshopId, notes);
+        await loadWorkshops();
+        return {
+          success: true,
+          message: "Berhasil mendaftar workshop!",
+          data: updated,
+        };
+      } catch (err: unknown) {
+        const msg =
+          err instanceof Error ? err.message : "Gagal mendaftar workshop";
+        return { success: false, message: msg };
+      } finally {
+        setIsSubmitting(false);
+      }
     },
     [loadWorkshops]
   );
 
   const cancelUserRegistration = useCallback(
-    (workshopId: string, userId: string) => {
-      const result = cancelStoredRegistration(workshopId, userId);
-      loadWorkshops();
-      return result;
+    async (workshopId: string, _userId?: string) => {
+      try {
+        setIsSubmitting(true);
+        const updated = await cancelWorkshopRegistrationApi(workshopId);
+        await loadWorkshops();
+        return {
+          success: true,
+          message: "Pendaftaran workshop berhasil dibatalkan",
+          data: updated,
+        };
+      } catch (err: unknown) {
+        const msg =
+          err instanceof Error
+            ? err.message
+            : "Gagal membatalkan pendaftaran workshop";
+        return { success: false, message: msg };
+      } finally {
+        setIsSubmitting(false);
+      }
     },
     [loadWorkshops]
   );
 
-  const getUserRegistrations = useCallback((userId: string) => {
-    return getStoredMyRegistrations(userId);
-  }, []);
-
   return {
     workshops,
     isLoading,
+    isSubmitting,
     refreshWorkshops: loadWorkshops,
     getWorkshop,
+    fetchWorkshopById,
     createWorkshop: createNewWorkshop,
     updateWorkshop: updateExistingWorkshop,
     deleteWorkshop: deleteExistingWorkshop,
     registerWorkshop: registerUserToWorkshop,
     cancelRegistration: cancelUserRegistration,
-    getUserRegistrations,
   };
 }

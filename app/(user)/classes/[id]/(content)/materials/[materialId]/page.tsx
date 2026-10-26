@@ -43,7 +43,7 @@ export default function MaterialDetailPage() {
       // Fetch fresh files with new tokens
       const files = await fetchStudentMaterialFiles(materialId);
       const freshFile = files.find((f) => f.title === fileName);
-      
+
       if (!freshFile) {
         throw new Error("File not found");
       }
@@ -64,7 +64,7 @@ export default function MaterialDetailPage() {
       // Fetch fresh files with new tokens
       const files = await fetchStudentMaterialFiles(materialId);
       const freshFile = files.find((f) => f.title === fileName);
-      
+
       if (!freshFile) {
         throw new Error("File not found");
       }
@@ -136,7 +136,7 @@ export default function MaterialDetailPage() {
           const material = materials.find((m) => m.id === materialId);
           if (material) {
             setCurrentMaterial(material);
-            
+
             // Fetch material files separately from student endpoint
             try {
               const files = await fetchStudentMaterialFiles(materialId);
@@ -234,7 +234,7 @@ export default function MaterialDetailPage() {
 
         <Separator className="my-6" />
 
-        <div 
+        <div
           className="leading-relaxed"
           dangerouslySetInnerHTML={{ __html: currentMaterial.content }}
         />

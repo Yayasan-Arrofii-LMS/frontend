@@ -19,14 +19,14 @@ export function useAuth() {
 
   useEffect(() => {
     checkAuth();
-    
+
     // Listen for auth changes
     const handleAuthChange = () => {
       checkAuth();
     };
-    
+
     window.addEventListener("auth-changed", handleAuthChange);
-    
+
     return () => {
       window.removeEventListener("auth-changed", handleAuthChange);
     };
@@ -42,10 +42,10 @@ export function useAuth() {
     }
 
     setIsAuthenticated(true);
-    
+
     // Get user info from localStorage first
     const userInfo = getUserInfo();
-    
+
     // Fetch user profile from API for latest role info
     try {
       const response = await fetch("/api/auth/profile");

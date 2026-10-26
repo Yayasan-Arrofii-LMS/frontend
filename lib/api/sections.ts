@@ -13,45 +13,15 @@ import {
   CreateMaterialInput,
   UpdateMaterialInput,
 } from "@/types/section";
+import { authenticatedFetch } from "./client";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001/api/v1";
-
-// Helper function to get auth token
-function getAuthToken(): string {
-  if (typeof window !== "undefined") {
-    return localStorage.getItem("auth_token") || "";
-  }
-  return "";
-}
-
-// Helper function for API calls
 async function apiCall<T>(
   endpoint: string,
-  options: RequestInit = {},
+  options: RequestInit = {}
 ): Promise<T> {
-  const token = getAuthToken();
-  const headers: HeadersInit = {
-    "Content-Type": "application/json",
-    ...(token && { Authorization: `Bearer ${token}` }),
-    ...options.headers,
-  };
-
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({
-      message: "An error occurred",
-    }));
-    throw new Error(error.message || `HTTP error! status: ${response.status}`);
-  }
-
-  return response.json();
+  const result = await authenticatedFetch(endpoint, options);
+  return result as unknown as T;
 }
-
 // Fetch class by ID
 export async function fetchClass(classId: string): Promise<Class> {
   try {
@@ -200,6 +170,8 @@ export async function fetchClassDetail(classId: string): Promise<ClassDetail> {
       studentCount: classInfo.students.length,
       students: classInfo.students,
       sections: sectionsWithMaterials,
+      categoryId: classInfo.categoryId ?? null,
+      category: classInfo.category ?? null,
       createdAt: new Date().toISOString(), // TODO: Get from API when available
       updatedAt: new Date().toISOString(), // TODO: Get from API when available
     };

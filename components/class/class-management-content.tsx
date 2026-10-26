@@ -23,6 +23,8 @@ export function ClassManagementContent({ basePath = "/course" }: ClassManagement
     isLoading,
     error,
     searchValue,
+    selectedCategory,
+    handleCategoryChange,
     isDeletingClass,
     handlePageChange,
     handleSearchChange,
@@ -103,6 +105,8 @@ export function ClassManagementContent({ basePath = "/course" }: ClassManagement
           onPageChange={handlePageChange}
           onSearchChange={handleSearchChange}
           searchValue={searchValue}
+          selectedCategory={selectedCategory}
+          onCategoryChange={handleCategoryChange}
         />
       </div>
 

@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { isWorkshopPast } from "@/lib/utils";
 
 export default function AdminWorkshopPage() {
   const { user } = useAuth();
@@ -70,26 +71,29 @@ export default function AdminWorkshopPage() {
     setIsFormOpen(true);
   };
 
-  const handleFormSubmit = (data: WorkshopFormData) => {
+  const handleFormSubmit = async (data: WorkshopFormData) => {
     if (workshopToEdit) {
-      updateWorkshop(workshopToEdit.id, data);
-      toast.success("Workshop berhasil diperbarui!");
+      const res = await updateWorkshop(workshopToEdit.id, data);
+      if (res.success) {
+        toast.success(res.message);
+        setIsFormOpen(false);
+      }
     } else {
-      createWorkshop(data, {
-        id: user?.id || "admin-1",
-        name: user?.name || "Administrator",
-        avatar: user?.profilePicture || null,
-        bio: "Pengelola Workshop Sekolah Alam",
-      });
-      toast.success("Workshop baru berhasil dibuat!");
+      const res = await createWorkshop(data);
+      if (res.success) {
+        toast.success(res.message);
+        setIsFormOpen(false);
+      }
     }
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (workshopToDelete) {
-      deleteWorkshop(workshopToDelete.id);
-      toast.success("Workshop berhasil dihapus.");
-      setWorkshopToDelete(null);
+      const res = await deleteWorkshop(workshopToDelete.id);
+      if (res.success) {
+        toast.success(res.message);
+        setWorkshopToDelete(null);
+      }
     }
   };
 
@@ -99,7 +103,6 @@ export default function AdminWorkshopPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
-            <Compass className="h-7 w-7 text-primary" />
             Manajemen Workshop & Pelatihan
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
@@ -239,6 +242,17 @@ export default function AdminWorkshopPage() {
                         </div>
                         <div className="text-muted-foreground mt-0.5">
                           {ws.startTime} - {ws.endTime} WIB
+                        </div>
+                        <div className="mt-1">
+                          {isWorkshopPast(ws.date, ws.endTime) ? (
+                            <Badge variant="outline" className="text-[10px] text-muted-foreground bg-muted border-muted-foreground/20">
+                              Sudah Selesai
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-[10px] text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 font-medium">
+                              Akan Berjalan
+                            </Badge>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell className="text-xs font-medium">

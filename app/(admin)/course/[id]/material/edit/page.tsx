@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -6,7 +6,7 @@ import { updateMaterial, getMaterial } from "@/lib/api/sections";
 import { UpdateMaterialInput } from "@/types/section";
 import { toast } from "sonner";
 import { useFullscreenPreference } from "@/hooks/use-fullscreen-preference";
-import { MaterialFormWithTabs } from "@/app/(teacher)/_components/material/material-form-with-tabs";
+import { MaterialFormWithTabs } from "@/app/teacher/_components/material/material-form-with-tabs";
 import { Material } from "@/types/section";
 import { syncMaterialImageUsage } from "@/lib/api/material-images";
 import { extractImageUrlsFromHtml } from "@/lib/tiptap-utils";

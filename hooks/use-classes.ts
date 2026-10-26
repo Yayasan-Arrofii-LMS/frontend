@@ -20,6 +20,9 @@ interface UseClassesReturn {
   searchValue: string;
   debouncedSearch: string;
   isDeletingClass: boolean;
+  selectedCategory: string;
+  setSelectedCategory: (category: string) => void;
+  handleCategoryChange: (category: string) => void;
   setCurrentPage: (page: number) => void;
   setSearchValue: (search: string) => void;
   handlePageChange: (page: number) => void;
@@ -38,6 +41,7 @@ export function useClasses(): UseClassesReturn {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchValue, setSearchValue] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("Semua");
 
   // Debounce search value
   useEffect(() => {
@@ -54,7 +58,8 @@ export function useClasses(): UseClassesReturn {
       setIsLoading(true);
       setError(null);
 
-      const result = await fetchClasses(currentPage, debouncedSearch);
+      const catFilter = selectedCategory === "Semua" ? undefined : selectedCategory;
+      const result = await fetchClasses(currentPage, debouncedSearch, catFilter);
 
       setClasses(result.classes);
       setMeta(result.meta);
@@ -65,7 +70,7 @@ export function useClasses(): UseClassesReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, debouncedSearch]);
+  }, [currentPage, debouncedSearch, selectedCategory]);
 
   useEffect(() => {
     loadClasses();
@@ -78,6 +83,11 @@ export function useClasses(): UseClassesReturn {
   const handleSearchChange = useCallback((search: string) => {
     setSearchValue(search);
     setCurrentPage(1); // Reset to first page on search
+  }, []);
+
+  const handleCategoryChange = useCallback((category: string) => {
+    setSelectedCategory(category);
+    setCurrentPage(1);
   }, []);
 
   const handleDeleteClass = useCallback(async (id: string) => {
@@ -108,6 +118,9 @@ export function useClasses(): UseClassesReturn {
     searchValue,
     debouncedSearch,
     isDeletingClass,
+    selectedCategory,
+    setSelectedCategory,
+    handleCategoryChange,
     setCurrentPage,
     setSearchValue,
     handlePageChange,

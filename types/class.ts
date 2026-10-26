@@ -8,6 +8,8 @@ export interface Class {
   createdAt: string;
   updatedAt: string;
   studentCount?: number;
+  categoryId?: number | null;
+  category?: string | { id: number; name: string } | null;
 }
 
 // API Response Types
@@ -19,6 +21,11 @@ export interface ApiClass {
   teacherId: string;
   createdAt: string;
   updatedAt: string;
+  categoryId?: number | null;
+  category?: {
+    id: number;
+    name: string;
+  } | null;
   teacher?: {
     id: string;
     name: string;
@@ -46,6 +53,7 @@ export interface CreateClassRequest {
   title: string;
   description: string;
   coverImage?: File | null;
+  categoryId?: number | null;
 }
 
 export interface CreateClassResponse {
@@ -58,6 +66,7 @@ export interface UpdateClassRequest {
   title?: string;
   description?: string;
   coverImage?: File | null;
+  categoryId?: number | null;
 }
 
 export interface UpdateClassResponse {
