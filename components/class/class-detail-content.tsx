@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from "react";
 import NextImage from "next/image";
+import { ClassCoverImage } from "@/components/class/class-cover-image";
 import { useSearchParams } from "next/navigation";
 import { ClassDetail } from "@/types/section";
 import { fetchClassDetail, reorderSections } from "@/lib/api/sections";
 import { ArrowLeft, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/error-state";
@@ -77,7 +79,7 @@ export function ClassDetailContent({ classId, basePath = "/course" }: ClassDetai
     const openEditMaterial = searchParams.get("openEditMaterial");
     const openAddQuiz = searchParams.get("openAddQuiz");
     const sectionIdParam = searchParams.get("sectionId");
-    
+
     if (openAddMaterial) {
       // openAddMaterial contains the sectionId value
       setTriggerModalOpen({
@@ -135,7 +137,7 @@ export function ClassDetailContent({ classId, basePath = "/course" }: ClassDetai
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
     if (!classDetail) return;
-    
+
     const section = classDetail.sections.find((s) => s.id === active.id);
     if (section) {
       setActiveSection(section);
@@ -155,13 +157,13 @@ export function ClassDetailContent({ classId, basePath = "/course" }: ClassDetai
       const newIndex = sections.findIndex((s) => s.id === over.id);
 
       const newSections = arrayMove(sections, oldIndex, newIndex);
-      
+
       // Store original orders before update
       const originalOrders = sections.map((s, index) => ({
         id: s.id,
         order: index + 1,
       }));
-      
+
       // Update UI immediately
       setClassDetail({
         ...classDetail,
@@ -208,22 +210,26 @@ export function ClassDetailContent({ classId, basePath = "/course" }: ClassDetai
 
         <div className="flex items-start gap-6 min-w-0">
           <div className="relative w-32 h-32 flex-shrink-0 rounded-lg overflow-hidden">
-            <NextImage
+            <ClassCoverImage
               src={classDetail.coverImage}
               alt={classDetail.title}
-              fill
-              className="object-cover"
-              sizes="128px"
             />
           </div>
           <div className="flex-1 min-w-0">
-            <h1 className="text-3xl font-bold mb-2 break-all line-clamp-1">{classDetail.title}</h1>
+            <div className="flex items-center gap-3 mb-2 flex-wrap">
+              <h1 className="text-3xl font-bold break-all line-clamp-1">{classDetail.title}</h1>
+              {classDetail.category && (
+                <Badge variant="secondary" className="font-medium text-xs">
+                  {typeof classDetail.category === "object" ? classDetail.category.name : classDetail.category}
+                </Badge>
+              )}
+            </div>
             <p className="text-muted-foreground mb-4 break-all line-clamp-2">{classDetail.description}</p>
             <div className="flex gap-4 text-sm text-muted-foreground flex-wrap">
               <span className="break-all">Guru: {classDetail.teacherName}</span>
-              <span>•</span>
+              <span>&bull;</span>
               <span>{classDetail.studentCount} Siswa</span>
-              <span>•</span>
+              <span>&bull;</span>
               <span>{classDetail.sections.length} Section</span>
             </div>
           </div>

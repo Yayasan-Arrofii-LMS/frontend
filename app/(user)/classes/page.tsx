@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { ClassCoverImage } from "@/components/class/class-cover-image";
 import {
   Card,
   CardContent,
@@ -8,11 +9,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Users, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, useEffect } from "react";
 import { fetchPublicClasses } from "@/lib/api/classes";
+import { useCategories } from "@/hooks/use-categories";
 import { Class } from "@/types/class";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
@@ -40,6 +43,7 @@ export default function ClassesPage() {
   const [totalItems, setTotalItems] = useState(0);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
 
+  const { categories, isLoading: isCategoriesLoading } = useCategories();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const router = useRouter();
 
@@ -57,9 +61,12 @@ export default function ClassesPage() {
     async function loadClasses() {
       try {
         setIsLoading(true);
+        // If a category is selected (and not 'Semua'), pass it to the backend
+        const catFilter = selectedCategory === "Semua" ? undefined : selectedCategory;
         const { classes: publicClasses, meta } = await fetchPublicClasses(
           currentPage,
-          debouncedSearch
+          debouncedSearch,
+          catFilter
         );
         setClasses(publicClasses);
         setTotalPages(meta.totalPages);
@@ -74,7 +81,7 @@ export default function ClassesPage() {
     }
 
     loadClasses();
-  }, [currentPage, debouncedSearch]);
+  }, [currentPage, debouncedSearch, selectedCategory]);
 
   const handleClassClick = (classId: string, e: React.MouseEvent) => {
     e.preventDefault();
@@ -107,7 +114,7 @@ export default function ClassesPage() {
         </p>
       </div>
 
-      {/* Search Bar (Full Rounded & Centered) */}
+      {/* Search Bar */}
       <div className="mb-8 flex justify-center">
         <div className="relative w-full max-w-2xl flex items-center rounded-full bg-card border-2 border-muted-foreground/20 hover:border-primary/40 focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/10 shadow-md transition-all px-4 py-1">
           <Search className="h-5 w-5 text-muted-foreground shrink-0 ml-1" />
@@ -121,28 +128,41 @@ export default function ClassesPage() {
         </div>
       </div>
 
-      {/* Category Filter */}
+      {/* Category Filter â€” Connected to Backend Categories API */}
       <div className="mb-8 flex justify-center">
         <div className="flex flex-wrap items-center justify-center gap-2">
-          {[
-            "Semua",
-            "Sains Alam",
-            "Keterampilan Hidup",
-            "Kewirausahaan",
-            "Budaya",
-          ].map((category) => (
+          <Button
+            variant={selectedCategory === "Semua" ? "default" : "outline"}
+            size="sm"
+            onClick={() => {
+              setSelectedCategory("Semua");
+              setCurrentPage(1);
+            }}
+            className={
+              selectedCategory === "Semua"
+                ? "font-bold shadow-xs"
+                : "font-normal text-foreground"
+            }
+          >
+            Semua
+          </Button>
+
+          {categories.map((category) => (
             <Button
-              key={category}
-              variant={selectedCategory === category ? "default" : "outline"}
+              key={category.id}
+              variant={selectedCategory === category.name ? "default" : "outline"}
               size="sm"
-              onClick={() => setSelectedCategory(category)}
+              onClick={() => {
+                setSelectedCategory(category.name);
+                setCurrentPage(1);
+              }}
               className={
-                selectedCategory === category
+                selectedCategory === category.name
                   ? "font-bold shadow-xs"
                   : "font-normal text-foreground"
               }
             >
-              {category}
+              {category.name}
             </Button>
           ))}
         </div>
@@ -169,8 +189,8 @@ export default function ClassesPage() {
       ) : classes.length === 0 ? (
         <div className="py-16 text-center">
           <p className="text-lg text-muted-foreground">
-            {searchQuery
-              ? "Tidak ada kelas yang cocok dengan pencarian Anda"
+            {searchQuery || selectedCategory !== "Semua"
+              ? "Tidak ada kelas yang cocok dengan filter atau pencarian Anda"
               : "Tidak ada kelas tersedia"}
           </p>
         </div>
@@ -184,13 +204,17 @@ export default function ClassesPage() {
             >
               <Card className="overflow-hidden transition-shadow hover:shadow-lg h-full">
                 <div className="aspect-video w-full overflow-hidden bg-muted relative">
-                  <Image
-                    src={classItem.coverImage || "/placeholder.svg"}
+                  <ClassCoverImage
+                    src={classItem.coverImage}
                     alt={classItem.title}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   />
+                  {classItem.category && (
+                    <div className="absolute top-2.5 left-2.5 z-10">
+                      <Badge variant="secondary" className="backdrop-blur-md bg-background/85 font-medium text-xs shadow-xs border-0">
+                        {typeof classItem.category === "string" ? classItem.category : classItem.category.name}
+                      </Badge>
+                    </div>
+                  )}
                 </div>
                 <CardHeader>
                   <CardTitle className="line-clamp-1">

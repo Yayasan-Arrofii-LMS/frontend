@@ -36,7 +36,10 @@ export function PublicNavbar() {
   const navLinks = [
     { href: "/home", label: "Beranda" },
     { href: "/classes", label: "Kelas" },
-    { href: "/workshops", label: "Workshop" },
+    {
+      href: isAuthenticated ? "/workshops" : "/login",
+      label: "Workshop",
+    },
     ...(isAuthenticated ? [{ href: "/my-classes", label: "Kelas Saya" }] : []),
     { href: "/about", label: "Tentang Kami" },
   ];
@@ -67,11 +70,10 @@ export function PublicNavbar() {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`text-sm font-medium transition-colors hover:text-primary whitespace-nowrap ${
-                  pathname === link.href
+                className={`text-sm font-medium transition-colors hover:text-primary whitespace-nowrap ${pathname === link.href
                     ? "text-foreground"
                     : "text-muted-foreground"
-                }`}
+                  }`}
               >
                 {link.label}
               </Link>
@@ -165,11 +167,10 @@ export function PublicNavbar() {
             <Link
               key={link.href}
               href={link.href}
-              className={`text-xs font-medium transition-colors hover:text-primary ${
-                pathname === link.href
+              className={`text-xs font-medium transition-colors hover:text-primary ${pathname === link.href
                   ? "text-foreground"
                   : "text-muted-foreground"
-              }`}
+                }`}
             >
               {link.label}
             </Link>

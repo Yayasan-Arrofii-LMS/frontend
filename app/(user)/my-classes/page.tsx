@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { ClassCoverImage } from "@/components/class/class-cover-image";
 import {
   Card,
   CardContent,

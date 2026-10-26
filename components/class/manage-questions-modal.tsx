@@ -79,13 +79,13 @@ export function ManageQuestionsModal({
     try {
       const data = await fetchQuestions(sectionId, quizId);
       console.log("Pertanyaan dimuat:", data);
-      
+
       if (!data || data.length === 0) {
         console.log("Tidak ada pertanyaan, mulai dengan daftar kosong");
         setQuestions([]);
         return;
       }
-      
+
       const formattedQuestions: QuestionForm[] = data.map((q) => ({
         id: q.id,
         question: q.question,
@@ -249,7 +249,7 @@ export function ManageQuestionsModal({
   const validateAndSave = async () => {
     for (let i = 0; i < questions.length; i++) {
       const q = questions[i];
-      
+
       if (q.isDeleted) continue;
 
       if (!q.question.trim()) {
@@ -288,7 +288,7 @@ export function ManageQuestionsModal({
 
       for (const q of questions) {
         if (q.isDeleted) continue;
-        
+
         if (q.isNew) {
           const questionData: Partial<CreateQuestionInput> = {
             question: q.question.trim(),

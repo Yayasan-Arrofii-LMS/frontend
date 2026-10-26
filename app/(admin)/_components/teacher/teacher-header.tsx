@@ -25,7 +25,7 @@ export function TeacherHeader({ totalItems }: TeacherHeaderProps) {
           )}
         </p>
         <p className="text-muted-foreground text-sm flex items-center gap-2">
-          Password default: 
+          Password default:
           <span className="font-mono">
             {showPassword ? "password123" : "••••••••••••"}
           </span>

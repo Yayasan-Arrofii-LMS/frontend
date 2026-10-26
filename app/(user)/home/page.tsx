@@ -1,8 +1,10 @@
 "use client";
 
 import Image from "next/image";
+import { ClassCoverImage } from "@/components/class/class-cover-image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -148,6 +150,9 @@ export default function HomePage() {
               <Button size="lg" variant="outline" asChild>
                 <Link href="/classes">Jelajahi Kelas</Link>
               </Button>
+              <Button size="lg" asChild>
+                <Link href="/workshops">Jelajahi Workshop</Link>
+              </Button>
             </div>
           )}
         </div>
@@ -195,13 +200,22 @@ export default function HomePage() {
                   >
                     <Card className="overflow-hidden transition-shadow hover:shadow-lg w-[320px] flex-shrink-0">
                       <div className="aspect-video w-full overflow-hidden bg-muted relative">
-                        <Image
-                          src={classItem.coverImage || "/placeholder.svg"}
+                        <ClassCoverImage
+                          src={classItem.coverImage}
                           alt={classItem.title}
-                          fill
-                          className="object-cover"
-                          sizes="320px"
                         />
+                        {classItem.category && (
+                          <div className="absolute top-2.5 left-2.5 z-10">
+                            <Badge
+                              variant="secondary"
+                              className="backdrop-blur-md bg-background/85 font-medium text-xs shadow-xs border-0"
+                            >
+                              {typeof classItem.category === "string"
+                                ? classItem.category
+                                : classItem.category.name}
+                            </Badge>
+                          </div>
+                        )}
                       </div>
                       <CardHeader>
                         <CardTitle className="line-clamp-1">

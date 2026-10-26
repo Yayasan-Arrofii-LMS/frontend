@@ -200,7 +200,7 @@ export default function QuizDetailPage() {
   const bestScoreAttempt = quizData.bestScore !== null && quizData.bestScore !== undefined
     ? quizData.attempts.find(attempt => attempt.score === quizData.bestScore)
     : null;
-  const isBestScorePassed = bestScoreAttempt?.isPassed ?? 
+  const isBestScorePassed = bestScoreAttempt?.isPassed ??
     (quizData.bestScore !== null ? quizData.bestScore >= quizData.passing_grade : false);
 
   const hasPrevious = currentIndex > 0;
@@ -430,9 +430,9 @@ export default function QuizDetailPage() {
                 </div>
               </div>
             ) : (quizData.attemptsRemaining > 0 || quizData.max_attempts === 0) ? (
-              <Button 
-                onClick={handleStartQuiz} 
-                className="w-full" 
+              <Button
+                onClick={handleStartQuiz}
+                className="w-full"
                 size="lg"
                 disabled={!isOpen}
               >

@@ -1,4 +1,4 @@
-// === Quiz Types ===
+﻿// === Quiz Types ===
 
 // Answer from API
 export interface Answer {
@@ -380,6 +380,8 @@ export interface Class {
   description: string;
   image_path: string;
   image_path_relative: string;
+  categoryId?: number | null;
+  category?: { id: number; name: string } | string | null;
   teachers: Teacher[];
   students: Student[];
 }
@@ -400,6 +402,8 @@ export interface ClassDetail {
   teacherId: string;
   teacherName: string;
   studentCount: number;
+  categoryId?: number | null;
+  category?: { id: number; name: string } | string | null;
   sections: Section[];
   students: Student[];
   createdAt: string;

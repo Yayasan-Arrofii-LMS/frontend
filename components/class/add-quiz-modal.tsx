@@ -74,7 +74,7 @@ export function AddQuizModal({
     if (isOpen) {
       const draftKey = `quiz-draft-${sectionId}`;
       const savedDraft = sessionStorage.getItem(draftKey);
-      
+
       if (savedDraft) {
         try {
           const formData = JSON.parse(savedDraft);
@@ -87,14 +87,14 @@ export function AddQuizModal({
           setPassingGrade(formData.passingGrade || "70");
           setXp(formData.xp || "10");
           setQuestions(formData.questions || []);
-          
+
           // Clear draft after loading
           sessionStorage.removeItem(draftKey);
         } catch (error) {
           console.error("Failed to load quiz draft:", error);
         }
       }
-      
+
       // Initialize with one empty question if no questions loaded
       if (questions.length === 0) {
         addQuestion();
@@ -197,7 +197,7 @@ export function AddQuizModal({
       questions,
     };
     sessionStorage.setItem(`quiz-draft-${sectionId}`, JSON.stringify(formData));
-    
+
     setPreference("fullscreen");
     onClose();
     router.push(`${basePath}/${classId}/quiz/add?sectionId=${sectionId}`);
@@ -229,7 +229,7 @@ export function AddQuizModal({
         toast.error(`Pertanyaan ${i + 1}: Pertanyaan wajib diisi`);
         return;
       }
-      
+
       const emptyChoices = q.choices.filter(c => !c.text.trim());
       if (emptyChoices.length > 0) {
         toast.error(`Pertanyaan ${i + 1}: Semua pilihan jawaban harus diisi`);

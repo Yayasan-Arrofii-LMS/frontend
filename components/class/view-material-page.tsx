@@ -31,10 +31,10 @@ export function ViewMaterialPage({
     const fetchMaterialData = async () => {
       try {
         setIsLoading(true);
-        
+
         // Fetch class detail to get material with sectionId
         const classData = await fetchClassDetail(classId);
-        
+
         // Find the material in sections
         let foundMaterial: Material | null = null;
         for (const section of classData.sections) {
@@ -134,7 +134,7 @@ export function ViewMaterialPage({
 
         <Separator className="my-6" />
 
-        <div 
+        <div
           className="leading-relaxed"
           dangerouslySetInnerHTML={{ __html: material.content }}
         />

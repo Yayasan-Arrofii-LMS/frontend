@@ -1,4 +1,4 @@
-import { ClassDetailContainer, PageContainer } from "../../_components";
+﻿import { redirect } from "next/navigation";
 
 export default async function ClassDetailPage({
   params,
@@ -6,10 +6,5 @@ export default async function ClassDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  
-  return (
-    <PageContainer>
-      <ClassDetailContainer classId={id} />
-    </PageContainer>
-  );
+  redirect(`/teacher/my-courses/${id}`);
 }
