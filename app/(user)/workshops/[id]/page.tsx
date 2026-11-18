@@ -321,7 +321,7 @@ export default function WorkshopDetailPage({
           <div className="space-y-3">
             <h2 className="text-xl font-bold flex items-center gap-2">
               <Users className="h-5 w-5 text-primary" />
-              Narasumber / Instruktur
+              Fasilitator
             </h2>
             <Card className="p-4 bg-muted/30 border-2">
               <div className="flex items-center gap-4">

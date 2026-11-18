@@ -10,6 +10,14 @@ import { normalizeImageUrl } from "@/lib/utils";
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001/api/v1";
 
+async function parseJsonResponse<T = any>(response: Response): Promise<T | null> {
+  try {
+    return await response.json();
+  } catch {
+    return null;
+  }
+}
+
 // Helper to get auth token
 async function getToken(): Promise<string | null> {
   if (typeof window !== "undefined") {
