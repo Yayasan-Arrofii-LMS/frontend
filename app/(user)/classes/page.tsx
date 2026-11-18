@@ -93,7 +93,7 @@ export default function ClassesPage() {
     if (!isAuthenticated) {
       setShowLoginDialog(true);
     } else {
-      router.push(`/classes/${classId}`);
+      router.push(`/classes/${classId}?from=classes`);
     }
   };
 

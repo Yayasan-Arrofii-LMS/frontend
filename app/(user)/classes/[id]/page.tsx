@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {
@@ -56,6 +56,8 @@ interface Section {
 export default function ClassDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const from = searchParams.get("from");
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const classId = params.id as string;
 
@@ -65,6 +67,29 @@ export default function ClassDetailPage() {
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
+
+  const handleBack = () => {
+    if (from === "my-classes") {
+      router.push("/my-classes");
+    } else if (from === "classes") {
+      router.push("/classes");
+    } else if (from === "home") {
+      router.push("/home");
+    } else if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push("/my-classes");
+    }
+  };
+
+  const backLabel =
+    from === "my-classes"
+      ? "Kembali ke Kelas Saya"
+      : from === "classes"
+      ? "Kembali ke Daftar Kelas"
+      : from === "home"
+      ? "Kembali ke Beranda"
+      : "Kembali";
 
   const handleQuizClick = (
     quiz: {
@@ -76,8 +101,9 @@ export default function ClassDetailPage() {
     sectionId: number
   ) => {
     // Navigate to quiz detail page
+    const fromParam = from ? `&from=${encodeURIComponent(from)}` : "";
     router.push(
-      `/classes/${classId}/quizzes/${quiz.id}/detail?sectionId=${sectionId}`
+      `/classes/${classId}/quizzes/${quiz.id}/detail?sectionId=${sectionId}${fromParam}`
     );
   };
 
@@ -190,9 +216,9 @@ export default function ClassDetailPage() {
         <p className="text-muted-foreground mb-6">
           Kelas yang Anda cari tidak tersedia
         </p>
-        <Button onClick={() => router.push("/classes")}>
+        <Button onClick={handleBack}>
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Kembali ke Daftar Kelas
+          {backLabel}
         </Button>
       </div>
     );
@@ -222,11 +248,11 @@ export default function ClassDetailPage() {
               Create Account
             </Button>
             <Button
-              onClick={() => router.push("/classes")}
+              onClick={handleBack}
               variant="ghost"
               className="w-full"
             >
-              Back to Classes
+              {backLabel}
             </Button>
           </div>
         </DialogContent>
@@ -234,12 +260,12 @@ export default function ClassDetailPage() {
 
       <Button
         variant="ghost"
-        onClick={() => router.push("/classes")}
+        onClick={handleBack}
         className="mb-4 sm:mb-6"
         size="sm"
       >
         <ArrowLeft className="h-4 w-4 mr-2" />
-        <span className="hidden sm:inline">Kembali ke Daftar Kelas</span>
+        <span className="hidden sm:inline">{backLabel}</span>
         <span className="sm:hidden">Kembali</span>
       </Button>
 
@@ -306,8 +332,9 @@ export default function ClassDetailPage() {
                                 key={material.id}
                                 onClick={() => {
                                   if (isEnrolled) {
+                                    const fromParam = from ? `?from=${encodeURIComponent(from)}` : "";
                                     router.push(
-                                      `/classes/${classId}/materials/${material.id}`
+                                      `/classes/${classId}/materials/${material.id}${fromParam}`
                                     );
                                   } else {
                                     toast.error(
