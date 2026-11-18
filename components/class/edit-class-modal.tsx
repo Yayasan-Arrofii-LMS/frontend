@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { Class } from "@/types/class";
 import { updateClass } from "@/lib/api/classes";
+import { createCategory } from "@/lib/api/category";
 import {
   Dialog,
   DialogContent,
@@ -14,7 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, X, Image as ImageIcon } from "lucide-react";
+import { Loader2, X, Image as ImageIcon, Plus, Tag, Check } from "lucide-react";
 import { toast } from "sonner";
 import {
   Select,
@@ -60,7 +61,15 @@ export function EditClassModal({
     description: "",
     categoryId: null,
   });
-  const { categories, isLoading: isCategoriesLoading } = useCategories();
+  const {
+    categories,
+    isLoading: isCategoriesLoading,
+    addCategory,
+    refetch: refetchCategories,
+  } = useCategories();
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [isSubmittingCategory, setIsSubmittingCategory] = useState(false);
   const [coverImage, setCoverImage] = useState<File | null>(null);
   const [coverImagePreview, setCoverImagePreview] = useState<string | null>(
     null
@@ -130,6 +139,62 @@ export function EditClassModal({
     }
   };
 
+  const handleCreateCategory = async () => {
+    const trimmedName = newCategoryName.trim();
+    if (!trimmedName) {
+      toast.error("Nama kategori tidak boleh kosong");
+      return;
+    }
+    if (trimmedName.length > 100) {
+      toast.error("Nama kategori maksimal 100 karakter");
+      return;
+    }
+
+    // Cek apakah kategori sudah ada di daftar lokal (case-insensitive)
+    const existing = categories.find(
+      (c) => c.name.toLowerCase() === trimmedName.toLowerCase()
+    );
+    if (existing) {
+      setFormData((prev) => ({ ...prev, categoryId: existing.id }));
+      toast.info(`Kategori "${existing.name}" sudah ada dan dipilih otomatis.`);
+      setIsAddingCategory(false);
+      setNewCategoryName("");
+      return;
+    }
+
+    setIsSubmittingCategory(true);
+    try {
+      const created = await createCategory(trimmedName);
+      addCategory(created);
+      setFormData((prev) => ({ ...prev, categoryId: created.id }));
+      toast.success(`Kategori "${created.name}" berhasil dibuat dan dipilih!`);
+      setIsAddingCategory(false);
+      setNewCategoryName("");
+    } catch (error: any) {
+      console.error("Gagal menambahkan kategori:", error);
+      const message = error?.message || "Gagal membuat kategori baru";
+      if (
+        message.toLowerCase().includes("already exists") ||
+        message.toLowerCase().includes("sudah ada")
+      ) {
+        const refreshed = await refetchCategories();
+        const found = refreshed.find(
+          (c) => c.name.toLowerCase() === trimmedName.toLowerCase()
+        );
+        if (found) {
+          setFormData((prev) => ({ ...prev, categoryId: found.id }));
+          toast.info(`Kategori "${found.name}" sudah ada dan dipilih otomatis.`);
+          setIsAddingCategory(false);
+          setNewCategoryName("");
+          return;
+        }
+      }
+      toast.error(message);
+    } finally {
+      setIsSubmittingCategory(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -166,6 +231,8 @@ export function EditClassModal({
 
       // Reset form
       setErrors({});
+      setIsAddingCategory(false);
+      setNewCategoryName("");
       onClose();
     } catch (error: unknown) {
       console.error("Error updating class:", error);
@@ -183,6 +250,8 @@ export function EditClassModal({
     if (!isLoading) {
       setErrors({});
       setCoverImage(null);
+      setIsAddingCategory(false);
+      setNewCategoryName("");
       onClose();
     }
   };
@@ -252,36 +321,114 @@ export function EditClassModal({
               />
             </div>
 
-            {/* Category Select */}
+            {/* Category Select & Quick Add */}
             <div className="space-y-2">
-              <Label htmlFor="category">
-                Kategori Kelas{" "}
-                <span className="text-muted-foreground text-sm">
-                  (Opsional)
-                </span>
-              </Label>
-              <Select
-                value={formData.categoryId ? formData.categoryId.toString() : "none"}
-                onValueChange={(val) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    categoryId: val === "none" ? null : Number(val),
-                  }))
-                }
-                disabled={isLoading || isCategoriesLoading}
-              >
-                <SelectTrigger id="category">
-                  <SelectValue placeholder="Pilih Kategori Kelas" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Tanpa Kategori</SelectItem>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id.toString()}>
-                      {cat.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="category" className="flex items-center gap-1.5">
+                  <Tag className="h-3.5 w-3.5 text-muted-foreground" />
+                  Kategori Kelas{" "}
+                  <span className="text-muted-foreground text-sm font-normal">
+                    (Opsional)
+                  </span>
+                </Label>
+                {!isAddingCategory && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs text-primary hover:text-primary/90 hover:bg-primary/10 px-2 flex items-center gap-1 font-medium transition-colors"
+                    onClick={() => setIsAddingCategory(true)}
+                    disabled={isLoading}
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Tambah Kategori Baru
+                  </Button>
+                )}
+              </div>
+
+              {isAddingCategory ? (
+                <div className="p-3 rounded-lg border border-primary/30 bg-primary/5 space-y-2.5 transition-all">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                      <Plus className="h-3.5 w-3.5 text-primary" />
+                      Buat & Tambahkan Kategori Baru
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsAddingCategory(false);
+                        setNewCategoryName("");
+                      }}
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                      disabled={isSubmittingCategory}
+                    >
+                      Batal
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="text"
+                      placeholder="Contoh: Pemrograman Web, Robotika..."
+                      value={newCategoryName}
+                      onChange={(e) => setNewCategoryName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleCreateCategory();
+                        }
+                      }}
+                      className="h-9 text-sm bg-background border-border"
+                      disabled={isSubmittingCategory}
+                      autoFocus
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={handleCreateCategory}
+                      disabled={isSubmittingCategory || !newCategoryName.trim()}
+                      className="h-9 px-3 shrink-0 gap-1"
+                    >
+                      {isSubmittingCategory ? (
+                        <>
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          <span>Menyimpan...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Check className="h-3.5 w-3.5" />
+                          <span>Simpan</span>
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    Kategori baru langsung tersimpan di sistem dan dapat digunakan kembali.
+                  </p>
+                </div>
+              ) : (
+                <Select
+                  value={formData.categoryId ? formData.categoryId.toString() : "none"}
+                  onValueChange={(val) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      categoryId: val === "none" ? null : Number(val),
+                    }))
+                  }
+                  disabled={isLoading || isCategoriesLoading}
+                >
+                  <SelectTrigger id="category">
+                    <SelectValue placeholder="Pilih Kategori Kelas" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Tanpa Kategori</SelectItem>
+                    {categories.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id.toString()}>
+                        {cat.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
             {/* Title Input */}
