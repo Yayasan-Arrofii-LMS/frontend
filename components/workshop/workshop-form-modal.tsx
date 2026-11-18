@@ -17,6 +17,7 @@ import {
   Select,
   SelectContent,
   SelectItem,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -26,10 +27,11 @@ import {
   WorkshopCategory,
   WorkshopType,
 } from "@/types/workshop";
-import { Video, MapPin, Sparkles, Users } from "lucide-react";
+import { Video, MapPin, Sparkles, Users, Plus, Tag, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { normalizeImageUrl } from "@/lib/utils";
 import { useCategories } from "@/hooks/use-categories";
+import { createCategory } from "@/lib/api/category";
 
 interface WorkshopFormModalProps {
   open: boolean;
@@ -57,7 +59,15 @@ export function WorkshopFormModal({
   onSubmit,
 }: WorkshopFormModalProps) {
   const isEditing = !!workshopToEdit;
-  const { categories: backendCategories } = useCategories();
+  const {
+    categories: backendCategories,
+    addCategory,
+    refetch: refetchCategories,
+  } = useCategories();
+
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [isSubmittingCategory, setIsSubmittingCategory] = useState(false);
 
   const [formData, setFormData] = useState<WorkshopFormData>({
     title: "",
@@ -78,6 +88,8 @@ export function WorkshopFormModal({
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
+    setIsAddingCategory(false);
+    setNewCategoryName("");
     if (workshopToEdit) {
       setFormData({
         title: workshopToEdit.title,
@@ -113,6 +125,62 @@ export function WorkshopFormModal({
     }
     setErrors({});
   }, [workshopToEdit, open]);
+
+  const handleCreateCategory = async () => {
+    const trimmedName = newCategoryName.trim();
+    if (!trimmedName) {
+      toast.error("Nama kategori tidak boleh kosong");
+      return;
+    }
+    if (trimmedName.length > 100) {
+      toast.error("Nama kategori maksimal 100 karakter");
+      return;
+    }
+
+    // Cek apakah sudah ada di backendCategories (case-insensitive)
+    const existing = backendCategories.find(
+      (c) => c.name.toLowerCase() === trimmedName.toLowerCase()
+    );
+    if (existing) {
+      setFormData((prev) => ({ ...prev, category: existing.name }));
+      toast.info(`Kategori "${existing.name}" sudah ada dan dipilih otomatis.`);
+      setIsAddingCategory(false);
+      setNewCategoryName("");
+      return;
+    }
+
+    setIsSubmittingCategory(true);
+    try {
+      const created = await createCategory(trimmedName);
+      addCategory(created);
+      setFormData((prev) => ({ ...prev, category: created.name }));
+      toast.success(`Kategori "${created.name}" berhasil dibuat dan dipilih!`);
+      setIsAddingCategory(false);
+      setNewCategoryName("");
+    } catch (error: any) {
+      console.error("Gagal menambahkan kategori:", error);
+      const message = error?.message || "Gagal membuat kategori baru";
+      if (
+        message.toLowerCase().includes("already exists") ||
+        message.toLowerCase().includes("sudah ada")
+      ) {
+        const refreshed = await refetchCategories();
+        const found = refreshed.find(
+          (c) => c.name.toLowerCase() === trimmedName.toLowerCase()
+        );
+        if (found) {
+          setFormData((prev) => ({ ...prev, category: found.name }));
+          toast.info(`Kategori "${found.name}" sudah ada dan dipilih otomatis.`);
+          setIsAddingCategory(false);
+          setNewCategoryName("");
+          return;
+        }
+      }
+      toast.error(message);
+    } finally {
+      setIsSubmittingCategory(false);
+    }
+  };
 
   const validate = (): boolean => {
     const errs: Record<string, string> = {};
@@ -174,7 +242,6 @@ export function WorkshopFormModal({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
             {isEditing ? "Edit Workshop" : "Buat Workshop Baru"}
           </DialogTitle>
           <DialogDescription>
@@ -219,34 +286,116 @@ export function WorkshopFormModal({
           {/* Kategori & Tipe */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label htmlFor="category" className="text-sm font-semibold">
-                Kategori <span className="text-red-500">*</span>
-              </Label>
-              <Select
-                value={formData.category}
-                onValueChange={(val) =>
-                  setFormData({ ...formData, category: val as WorkshopCategory })
-                }
-              >
-                <SelectTrigger id="category">
-                  <SelectValue placeholder="Pilih Kategori" />
-                </SelectTrigger>
-                <SelectContent>
-                  {backendCategories.length > 0 ? (
-                    backendCategories.map((cat) => (
-                      <SelectItem key={cat.id} value={cat.name}>
-                        {cat.name}
+              <div className="flex items-center justify-between">
+                <Label htmlFor="category" className="text-sm font-semibold flex items-center gap-1.5">
+                  <Tag className="h-3.5 w-3.5 text-muted-foreground" />
+                  Kategori <span className="text-red-500">*</span>
+                </Label>
+              </div>
+
+              {isAddingCategory ? (
+                <div className="p-2.5 rounded-lg border border-primary/30 bg-primary/5 space-y-2 transition-all">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                      <Plus className="h-3.5 w-3.5 text-primary" />
+                      Kategori Baru
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsAddingCategory(false);
+                        setNewCategoryName("");
+                      }}
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                      disabled={isSubmittingCategory}
+                    >
+                      Batal
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Input
+                      type="text"
+                      placeholder="Nama kategori baru..."
+                      value={newCategoryName}
+                      onChange={(e) => setNewCategoryName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleCreateCategory();
+                        }
+                      }}
+                      className="h-8 text-xs bg-background border-border"
+                      disabled={isSubmittingCategory}
+                      autoFocus
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={handleCreateCategory}
+                      disabled={isSubmittingCategory || !newCategoryName.trim()}
+                      className="h-8 px-2.5 text-xs shrink-0 gap-1"
+                    >
+                      {isSubmittingCategory ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <>
+                          <Check className="h-3 w-3" />
+                          <span>Simpan</span>
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Select
+                  value={formData.category}
+                  onValueChange={(val) => {
+                    if (val === "__ADD_NEW_CATEGORY__") {
+                      setIsAddingCategory(true);
+                      return;
+                    }
+                    setFormData({ ...formData, category: val as WorkshopCategory });
+                  }}
+                >
+                  <SelectTrigger id="category">
+                    <SelectValue placeholder="Pilih Kategori" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[300px]">
+                    <div className="p-1 pb-1.5">
+                      <SelectItem
+                        value="__ADD_NEW_CATEGORY__"
+                        className="cursor-pointer rounded-md border border-emerald-300 dark:border-emerald-700/70 bg-emerald-50 dark:bg-emerald-950/60 font-semibold text-emerald-800 dark:text-emerald-300 shadow-xs transition-all hover:bg-emerald-100 dark:hover:bg-emerald-900/80 focus:bg-emerald-100 dark:focus:bg-emerald-900/80 focus:text-emerald-900 dark:focus:text-emerald-200 data-[highlighted]:bg-emerald-100 dark:data-[highlighted]:bg-emerald-900/80 data-[highlighted]:text-emerald-900 dark:data-[highlighted]:text-emerald-100 my-0.5"
+                      >
+                        <div className="flex items-center gap-2 py-0.5">
+                          <div className="flex flex-col text-left">
+                            <span className="text-xs font-bold leading-none text-emerald-700 dark:text-emerald-300">
+                              + Tambah Kategori Baru
+                            </span>
+                            <span className="text-[10px] text-emerald-600/80 dark:text-emerald-400/80 font-normal leading-tight mt-0.5">
+                              Buat kategori kustom baru
+                            </span>
+                          </div>
+                        </div>
                       </SelectItem>
-                    ))
-                  ) : (
-                    CATEGORIES.map((cat) => (
-                      <SelectItem key={cat} value={cat}>
-                        {cat}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
+                      <SelectSeparator className="my-1.5" />
+                    </div>
+
+                    {backendCategories.length > 0 ? (
+                      backendCategories.map((cat) => (
+                        <SelectItem key={cat.id} value={cat.name}>
+                          {cat.name}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      CATEGORIES.map((cat) => (
+                        <SelectItem key={cat} value={cat}>
+                          {cat}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
             <div className="space-y-1.5">
