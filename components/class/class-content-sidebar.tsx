@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -61,7 +61,10 @@ function SidebarContent({
 }: ClassContentSidebarProps) {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
+  const from = searchParams.get("from");
   const classId = params.id as string;
+  const fromParam = from ? `?from=${encodeURIComponent(from)}` : "";
 
   return (
     <div className="h-full overflow-y-auto">
@@ -91,7 +94,7 @@ function SidebarContent({
                     key={`material-${material.id}`}
                     onClick={() =>
                       router.push(
-                        `/classes/${classId}/materials/${material.id}`
+                        `/classes/${classId}/materials/${material.id}${fromParam}`
                       )
                     }
                     className={cn(
@@ -114,7 +117,7 @@ function SidebarContent({
                     key={`quiz-${quiz.id}`}
                     onClick={() =>
                       router.push(
-                        `/classes/${classId}/quizzes/${quiz.id}/detail?sectionId=${section.id}`
+                        `/classes/${classId}/quizzes/${quiz.id}/detail?sectionId=${section.id}${from ? `&from=${encodeURIComponent(from)}` : ""}`
                       )
                     }
                     className={cn(
@@ -150,7 +153,10 @@ export function ClassContentSidebar({
 }: ClassContentSidebarProps) {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
+  const from = searchParams.get("from");
   const classId = params.id as string;
+  const fromParam = from ? `?from=${encodeURIComponent(from)}` : "";
 
   return (
     <>
@@ -167,7 +173,7 @@ export function ClassContentSidebar({
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => router.push(`/classes/${classId}`)}
+                onClick={() => router.push(`/classes/${classId}${fromParam}`)}
               >
                 <ArrowLeft className="h-5 w-5" />
               </Button>

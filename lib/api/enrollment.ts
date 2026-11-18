@@ -42,6 +42,8 @@ export interface EnrolledClass {
   classId: number;
   createdAt: string;
   updatedAt: string;
+  progress?: number;
+  progressPercentage?: number;
   class: {
     id: number;
     name: string;
@@ -49,6 +51,7 @@ export interface EnrolledClass {
     image_path: string;
     createdAt: string;
     updatedAt: string;
+    progress?: number;
     Section: Array<{
       id: number;
       name: string;
@@ -147,7 +150,7 @@ export async function checkEnrollmentStatus(classId: number): Promise<boolean> {
       return false;
     }
 
-    const response = await fetch(`${BASE_URL}/enrollment/status/${classId}`, {
+    const response = await fetch(`${BASE_URL}/enrollment/check/${classId}`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -39,6 +39,8 @@ interface ContentItem {
 export default function QuizDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const from = searchParams.get("from");
   const classId = params.id as string;
   const quizId = parseInt(params.quizId as string);
 
@@ -78,7 +80,11 @@ export default function QuizDetailPage() {
 
         if (!sectionId) {
           toast.error("Section ID tidak ditemukan");
-          router.push(`/classes/${classId}`);
+          router.push(
+            `/classes/${classId}${
+              from ? `?from=${encodeURIComponent(from)}` : ""
+            }`
+          );
           return;
         }
 
@@ -93,32 +99,39 @@ export default function QuizDetailPage() {
     }
 
     loadQuizDetail();
-  }, [classId, quizId, router]);
+  }, [classId, quizId, router, from]);
 
   const handleStartQuiz = () => {
     if (!quizData) return;
 
-    // Redirect to quiz page with sectionId
+    // Redirect to quiz page with sectionId and from
+    const fromParam = from ? `&from=${encodeURIComponent(from)}` : "";
     router.push(
-      `/classes/${classId}/quizzes/${quizId}?sectionId=${quizData.sectionId}`
+      `/classes/${classId}/quizzes/${quizId}?sectionId=${quizData.sectionId}${fromParam}`
     );
   };
 
   const handleContinueQuiz = () => {
     if (!quizData?.ongoingAttempt) return;
 
+    const fromParam = from ? `&from=${encodeURIComponent(from)}` : "";
     router.push(
-      `/classes/${classId}/quizzes/${quizId}?sectionId=${quizData.sectionId}&attemptId=${quizData.ongoingAttempt.id}`
+      `/classes/${classId}/quizzes/${quizId}?sectionId=${quizData.sectionId}&attemptId=${quizData.ongoingAttempt.id}${fromParam}`
     );
   };
 
   const handlePrevious = () => {
     if (currentIndex > 0) {
       const prevItem = contentItems[currentIndex - 1];
+      const fromParam = from ? `?from=${encodeURIComponent(from)}` : "";
       if (prevItem.type === "material") {
-        router.push(`/classes/${classId}/materials/${prevItem.id}`);
+        router.push(`/classes/${classId}/materials/${prevItem.id}${fromParam}`);
       } else {
-        router.push(`/classes/${classId}/quizzes/${prevItem.id}/detail?sectionId=${prevItem.sectionId}`);
+        router.push(
+          `/classes/${classId}/quizzes/${prevItem.id}/detail?sectionId=${prevItem.sectionId}${
+            from ? `&from=${encodeURIComponent(from)}` : ""
+          }`
+        );
       }
     }
   };
@@ -126,10 +139,15 @@ export default function QuizDetailPage() {
   const handleNext = () => {
     if (currentIndex < contentItems.length - 1) {
       const nextItem = contentItems[currentIndex + 1];
+      const fromParam = from ? `?from=${encodeURIComponent(from)}` : "";
       if (nextItem.type === "material") {
-        router.push(`/classes/${classId}/materials/${nextItem.id}`);
+        router.push(`/classes/${classId}/materials/${nextItem.id}${fromParam}`);
       } else {
-        router.push(`/classes/${classId}/quizzes/${nextItem.id}/detail?sectionId=${nextItem.sectionId}`);
+        router.push(
+          `/classes/${classId}/quizzes/${nextItem.id}/detail?sectionId=${nextItem.sectionId}${
+            from ? `&from=${encodeURIComponent(from)}` : ""
+          }`
+        );
       }
     }
   };
@@ -163,7 +181,13 @@ export default function QuizDetailPage() {
               Kuis tidak ditemukan
             </p>
             <Button
-              onClick={() => router.push(`/classes/${classId}`)}
+              onClick={() =>
+                router.push(
+                  `/classes/${classId}${
+                    from ? `?from=${encodeURIComponent(from)}` : ""
+                  }`
+                )
+              }
               className="mt-4"
             >
               Kembali ke Kelas
@@ -212,7 +236,13 @@ export default function QuizDetailPage() {
       <div className="lg:hidden mb-4">
         <Button
           variant="ghost"
-          onClick={() => router.push(`/classes/${classId}`)}
+          onClick={() =>
+            router.push(
+              `/classes/${classId}${
+                from ? `?from=${encodeURIComponent(from)}` : ""
+              }`
+            )
+          }
           className="gap-2"
         >
           <ArrowLeft className="h-4 w-4" />

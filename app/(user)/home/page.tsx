@@ -50,7 +50,7 @@ export default function HomePage() {
     if (!isAuthenticated) {
       setShowLoginDialog(true);
     } else {
-      router.push(`/classes/${classId}`);
+      router.push(`/classes/${classId}?from=home`);
     }
   };
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
@@ -26,6 +26,8 @@ interface ContentItem {
 export default function MaterialDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const from = searchParams.get("from");
   const classId = params.id as string;
   const materialId = parseInt(params.materialId as string);
 
@@ -148,11 +150,19 @@ export default function MaterialDetailPage() {
             }
           } else {
             toast.error("Materi tidak ditemukan");
-            router.push(`/classes/${classId}`);
+            router.push(
+              `/classes/${classId}${
+                from ? `?from=${encodeURIComponent(from)}` : ""
+              }`
+            );
           }
         } else {
           toast.error("Materi tidak ditemukan");
-          router.push(`/classes/${classId}`);
+          router.push(
+            `/classes/${classId}${
+              from ? `?from=${encodeURIComponent(from)}` : ""
+            }`
+          );
         }
       } catch (error) {
         console.error("Failed to load material:", error);
@@ -163,15 +173,20 @@ export default function MaterialDetailPage() {
     }
 
     loadData();
-  }, [classId, materialId, router]);
+  }, [classId, materialId, router, from]);
 
   const handlePrevious = () => {
     if (currentIndex > 0) {
       const prevItem = contentItems[currentIndex - 1];
+      const fromParam = from ? `?from=${encodeURIComponent(from)}` : "";
       if (prevItem.type === "material") {
-        router.push(`/classes/${classId}/materials/${prevItem.id}`);
+        router.push(`/classes/${classId}/materials/${prevItem.id}${fromParam}`);
       } else {
-        router.push(`/classes/${classId}/quizzes/${prevItem.id}/detail?sectionId=${prevItem.sectionId}`);
+        router.push(
+          `/classes/${classId}/quizzes/${prevItem.id}/detail?sectionId=${prevItem.sectionId}${
+            from ? `&from=${encodeURIComponent(from)}` : ""
+          }`
+        );
       }
     }
   };
@@ -179,10 +194,15 @@ export default function MaterialDetailPage() {
   const handleNext = () => {
     if (currentIndex < contentItems.length - 1) {
       const nextItem = contentItems[currentIndex + 1];
+      const fromParam = from ? `?from=${encodeURIComponent(from)}` : "";
       if (nextItem.type === "material") {
-        router.push(`/classes/${classId}/materials/${nextItem.id}`);
+        router.push(`/classes/${classId}/materials/${nextItem.id}${fromParam}`);
       } else {
-        router.push(`/classes/${classId}/quizzes/${nextItem.id}/detail?sectionId=${nextItem.sectionId}`);
+        router.push(
+          `/classes/${classId}/quizzes/${nextItem.id}/detail?sectionId=${nextItem.sectionId}${
+            from ? `&from=${encodeURIComponent(from)}` : ""
+          }`
+        );
       }
     }
   };
@@ -211,7 +231,13 @@ export default function MaterialDetailPage() {
       <div className="lg:hidden mb-4">
         <Button
           variant="ghost"
-          onClick={() => router.push(`/classes/${classId}`)}
+          onClick={() =>
+            router.push(
+              `/classes/${classId}${
+                from ? `?from=${encodeURIComponent(from)}` : ""
+              }`
+            )
+          }
           className="gap-2"
         >
           <ArrowLeft className="h-4 w-4" />

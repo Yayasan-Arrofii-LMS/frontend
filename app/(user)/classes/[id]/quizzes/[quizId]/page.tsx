@@ -1,7 +1,8 @@
+
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -59,16 +60,18 @@ import { cn } from "@/lib/utils";
 export default function QuizPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const from = searchParams.get("from");
   const { isAuthenticated, isLoading: authLoading } = useAuth();
 
   const classId = params.id as string;
   const quizId = parseInt(params.quizId as string);
-
-  // We need sectionId - will get it from query param or fetch from quiz details
-  const searchParams = new URLSearchParams(
-    typeof window !== "undefined" ? window.location.search : ""
-  );
   const sectionId = parseInt(searchParams.get("sectionId") || "1");
+
+  const returnToClass = () => {
+    const fromParam = from ? `?from=${encodeURIComponent(from)}` : "";
+    router.push(`/classes/${classId}${fromParam}`);
+  };
 
   const [isLoading, setIsLoading] = useState(true);
   const [quizData, setQuizData] = useState<SavedAnswersData | null>(null);
@@ -118,13 +121,13 @@ export default function QuizPage() {
 
           if (now < openAt) {
             toast.error(`Kuis belum dibuka. Akan dibuka pada ${openAt.toLocaleString("id-ID")}`);
-            router.push(`/classes/${classId}`);
+            returnToClass();
             return;
           }
 
           if (now > closeAt) {
             toast.error(`Kuis telah ditutup pada ${closeAt.toLocaleString("id-ID")}`);
-            router.push(`/classes/${classId}`);
+            returnToClass();
             return;
           }
 
@@ -135,7 +138,7 @@ export default function QuizPage() {
             toast.error(
               `Anda telah mencapai batas maksimal ${anyAttempt.quiz.max_attempts} percobaan`
             );
-            router.push(`/classes/${classId}`);
+            returnToClass();
             return;
           }
         }
@@ -190,14 +193,14 @@ export default function QuizPage() {
             } else {
               toast.error("Gagal memulai kuis");
             }
-            router.push(`/classes/${classId}`);
+            returnToClass();
             return;
           }
         }
       } catch (error) {
         console.error("Failed to load quiz:", error);
         toast.error("Gagal memuat kuis");
-        router.push(`/classes/${classId}`);
+        returnToClass();
       } finally {
         setIsLoading(false);
       }
@@ -475,7 +478,7 @@ export default function QuizPage() {
               Kembali ke Hasil
             </Button>
             <Button
-              onClick={() => router.push(`/classes/${classId}`)}
+              onClick={returnToClass}
               className="flex-1"
             >
               Kembali ke Kelas
@@ -490,7 +493,7 @@ export default function QuizPage() {
       <div className="container mx-auto px-4 py-8">
         <Button
           variant="ghost"
-          onClick={() => router.push(`/classes/${classId}`)}
+          onClick={returnToClass}
           className="mb-6"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
@@ -582,7 +585,7 @@ export default function QuizPage() {
 
               <div className="flex gap-3">
                 <Button
-                  onClick={() => router.push(`/classes/${classId}`)}
+                  onClick={returnToClass}
                   className="flex-1"
                 >
                   Kembali ke Kelas
@@ -903,7 +906,7 @@ export default function QuizPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>Batal</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => router.push(`/classes/${classId}`)}
+              onClick={returnToClass}
             >
               Ya, Keluar
             </AlertDialogAction>
