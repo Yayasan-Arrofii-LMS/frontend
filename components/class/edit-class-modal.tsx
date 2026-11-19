@@ -15,7 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, X, Image as ImageIcon, Plus, Tag, Check } from "lucide-react";
+import { Loader2, X, Image as ImageIcon, Plus, Tag, Check, UserCheck } from "lucide-react";
 import { toast } from "sonner";
 import {
   Select,
@@ -56,10 +56,12 @@ export function EditClassModal({
     title: string;
     description: string;
     categoryId: number | null;
+    registrationType: "AUTO" | "MANUAL";
   }>({
     title: "",
     description: "",
     categoryId: null,
+    registrationType: "AUTO",
   });
   const {
     categories,
@@ -88,6 +90,7 @@ export function EditClassModal({
         title: classData.title,
         description: classData.description,
         categoryId: classData.categoryId ?? null,
+        registrationType: classData.registrationType || "AUTO",
       });
       setCoverImagePreview(classData.coverImage);
       setCoverImage(null);
@@ -260,19 +263,19 @@ export function EditClassModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[600px]">
-        <DialogHeader>
+      <DialogContent className="w-[95vw] max-w-[620px] max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+        <DialogHeader className="p-5 sm:p-6 pb-4 border-b shrink-0 pr-12">
           <DialogTitle className="text-xl font-semibold">
             Edit Kelas
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-4 py-4">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden min-h-0">
+          <div className="flex-1 overflow-y-auto px-5 sm:px-6 py-4 space-y-4">
             {/* Cover Image Upload */}
             <div className="space-y-2">
               <Label htmlFor="cover-image">Cover Kelas</Label>
               {coverImagePreview ? (
-                <div className="relative w-full h-48 rounded-lg overflow-hidden border-2 border-border">
+                <div className="relative w-full h-40 sm:h-48 rounded-lg overflow-hidden border-2 border-border">
                   <Image
                     src={coverImagePreview}
                     alt="Cover preview"
@@ -477,9 +480,78 @@ export function EditClassModal({
                 </p>
               </div>
             </div>
+
+            {/* Mekanisme Pendaftaran */}
+            <div className="space-y-2.5 rounded-lg border p-3.5 bg-muted/20">
+              <div className="space-y-0.5">
+                <Label className="text-sm font-semibold flex items-center gap-1.5">
+                  <UserCheck className="h-4 w-4 text-primary" />
+                  Mekanisme Pendaftaran
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Tentukan bagaimana siswa dapat bergabung ke dalam kelas ini.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                <div
+                  onClick={() =>
+                    setFormData((prev) => ({ ...prev, registrationType: "AUTO" }))
+                  }
+                  className={`flex items-start gap-3 p-3 rounded-md border cursor-pointer transition-colors ${
+                    formData.registrationType === "AUTO"
+                      ? "border-primary bg-primary/5 text-primary"
+                      : "border-border hover:bg-muted/50"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="editRegistrationType"
+                    checked={formData.registrationType === "AUTO"}
+                    onChange={() => {}}
+                    className="mt-0.5"
+                  />
+                  <div>
+                    <p className="text-xs font-semibold leading-tight text-foreground">
+                      Pendaftaran Terbuka
+                    </p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      Siswa langsung diterima saat mendaftar tanpa menunggu persetujuan.
+                    </p>
+                  </div>
+                </div>
+
+                <div
+                  onClick={() =>
+                    setFormData((prev) => ({ ...prev, registrationType: "MANUAL" }))
+                  }
+                  className={`flex items-start gap-3 p-3 rounded-md border cursor-pointer transition-colors ${
+                    formData.registrationType === "MANUAL"
+                      ? "border-primary bg-primary/5 text-primary"
+                      : "border-border hover:bg-muted/50"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="editRegistrationType"
+                    checked={formData.registrationType === "MANUAL"}
+                    onChange={() => {}}
+                    className="mt-0.5"
+                  />
+                  <div>
+                    <p className="text-xs font-semibold leading-tight text-foreground">
+                      Persetujuan Guru
+                    </p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      Guru harus menyetujui pendaftaran sebelum siswa dapat mengakses materi.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="p-4 sm:p-6 pt-3 sm:pt-4 border-t bg-background shrink-0 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
             <Button
               type="button"
               variant="outline"
