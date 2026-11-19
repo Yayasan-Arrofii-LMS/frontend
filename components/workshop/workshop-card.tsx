@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Workshop } from "@/types/workshop";
-import { normalizeImageUrl } from "@/lib/utils";
+import { normalizeImageUrl, cn } from "@/lib/utils";
 
 interface WorkshopCardProps {
   workshop: Workshop;
@@ -29,6 +29,8 @@ interface WorkshopCardProps {
   onEditClick?: (workshop: Workshop) => void;
   onDeleteClick?: (workshop: Workshop) => void;
   onParticipantsClick?: (workshop: Workshop) => void;
+  onCardClick?: (workshopId: string, e: React.MouseEvent) => void;
+  from?: string;
 }
 
 export function WorkshopCard({
@@ -38,6 +40,8 @@ export function WorkshopCard({
   onEditClick,
   onDeleteClick,
   onParticipantsClick,
+  onCardClick,
+  from,
 }: WorkshopCardProps) {
   const isFull = workshop.registeredCount >= workshop.quota;
   const remainingQuota = Math.max(0, workshop.quota - workshop.registeredCount);
@@ -56,8 +60,30 @@ export function WorkshopCard({
     setImgSrc(normalizeImageUrl(workshop.thumbnail));
   }, [workshop.thumbnail]);
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    if (onCardClick) {
+      onCardClick(String(workshop.id), e);
+    }
+  };
+
+  const handleSaveScroll = () => {
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("user_workshops_scroll_pos", window.scrollY.toString());
+    }
+  };
+
+  const detailHref = `/workshops/${workshop.id}${
+    from ? `?from=${encodeURIComponent(from)}` : ""
+  }`;
+
   return (
-    <Card className="group flex flex-col justify-between overflow-hidden rounded-[var(--radius-xl)] border border-border bg-card text-card-foreground p-3.5 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] hover:border-primary/40 hover:shadow-md">
+    <Card
+      onClick={onCardClick ? handleCardClick : undefined}
+      className={cn(
+        "group flex flex-col justify-between overflow-hidden rounded-[var(--radius-xl)] border border-border bg-card text-card-foreground p-3.5 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] hover:border-primary/40 hover:shadow-md",
+        onCardClick && "cursor-pointer"
+      )}
+    >
       <div>
         {/* Floating Thumbnail dengan aspect ratio terstandarisasi */}
         <div className="relative aspect-[16/10] w-full overflow-hidden rounded-[var(--radius-lg)] bg-muted">
@@ -112,9 +138,22 @@ export function WorkshopCard({
         {/* Header & Deskripsi Kursus */}
         <div className="pt-3 pb-2 px-0.5">
           <h3 className="text-sm sm:text-base font-bold text-foreground line-clamp-1 leading-snug transition-colors duration-200 group-hover:text-primary">
-            <Link href={`/workshops/${workshop.id}`} className="focus-visible:outline-hidden focus-visible:underline">
-              {workshop.title}
-            </Link>
+            {onCardClick ? (
+              <span
+                onClick={handleCardClick}
+                className="cursor-pointer focus-visible:outline-hidden focus-visible:underline"
+              >
+                {workshop.title}
+              </span>
+            ) : (
+              <Link
+                href={detailHref}
+                onClick={handleSaveScroll}
+                className="focus-visible:outline-hidden focus-visible:underline"
+              >
+                {workshop.title}
+              </Link>
+            )}
           </h3>
           <p className="mt-0.5 text-[11px] text-muted-foreground truncate">
             Fasilitator: <span className="font-medium text-foreground/90">{workshop.instructorName}</span>
@@ -182,13 +221,28 @@ export function WorkshopCard({
               <Trash2 className="h-3.5 w-3.5" strokeWidth={1.8} />
             </Button>
           </div>
+        ) : onCardClick ? (
+          <Button
+            size="sm"
+            onClick={handleCardClick}
+            className="h-8 shrink-0 rounded-[var(--radius-md)] bg-primary text-primary-foreground hover:bg-primary/90 px-3.5 text-xs font-semibold shadow-xs"
+          >
+            <span className="flex items-center gap-1.5">
+              Detail
+              <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" strokeWidth={2} />
+            </span>
+          </Button>
         ) : (
           <Button
             asChild
             size="sm"
             className="h-8 shrink-0 rounded-[var(--radius-md)] bg-primary text-primary-foreground hover:bg-primary/90 px-3.5 text-xs font-semibold shadow-xs"
           >
-            <Link href={`/workshops/${workshop.id}`} className="flex items-center gap-1.5">
+            <Link
+              href={detailHref}
+              onClick={handleSaveScroll}
+              className="flex items-center gap-1.5"
+            >
               Detail
               <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" strokeWidth={2} />
             </Link>

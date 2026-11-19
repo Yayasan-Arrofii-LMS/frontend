@@ -3,7 +3,7 @@
 import { useState, use, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { useWorkshops } from "@/hooks/use-workshops";
 import { WorkshopFormModal } from "@/components/workshop/workshop-form-modal";
@@ -40,6 +40,7 @@ import {
   Trash2,
   Share2,
   Sparkles,
+  GraduationCap,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -52,6 +53,8 @@ export default function WorkshopDetailPage({
   const workshopId = resolvedParams.id;
 
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const from = searchParams.get("from");
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const {
     getWorkshop,
@@ -64,6 +67,34 @@ export default function WorkshopDetailPage({
   } = useWorkshops();
 
   const workshop = getWorkshop(workshopId);
+
+  // Menentukan URL kembali berdasarkan parameter 'from' atau role pengguna
+  const getBackUrl = () => {
+    if (
+      from === "workshop" ||
+      from === "admin-workshop" ||
+      from === "admin" ||
+      from === "/workshop"
+    ) {
+      return "/workshop";
+    }
+
+    if (from === "workshops" || from === "public" || from === "/workshops") {
+      return "/workshops";
+    }
+
+    // Fallback jika dibuka langsung tanpa query param:
+    // Jika Admin/Superadmin, arahkan ke /workshop
+    const role = user?.role?.toLowerCase();
+    if (role === "admin" || role === "superadmin") {
+      return "/workshop";
+    }
+
+    // Default untuk Siswa, Guru, atau umum
+    return "/workshops";
+  };
+
+  const backUrl = getBackUrl();
 
   // Modal states
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -83,12 +114,11 @@ export default function WorkshopDetailPage({
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
-      toast.error("Silakan login terlebih dahulu untuk mengakses workshop ini");
-      router.push(`/login?from=/workshops/${workshopId}`);
+      setShowLoginPrompt(true);
     }
-  }, [authLoading, isAuthenticated, router, workshopId]);
+  }, [authLoading, isAuthenticated]);
 
-  if (authLoading || !isAuthenticated || workshopLoading) {
+  if (authLoading || workshopLoading) {
     return (
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 max-w-7xl">
         <Skeleton className="h-10 w-48 mb-6" />
@@ -115,7 +145,7 @@ export default function WorkshopDetailPage({
           Workshop yang Anda cari mungkin telah dihapus atau tidak tersedia.
         </p>
         <Button asChild>
-          <Link href="/workshops">
+          <Link href={backUrl} scroll={false}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Kembali ke Daftar Workshop
           </Link>
@@ -124,11 +154,23 @@ export default function WorkshopDetailPage({
     );
   }
 
-  const isTeacherOrAdmin =
-    isAuthenticated &&
-    (user?.role?.toLowerCase() === "teacher" ||
-      user?.role?.toLowerCase() === "admin" ||
-      user?.role?.toLowerCase() === "superadmin");
+  const isAdmin =
+    user?.role?.toLowerCase() === "admin" ||
+    user?.role?.toLowerCase() === "superadmin";
+  const isTeacher = user?.role?.toLowerCase() === "teacher";
+
+  // Verifikasi apakah pengguna adalah pemilik/instruktur workshop ini
+  const isOwner =
+    !!user &&
+    (
+      (workshop.instructorId && String(workshop.instructorId) === String(user.id)) ||
+      (workshop.instructorName &&
+        user.name &&
+        workshop.instructorName.trim().toLowerCase() === user.name.trim().toLowerCase())
+    );
+
+  // Hak kelola: Admin boleh mengelola semua workshop, Guru HANYA workshop miliknya sendiri
+  const canManage = isAuthenticated && (isAdmin || (isTeacher && isOwner));
 
   const isRegistered =
     !!user &&
@@ -159,6 +201,11 @@ export default function WorkshopDetailPage({
 
     if (!user) return;
 
+    if (isOwner && !isAdmin) {
+      toast.error("Guru tidak dapat mendaftar pada workshop yang dibuatnya sendiri");
+      return;
+    }
+
     const res = await registerWorkshop(workshop.id);
 
     if (res.success) {
@@ -180,6 +227,10 @@ export default function WorkshopDetailPage({
   };
 
   const handleFormSubmit = async (data: WorkshopFormData) => {
+    if (!canManage) {
+      toast.error("Anda tidak memiliki izin untuk mengedit workshop ini");
+      return;
+    }
     const res = await updateWorkshop(workshop.id, data);
     if (res.success) {
       toast.success(res.message);
@@ -188,10 +239,14 @@ export default function WorkshopDetailPage({
   };
 
   const handleConfirmDelete = async () => {
+    if (!canManage) {
+      toast.error("Anda tidak memiliki izin untuk menghapus workshop ini");
+      return;
+    }
     const res = await deleteWorkshop(workshop.id);
     if (res.success) {
       toast.success(res.message);
-      router.push("/workshops");
+      router.push(backUrl, { scroll: false });
     }
   };
 
@@ -207,7 +262,7 @@ export default function WorkshopDetailPage({
       {/* Top Back & Admin Controls */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <Button variant="ghost" size="sm" asChild className="gap-2">
-          <Link href="/workshops">
+          <Link href={backUrl} scroll={false}>
             <ArrowLeft className="h-4 w-4" />
             Kembali ke Katalog Workshop
           </Link>
@@ -219,7 +274,7 @@ export default function WorkshopDetailPage({
             Bagikan
           </Button>
 
-          {isTeacherOrAdmin && (
+          {canManage && (
             <>
               <Button
                 variant="outline"
@@ -408,7 +463,7 @@ export default function WorkshopDetailPage({
                   <span className="text-xs font-bold text-blue-700 dark:text-blue-400 block">
                     Ruang Virtual (Link Meeting)
                   </span>
-                  {isRegistered || isTeacherOrAdmin ? (
+                  {isRegistered || canManage ? (
                     <a
                       href={workshop.meetingLink}
                       target="_blank"
@@ -471,6 +526,20 @@ export default function WorkshopDetailPage({
                       Jadwal pelaksanaan telah terlewat sehingga pendaftaran sudah ditutup.
                     </p>
                   </div>
+                ) : isOwner && !isAdmin ? (
+                  <div className="space-y-2">
+                    <Button
+                      variant="outline"
+                      className="w-full border-primary/40 text-primary bg-primary/5 font-semibold cursor-default"
+                      disabled
+                    >
+                      <GraduationCap className="h-4 w-4 mr-2" />
+                      Penyelenggara Workshop Ini
+                    </Button>
+                    <p className="text-[11px] text-center text-muted-foreground">
+                      Sebagai instruktur/pembuat, Anda mengelola kegiatan ini dan tidak dapat mendaftar sebagai peserta.
+                    </p>
+                  </div>
                 ) : isRegistered ? (
                   <div className="space-y-2">
                     <Button
@@ -499,6 +568,14 @@ export default function WorkshopDetailPage({
                     <AlertCircle className="h-4 w-4 mr-2" />
                     Kuota Penuh
                   </Button>
+                ) : !isAuthenticated ? (
+                  <Button
+                    onClick={() => setShowLoginPrompt(true)}
+                    size="lg"
+                    className="w-full font-bold shadow-md"
+                  >
+                    Login untuk Mendaftar
+                  </Button>
                 ) : (
                   <Button
                     onClick={handleRegister}
@@ -520,15 +597,24 @@ export default function WorkshopDetailPage({
           <DialogHeader>
             <DialogTitle>Login Diperlukan</DialogTitle>
             <DialogDescription>
-              Anda harus masuk menggunakan akun Anda terlebih dahulu untuk mendaftar workshop ini.
+              Anda harus login terlebih dahulu untuk melihat detail workshop.
+              Silakan login atau buat akun baru untuk melanjutkan.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0 pt-3">
-            <Button variant="outline" onClick={() => setShowLoginPrompt(false)}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowLoginPrompt(false);
+                if (!isAuthenticated) {
+                  router.push(backUrl, { scroll: false });
+                }
+              }}
+            >
               Batal
             </Button>
-            <Button onClick={() => router.push("/login")}>
-              Masuk Sekarang
+            <Button onClick={() => router.push(`/login?from=/workshops/${workshopId}`)}>
+              Login
             </Button>
           </DialogFooter>
         </DialogContent>

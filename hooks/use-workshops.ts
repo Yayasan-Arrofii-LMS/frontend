@@ -24,14 +24,10 @@ export function useWorkshops(initialFilters?: WorkshopFilterParams) {
       try {
         setIsLoading(true);
         const data = await getWorkshopsApi(filters || initialFilters);
-        setWorkshops(data || []);
+        setWorkshops(Array.isArray(data) ? data : []);
       } catch (err: unknown) {
         console.error("Gagal mengambil data workshops dari backend:", err);
-        const msg =
-          err instanceof Error
-            ? err.message
-            : "Gagal memuat data workshop dari server";
-        toast.error(msg);
+        setWorkshops([]);
       } finally {
         setIsLoading(false);
       }

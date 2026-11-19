@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useWorkshops } from "@/hooks/use-workshops";
 import { WorkshopFormModal } from "@/components/workshop/workshop-form-modal";
@@ -39,10 +39,28 @@ export default function AdminWorkshopPage() {
   const { user } = useAuth();
   const {
     workshops,
+    isLoading,
     createWorkshop,
     updateWorkshop,
     deleteWorkshop,
   } = useWorkshops();
+
+  // Pulihkan posisi scroll terakhir ketika kembali dari halaman detail
+  useEffect(() => {
+    if (!isLoading && workshops.length > 0) {
+      const savedPos = sessionStorage.getItem("admin_workshop_scroll_pos");
+      if (savedPos !== null) {
+        const scrollY = parseInt(savedPos, 10);
+        if (!isNaN(scrollY)) {
+          const timer = setTimeout(() => {
+            window.scrollTo({ top: scrollY, behavior: "instant" });
+            sessionStorage.removeItem("admin_workshop_scroll_pos");
+          }, 60);
+          return () => clearTimeout(timer);
+        }
+      }
+    }
+  }, [isLoading, workshops.length]);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -272,7 +290,18 @@ export default function AdminWorkshopPage() {
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
                           <Button asChild variant="ghost" size="icon" className="h-8 w-8">
-                            <Link href={`/workshops/${ws.id}`} title="Lihat Halaman Publik">
+                            <Link
+                              href={`/workshops/${ws.id}?from=workshop`}
+                              title="Lihat Halaman Publik"
+                              onClick={() => {
+                                if (typeof window !== "undefined") {
+                                  sessionStorage.setItem(
+                                    "admin_workshop_scroll_pos",
+                                    window.scrollY.toString()
+                                  );
+                                }
+                              }}
+                            >
                               <Eye className="h-4 w-4" />
                             </Link>
                           </Button>

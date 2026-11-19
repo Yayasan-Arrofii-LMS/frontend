@@ -22,6 +22,16 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Search,
   Plus,
   Sparkles,
@@ -46,14 +56,36 @@ export default function WorkshopsPage() {
     deleteWorkshop,
   } = useWorkshops();
 
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      toast.error("Silakan login terlebih dahulu untuk mengakses fitur workshop");
-      router.push("/login?from=/workshops");
-    }
-  }, [authLoading, isAuthenticated, router]);
-
   const [activeTab, setActiveTab] = useState<string>("all");
+
+  // Pulihkan tab aktif jika sebelumnya tersimpan
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedTab = sessionStorage.getItem("user_workshops_active_tab");
+      if (savedTab) {
+        setActiveTab(savedTab);
+        sessionStorage.removeItem("user_workshops_active_tab");
+      }
+    }
+  }, []);
+
+  // Pulihkan posisi scroll terakhir ketika kembali dari halaman detail workshop
+  useEffect(() => {
+    if (!isLoading && workshops.length > 0) {
+      const savedPos = sessionStorage.getItem("user_workshops_scroll_pos");
+      if (savedPos !== null) {
+        const scrollY = parseInt(savedPos, 10);
+        if (!isNaN(scrollY)) {
+          const timer = setTimeout(() => {
+            window.scrollTo({ top: scrollY, behavior: "instant" });
+            sessionStorage.removeItem("user_workshops_scroll_pos");
+          }, 60);
+          return () => clearTimeout(timer);
+        }
+      }
+    }
+  }, [isLoading, workshops.length]);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("Semua");
   const [selectedType, setSelectedType] = useState<string>("Semua");
@@ -64,13 +96,57 @@ export default function WorkshopsPage() {
   const [workshopToDelete, setWorkshopToDelete] = useState<Workshop | null>(null);
   const [workshopToViewParticipants, setWorkshopToViewParticipants] =
     useState<Workshop | null>(null);
+  const [showLoginDialog, setShowLoginDialog] = useState(false);
 
+  const handleWorkshopClick = (workshopId: string, e: React.MouseEvent) => {
+    e.preventDefault();
+
+    if (authLoading) {
+      return;
+    }
+
+    if (!isAuthenticated) {
+      setShowLoginDialog(true);
+    } else {
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("user_workshops_scroll_pos", window.scrollY.toString());
+        sessionStorage.setItem("user_workshops_active_tab", activeTab);
+      }
+      router.push(`/workshops/${workshopId}?from=workshops`);
+    }
+  };
+
+  const handleLoginRedirect = () => {
+    setShowLoginDialog(false);
+    router.push("/login?from=/workshops");
+  };
+
+  const isAdmin =
+    user?.role?.toLowerCase() === "admin" ||
+    user?.role?.toLowerCase() === "superadmin";
   const isTeacher = user?.role?.toLowerCase() === "teacher";
-  const isTeacherOrAdmin =
-    isAuthenticated &&
-    (isTeacher ||
-      user?.role?.toLowerCase() === "admin" ||
-      user?.role?.toLowerCase() === "superadmin");
+  const isTeacherOrAdmin = isAuthenticated && (isTeacher || isAdmin);
+
+  // Verifikasi kepemilikan workshop: Guru hanya pemilik atau Admin yang berhak mengelola
+  const checkIsOwner = (ws: Workshop) => {
+    if (!user) return false;
+    if (ws.instructorId && String(ws.instructorId) === String(user.id)) return true;
+    if (
+      ws.instructorName &&
+      user.name &&
+      ws.instructorName.trim().toLowerCase() === user.name.trim().toLowerCase()
+    ) {
+      return true;
+    }
+    return false;
+  };
+
+  const canManageWorkshop = (ws: Workshop) => {
+    if (!isAuthenticated) return false;
+    if (isAdmin) return true;
+    if (isTeacher && checkIsOwner(ws)) return true;
+    return false;
+  };
 
   // Workshop yang belum lewat / akan berjalan
   const upcomingWorkshops = useMemo(() => {
@@ -127,12 +203,28 @@ export default function WorkshopsPage() {
   };
 
   const handleOpenEditModal = (ws: Workshop) => {
+    if (!canManageWorkshop(ws)) {
+      toast.error("Anda tidak memiliki izin untuk mengedit workshop ini");
+      return;
+    }
     setWorkshopToEdit(ws);
     setIsFormOpen(true);
   };
 
+  const handleOpenParticipantsModal = (ws: Workshop) => {
+    if (!canManageWorkshop(ws)) {
+      toast.error("Anda tidak memiliki izin untuk melihat daftar peserta workshop ini");
+      return;
+    }
+    setWorkshopToViewParticipants(ws);
+  };
+
   const handleFormSubmit = async (data: WorkshopFormData) => {
     if (workshopToEdit) {
+      if (!canManageWorkshop(workshopToEdit)) {
+        toast.error("Anda tidak memiliki izin untuk mengedit workshop ini");
+        return;
+      }
       const res = await updateWorkshop(workshopToEdit.id, data);
       if (res.success) {
         toast.success(res.message);
@@ -149,6 +241,11 @@ export default function WorkshopsPage() {
 
   const handleConfirmDelete = async () => {
     if (workshopToDelete) {
+      if (!canManageWorkshop(workshopToDelete)) {
+        toast.error("Anda tidak memiliki izin untuk menghapus workshop ini");
+        setWorkshopToDelete(null);
+        return;
+      }
       const res = await deleteWorkshop(workshopToDelete.id);
       if (res.success) {
         toast.success(res.message);
@@ -164,7 +261,7 @@ export default function WorkshopsPage() {
     return text;
   };
 
-  if (authLoading || !isAuthenticated) {
+  if (authLoading) {
     return (
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 max-w-7xl">
         <Skeleton className="h-10 w-64 mb-4" />
@@ -344,10 +441,18 @@ export default function WorkshopsPage() {
                     key={ws.id}
                     workshop={ws}
                     isRegistered={isReg}
-                    showAdminActions={isTeacherOrAdmin}
+                    showAdminActions={canManageWorkshop(ws)}
                     onEditClick={handleOpenEditModal}
-                    onDeleteClick={(w) => setWorkshopToDelete(w)}
-                    onParticipantsClick={(w) => setWorkshopToViewParticipants(w)}
+                    onDeleteClick={(w) => {
+                      if (!canManageWorkshop(w)) {
+                        toast.error("Anda tidak memiliki izin untuk menghapus workshop ini");
+                        return;
+                      }
+                      setWorkshopToDelete(w);
+                    }}
+                    onParticipantsClick={handleOpenParticipantsModal}
+                    onCardClick={handleWorkshopClick}
+                    from="workshops"
                   />
                 );
               })}
@@ -396,8 +501,15 @@ export default function WorkshopsPage() {
                       workshop={ws}
                       showAdminActions={true}
                       onEditClick={handleOpenEditModal}
-                      onDeleteClick={(w) => setWorkshopToDelete(w)}
-                      onParticipantsClick={(w) => setWorkshopToViewParticipants(w)}
+                      onDeleteClick={(w) => {
+                        if (!canManageWorkshop(w)) {
+                          toast.error("Anda tidak memiliki izin untuk menghapus workshop ini");
+                          return;
+                        }
+                        setWorkshopToDelete(w);
+                      }}
+                      onParticipantsClick={handleOpenParticipantsModal}
+                      from="workshops"
                     />
                   ))}
                 </div>
@@ -413,6 +525,12 @@ export default function WorkshopsPage() {
                 <p className="text-sm text-muted-foreground mt-1 max-w-sm mx-auto">
                   Silakan masuk dengan akun Anda untuk melihat workshop yang telah Anda ikuti.
                 </p>
+                <Button
+                  onClick={() => router.push("/login?from=/workshops")}
+                  className="mt-4"
+                >
+                  Masuk Sekarang
+                </Button>
               </div>
             ) : myRegisteredWorkshops.length === 0 ? (
               <div className="text-center py-16 border-2 border-dashed rounded-3xl bg-muted/20">
@@ -439,6 +557,8 @@ export default function WorkshopsPage() {
                     onEditClick={handleOpenEditModal}
                     onDeleteClick={(w) => setWorkshopToDelete(w)}
                     onParticipantsClick={(w) => setWorkshopToViewParticipants(w)}
+                    onCardClick={handleWorkshopClick}
+                    from="workshops"
                   />
                 ))}
               </div>
@@ -467,6 +587,24 @@ export default function WorkshopsPage() {
         onOpenChange={(open) => !open && setWorkshopToViewParticipants(null)}
         workshop={workshopToViewParticipants}
       />
+
+      <AlertDialog open={showLoginDialog} onOpenChange={setShowLoginDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Login Diperlukan</AlertDialogTitle>
+            <AlertDialogDescription>
+              Anda harus login terlebih dahulu untuk melihat detail workshop.
+              Silakan login atau buat akun baru untuk melanjutkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleLoginRedirect}>
+              Login
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
