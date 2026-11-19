@@ -5,11 +5,17 @@ export interface Class {
   coverImage: string;
   teacherId: string;
   teacherName: string;
+  teachers?: Array<{
+    id: string;
+    name: string;
+    email: string;
+  }>;
   createdAt: string;
   updatedAt: string;
   studentCount?: number;
   categoryId?: number | null;
   category?: string | { id: number; name: string } | null;
+  registrationType?: "AUTO" | "MANUAL";
 }
 
 // API Response Types
@@ -26,6 +32,7 @@ export interface ApiClass {
     id: number;
     name: string;
   } | null;
+  registrationType?: "AUTO" | "MANUAL";
   teacher?: {
     id: string;
     name: string;
@@ -54,6 +61,7 @@ export interface CreateClassRequest {
   description: string;
   coverImage?: File | null;
   categoryId?: number | null;
+  registrationType?: "AUTO" | "MANUAL";
 }
 
 export interface CreateClassResponse {
@@ -67,6 +75,7 @@ export interface UpdateClassRequest {
   description?: string;
   coverImage?: File | null;
   categoryId?: number | null;
+  registrationType?: "AUTO" | "MANUAL";
 }
 
 export interface UpdateClassResponse {
@@ -78,4 +87,21 @@ export interface UpdateClassResponse {
 export interface DeleteClassResponse {
   success: boolean;
   message: string;
+}
+
+export interface Applicant {
+  id: number;
+  role: string;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  userId: string;
+  classId: number;
+  createdAt: string;
+  updatedAt: string;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    username: string;
+    profileImage?: string;
+  };
 }

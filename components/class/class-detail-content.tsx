@@ -16,6 +16,7 @@ import { ErrorState } from "@/components/error-state";
 import { SectionCard } from "@/components/class/section-card";
 import { AddSectionModal } from "@/components/class/add-section-modal";
 import { StudentsTable } from "@/components/class/students-table";
+import { ApplicantsTable } from "@/components/class/applicants-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import {
@@ -223,6 +224,15 @@ export function ClassDetailContent({ classId, basePath = "/course" }: ClassDetai
                   {typeof classDetail.category === "object" ? classDetail.category.name : classDetail.category}
                 </Badge>
               )}
+              {classDetail.registrationType === "MANUAL" ? (
+                <Badge variant="outline" className="text-xs bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30">
+                  Persetujuan Guru
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="text-xs bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/30">
+                  Pendaftaran Terbuka
+                </Badge>
+              )}
             </div>
             <p className="text-muted-foreground mb-4 break-all line-clamp-2">{classDetail.description}</p>
             <div className="flex gap-4 text-sm text-muted-foreground flex-wrap">
@@ -241,6 +251,7 @@ export function ClassDetailContent({ classId, basePath = "/course" }: ClassDetai
         <TabsList>
           <TabsTrigger value="content">Konten</TabsTrigger>
           <TabsTrigger value="students">Siswa ({classDetail.students?.length || 0})</TabsTrigger>
+          <TabsTrigger value="applicants">Pendaftar</TabsTrigger>
         </TabsList>
 
         <TabsContent value="content" className="space-y-6">
@@ -327,6 +338,10 @@ export function ClassDetailContent({ classId, basePath = "/course" }: ClassDetai
 
         <TabsContent value="students">
           <StudentsTable students={classDetail.students || []} />
+        </TabsContent>
+
+        <TabsContent value="applicants">
+          <ApplicantsTable classId={classId} onStatusChanged={loadClassDetail} />
         </TabsContent>
       </Tabs>
 

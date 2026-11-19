@@ -205,3 +205,76 @@ export async function fetchMyClasses(): Promise<EnrolledClass[]> {
     throw handleApiError(error);
   }
 }
+
+/**
+ * Fetch applicants for a class (Teacher/Admin)
+ */
+export async function fetchClassApplicants(
+  classId: string | number
+): Promise<import("@/types/class").Applicant[]> {
+  try {
+    const token = await getToken();
+
+    if (!token) {
+      throw new ApiError("Authentication required", 401);
+    }
+
+    const response = await fetch(`${BASE_URL}/enrollment/class/${classId}/applicants`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      throw new ApiError(
+        data.message || `Failed to fetch applicants (${response.status})`,
+        response.status
+      );
+    }
+
+    return data.data || [];
+  } catch (error) {
+    throw handleApiError(error);
+  }
+}
+
+/**
+ * Update applicant status (Approve / Reject)
+ */
+export async function updateApplicantStatus(
+  applicantId: number,
+  status: "APPROVED" | "REJECTED"
+): Promise<void> {
+  try {
+    const token = await getToken();
+
+    if (!token) {
+      throw new ApiError("Authentication required", 401);
+    }
+
+    const response = await fetch(`${BASE_URL}/enrollment/applicants/${applicantId}/status`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ status }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      throw new ApiError(
+        data.message || `Failed to update applicant status (${response.status})`,
+        response.status
+      );
+    }
+  } catch (error) {
+    throw handleApiError(error);
+  }
+}

@@ -97,6 +97,7 @@ export async function fetchClasses(
         studentCount: 0, // TODO: Get from API when available
         categoryId: apiClass.categoryId ?? null,
         category: (typeof apiClass.category === "object" && apiClass.category !== null) ? apiClass.category.name : (apiClass.category || null),
+        registrationType: (apiClass as any).registrationType || "AUTO",
       })
     );
 
@@ -129,6 +130,9 @@ export async function createClass(data: CreateClassRequest): Promise<Class> {
     formData.append("description", data.description);
     if (data.categoryId !== undefined && data.categoryId !== null) {
       formData.append("categoryId", data.categoryId.toString());
+    }
+    if (data.registrationType) {
+      formData.append("registrationType", data.registrationType);
     }
 
     // Jika ada cover image, tambahkan ke form data dengan nama field "file" sesuai backend
@@ -172,8 +176,9 @@ export async function createClass(data: CreateClassRequest): Promise<Class> {
       createdAt: new Date().toISOString(), // TODO: Get from API when available
       updatedAt: new Date().toISOString(), // TODO: Get from API when available
       studentCount: 0, // TODO: Get from API when available
-        categoryId: apiClass.categoryId ?? null,
-        category: (typeof apiClass.category === "object" && apiClass.category !== null) ? apiClass.category.name : (apiClass.category || null),
+      categoryId: apiClass.categoryId ?? null,
+      category: (typeof apiClass.category === "object" && apiClass.category !== null) ? apiClass.category.name : (apiClass.category || null),
+      registrationType: apiClass.registrationType || "AUTO",
     };
 
     return newClass;
@@ -203,6 +208,9 @@ export async function updateClass(
     }
     if (data.categoryId !== undefined) {
       formData.append("categoryId", data.categoryId === null ? "" : data.categoryId.toString());
+    }
+    if (data.registrationType) {
+      formData.append("registrationType", data.registrationType);
     }
     if (data.coverImage) {
       formData.append("file", data.coverImage);
@@ -245,6 +253,7 @@ export async function updateClass(
       studentCount: 0,
       categoryId: apiClass.categoryId ?? null,
       category: (typeof apiClass.category === "object" && apiClass.category !== null) ? apiClass.category.name : (apiClass.category || null),
+      registrationType: apiClass.registrationType || "AUTO",
     };
 
     return updatedClass;
@@ -329,6 +338,7 @@ export async function getClassById(id: string): Promise<Class> {
       studentCount: 0,
       categoryId: apiClass.categoryId ?? null,
       category: (typeof apiClass.category === "object" && apiClass.category !== null) ? apiClass.category.name : (apiClass.category || null),
+      registrationType: apiClass.registrationType || "AUTO",
     };
 
     return classData;
@@ -452,18 +462,21 @@ export async function fetchPublicClassDetail(classId: string): Promise<{
 
     // API returns data directly, not data.class
     const apiClass = responseData.data;
+    const primaryTeacher = apiClass.teachers?.[0];
     const classData: Class = {
       id: apiClass.id.toString(),
       title: apiClass.name,
       description: apiClass.description,
       coverImage: normalizeImageUrl(apiClass.image_path_relative || apiClass.image_path),
-      teacherId: "",
-      teacherName: "",
+      teacherId: primaryTeacher?.id || apiClass.teacherId || "",
+      teacherName: primaryTeacher?.name || apiClass.teacherName || "",
+      teachers: apiClass.teachers || (primaryTeacher ? [primaryTeacher] : []),
       createdAt: apiClass.createdAt || new Date().toISOString(),
       updatedAt: apiClass.updatedAt || new Date().toISOString(),
       studentCount: 0,
       categoryId: apiClass.categoryId ?? null,
       category: (typeof apiClass.category === "object" && apiClass.category !== null) ? apiClass.category.name : (apiClass.category || null),
+      registrationType: apiClass.registrationType || "AUTO",
     };
 
     // Transform sections from API format
@@ -525,6 +538,7 @@ export async function fetchStudentClassDetail(classId: string): Promise<{
     }>;
   }>;
   isEnrolled: boolean;
+  enrollmentStatus?: "PENDING" | "APPROVED" | "REJECTED" | null;
 }> {
   try {
     const token = await getToken();
@@ -553,19 +567,22 @@ export async function fetchStudentClassDetail(classId: string): Promise<{
     }
 
     const apiClass = responseData.data;
+    const primaryTeacher = apiClass.teachers?.[0];
 
     const classData: Class = {
       id: apiClass.id.toString(),
       title: apiClass.name,
       description: apiClass.description,
       coverImage: normalizeImageUrl(apiClass.image_path_relative || apiClass.image_path),
-      teacherId: "",
-      teacherName: "",
+      teacherId: primaryTeacher?.id || apiClass.teacherId || "",
+      teacherName: primaryTeacher?.name || apiClass.teacherName || "",
+      teachers: apiClass.teachers || (primaryTeacher ? [primaryTeacher] : []),
       createdAt: apiClass.createdAt || new Date().toISOString(),
       updatedAt: apiClass.updatedAt || new Date().toISOString(),
       studentCount: 0,
       categoryId: apiClass.categoryId ?? null,
       category: (typeof apiClass.category === "object" && apiClass.category !== null) ? apiClass.category.name : (apiClass.category || null),
+      registrationType: apiClass.registrationType || "AUTO",
     };
 
     // Transform sections from API format
@@ -602,6 +619,7 @@ export async function fetchStudentClassDetail(classId: string): Promise<{
       class: classData,
       sections,
       isEnrolled: apiClass.isEnrolled || false,
+      enrollmentStatus: apiClass.enrollmentStatus || null,
     };
   } catch (error) {
     throw handleApiError(error);

@@ -172,6 +172,7 @@ export async function fetchClassDetail(classId: string): Promise<ClassDetail> {
       sections: sectionsWithMaterials,
       categoryId: classInfo.categoryId ?? null,
       category: classInfo.category ?? null,
+      registrationType: classInfo.registrationType || "AUTO",
       createdAt: new Date().toISOString(), // TODO: Get from API when available
       updatedAt: new Date().toISOString(), // TODO: Get from API when available
     };

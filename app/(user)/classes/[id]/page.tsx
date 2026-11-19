@@ -28,6 +28,10 @@ import {
   Lock,
   CheckCircle2,
   AlertCircle,
+  GraduationCap,
+  Clock,
+  XCircle,
+  UserCheck,
 } from "lucide-react";
 import { fetchStudentClassDetail } from "@/lib/api/classes";
 import { enrollClass, unenrollClass } from "@/lib/api/enrollment";
@@ -58,15 +62,34 @@ export default function ClassDetailPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const from = searchParams.get("from");
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const classId = params.id as string;
 
   const [classData, setClassData] = useState<Class | null>(null);
   const [sections, setSections] = useState<Section[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isEnrolled, setIsEnrolled] = useState(false);
+  const [enrollmentStatus, setEnrollmentStatus] = useState<"PENDING" | "APPROVED" | "REJECTED" | null>(null);
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
+
+  // Verifikasi hak akses pengajar kelas
+  const isTeacher = user?.role?.toLowerCase() === "teacher";
+  const isClassTeacher =
+    isTeacher &&
+    !!user &&
+    !!classData &&
+    (
+      (classData.teacherId && String(classData.teacherId) === String(user.id)) ||
+      (classData.teachers && classData.teachers.some((t) => String(t.id) === String(user.id))) ||
+      (classData.teacherName && user.name && classData.teacherName.trim().toLowerCase() === user.name.trim().toLowerCase())
+    );
+
+  const hasAccess =
+    (isEnrolled && enrollmentStatus !== "PENDING" && enrollmentStatus !== "REJECTED") ||
+    isClassTeacher ||
+    user?.role?.toLowerCase() === "admin" ||
+    user?.role?.toLowerCase() === "superadmin";
 
   const handleBack = () => {
     if (from === "my-classes") {
@@ -86,10 +109,10 @@ export default function ClassDetailPage() {
     from === "my-classes"
       ? "Kembali ke Kelas Saya"
       : from === "classes"
-      ? "Kembali ke Daftar Kelas"
-      : from === "home"
-      ? "Kembali ke Beranda"
-      : "Kembali";
+        ? "Kembali ke Daftar Kelas"
+        : from === "home"
+          ? "Kembali ke Beranda"
+          : "Kembali";
 
   const handleQuizClick = (
     quiz: {
@@ -123,6 +146,7 @@ export default function ClassDetailPage() {
           setClassData(data.class);
           setSections(data.sections);
           setIsEnrolled(data.isEnrolled);
+          setEnrollmentStatus(data.enrollmentStatus || null);
         } else {
           // Not authenticated: show login dialog
           setShowLoginDialog(true);
@@ -147,16 +171,31 @@ export default function ClassDetailPage() {
       return;
     }
 
+    if (isClassTeacher) {
+      toast.error("Guru tidak dapat mendaftar pada kelas yang dibuatnya sendiri");
+      return;
+    }
+
     try {
       setIsEnrolling(true);
-      await enrollClass(parseInt(classId));
-      setIsEnrolled(true);
-      toast.success("Berhasil mendaftar ke kelas");
+      const res = await enrollClass(parseInt(classId));
+      const resStatus = (res as any)?.status || (classData?.registrationType === "MANUAL" ? "PENDING" : "APPROVED");
+      setEnrollmentStatus(resStatus);
+
+      if (resStatus === "APPROVED") {
+        setIsEnrolled(true);
+        toast.success("Berhasil mendaftar ke kelas");
+      } else {
+        setIsEnrolled(false);
+        toast.info("Pendaftaran diajukan! Menunggu persetujuan dari pengajar.");
+      }
 
       // Reload class data after enrollment
       const data = await fetchStudentClassDetail(classId);
       setClassData(data.class);
       setSections(data.sections);
+      setIsEnrolled(data.isEnrolled);
+      setEnrollmentStatus(data.enrollmentStatus || null);
     } catch (error) {
       console.error("Failed to enroll:", error);
       toast.error(
@@ -172,12 +211,15 @@ export default function ClassDetailPage() {
       setIsEnrolling(true);
       await unenrollClass(parseInt(classId));
       setIsEnrolled(false);
+      setEnrollmentStatus(null);
       toast.success("Berhasil keluar dari kelas");
 
       // Reload class data after unenrollment
       const data = await fetchStudentClassDetail(classId);
       setClassData(data.class);
       setSections(data.sections);
+      setIsEnrolled(data.isEnrolled);
+      setEnrollmentStatus(data.enrollmentStatus || null);
     } catch (error) {
       console.error("Failed to unenroll:", error);
       toast.error(
@@ -296,9 +338,22 @@ export default function ClassDetailPage() {
 
           {/* Sections */}
           <div>
-            <h2 className="text-xl sm:text-2xl font-bold mb-4\">
+            <h2 className="text-xl sm:text-2xl font-bold mb-4">
               Konten Kelas
             </h2>
+
+            {enrollmentStatus === "PENDING" && (
+              <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200 mb-4">
+                <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5 animate-pulse" />
+                <div className="text-sm">
+                  <p className="font-semibold">Materi Terkunci — Menunggu Persetujuan Guru</p>
+                  <p className="text-xs text-amber-800/80 dark:text-amber-300/80 mt-1">
+                    Permohonan pendaftaran Anda sedang menunggu persetujuan dari Guru. Seluruh materi pembelajaran dan kuis akan terbuka secara otomatis setelah disetujui.
+                  </p>
+                </div>
+              </div>
+            )}
+
             <div className="space-y-4">
               {sections.length === 0 ? (
                 <Card>
@@ -331,22 +386,25 @@ export default function ClassDetailPage() {
                               <div
                                 key={material.id}
                                 onClick={() => {
-                                  if (isEnrolled) {
+                                  if (hasAccess) {
                                     const fromParam = from ? `?from=${encodeURIComponent(from)}` : "";
                                     router.push(
                                       `/classes/${classId}/materials/${material.id}${fromParam}`
                                     );
                                   } else {
-                                    toast.error(
-                                      "Silakan enroll terlebih dahulu"
-                                    );
+                                    if (enrollmentStatus === "PENDING") {
+                                      toast.error("Pendaftaran Anda sedang menunggu persetujuan Guru");
+                                    } else if (enrollmentStatus === "REJECTED") {
+                                      toast.error("Pendaftaran Anda ditolak. Silakan ajukan pendaftaran ulang");
+                                    } else {
+                                      toast.error("Silakan daftar ke kelas terlebih dahulu");
+                                    }
                                   }
                                 }}
-                                className={`flex items-center gap-3 p-3 rounded-lg border ${
-                                  isEnrolled
+                                className={`flex items-center gap-3 p-3 rounded-lg border ${hasAccess
                                     ? "hover:bg-accent cursor-pointer"
                                     : "bg-muted/50 cursor-not-allowed"
-                                }`}
+                                  }`}
                               >
                                 <FileText className="h-4 w-4 text-muted-foreground" />
                                 <span className="flex-1 text-sm">
@@ -355,7 +413,7 @@ export default function ClassDetailPage() {
                                 <Badge variant="outline" className="text-xs">
                                   {material.type}
                                 </Badge>
-                                {!isEnrolled && (
+                                {!hasAccess && (
                                   <Lock className="h-3 w-3 text-muted-foreground" />
                                 )}
                               </div>
@@ -370,25 +428,28 @@ export default function ClassDetailPage() {
                           <h4 className="font-semibold mb-2 text-sm">Kuis</h4>
                           <div className="space-y-2">
                             {section.quizzes.map((quiz) => {
-                              const canClick = isEnrolled;
+                              const canClick = hasAccess;
 
                               return (
                                 <div
                                   key={quiz.id}
                                   onClick={() => {
-                                    if (!isEnrolled) {
-                                      toast.error(
-                                        "Silakan enroll terlebih dahulu"
-                                      );
+                                    if (!hasAccess) {
+                                      if (enrollmentStatus === "PENDING") {
+                                        toast.error("Pendaftaran Anda sedang menunggu persetujuan Guru");
+                                      } else if (enrollmentStatus === "REJECTED") {
+                                        toast.error("Pendaftaran Anda ditolak. Silakan ajukan pendaftaran ulang");
+                                      } else {
+                                        toast.error("Silakan daftar ke kelas terlebih dahulu");
+                                      }
                                       return;
                                     }
                                     handleQuizClick(quiz, section.id);
                                   }}
-                                  className={`flex items-center gap-3 p-3 rounded-lg border ${
-                                    canClick
+                                  className={`flex items-center gap-3 p-3 rounded-lg border ${canClick
                                       ? "hover:bg-accent cursor-pointer"
                                       : "bg-muted/50 cursor-not-allowed opacity-60"
-                                  }`}
+                                    }`}
                                 >
                                   <BookOpen className="h-4 w-4 text-muted-foreground" />
                                   <span className="flex-1 text-sm">
@@ -403,7 +464,7 @@ export default function ClassDetailPage() {
                                         {quiz.totalQuestions} pertanyaan
                                       </Badge>
                                     )}
-                                    {!isEnrolled && (
+                                    {!hasAccess && (
                                       <Lock className="h-3 w-3 text-muted-foreground" />
                                     )}
                                   </div>
@@ -437,17 +498,52 @@ export default function ClassDetailPage() {
             <CardContent className="space-y-6">
               {/* Enrollment Status */}
               {isAuthenticated && (
-                <div className="flex items-center gap-2 p-3 rounded-lg bg-muted">
-                  {isEnrolled ? (
+                <div className="flex items-center gap-2.5 p-3 rounded-lg bg-muted">
+                  {isClassTeacher ? (
                     <>
-                      <CheckCircle2 className="h-5 w-5 text-green-600" />
+                      <div className="min-w-0">
+                        <span className="text-sm font-semibold text-foreground block">
+                          Pengajar Kelas Ini
+                        </span>
+                        <span className="text-xs text-muted-foreground block">
+                          Anda memiliki akses penuh untuk mengelola kelas ini
+                        </span>
+                      </div>
+                    </>
+                  ) : enrollmentStatus === "PENDING" ? (
+                    <>
+                      <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 animate-pulse" />
+                      <div className="min-w-0">
+                        <span className="text-xs font-semibold text-amber-800 dark:text-amber-300 block">
+                          Menunggu Persetujuan Guru
+                        </span>
+                        <span className="text-[11px] text-muted-foreground block">
+                          Permohonan pendaftaran sedang ditinjau
+                        </span>
+                      </div>
+                    </>
+                  ) : enrollmentStatus === "REJECTED" ? (
+                    <>
+                      <XCircle className="h-5 w-5 text-rose-600 shrink-0" />
+                      <div className="min-w-0">
+                        <span className="text-xs font-semibold text-rose-700 dark:text-rose-400 block">
+                          Pendaftaran Ditolak
+                        </span>
+                        <span className="text-[11px] text-muted-foreground block">
+                          Silakan ajukan pendaftaran ulang
+                        </span>
+                      </div>
+                    </>
+                  ) : isEnrolled ? (
+                    <>
+                      <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
                       <span className="text-sm font-medium">
                         Anda terdaftar di kelas ini
                       </span>
                     </>
                   ) : (
                     <>
-                      <Lock className="h-5 w-5 text-muted-foreground" />
+                      <Lock className="h-5 w-5 text-muted-foreground shrink-0" />
                       <span className="text-sm font-medium">
                         Belum terdaftar
                       </span>
@@ -467,6 +563,50 @@ export default function ClassDetailPage() {
                     >
                       Login untuk Mendaftar
                     </Button>
+                  ) : isClassTeacher ? (
+                    <div className="space-y-2">
+                      <Button
+                        className="w-full bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 font-semibold"
+                        size="lg"
+                        variant="outline"
+                        onClick={() => router.push("/teacher/my-courses")}
+                      >
+                        <GraduationCap className="h-4 w-4 mr-2" />
+                        Kelola Kelas di Menu Guru
+                      </Button>
+                      <p className="text-[11px] text-center text-muted-foreground">
+                        Sebagai pengampu kelas, Anda tidak dapat mendaftar sebagai peserta pada kelas sendiri.
+                      </p>
+                    </div>
+                  ) : enrollmentStatus === "PENDING" ? (
+                    <div className="space-y-2">
+                      <Button
+                        className="w-full bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30 cursor-not-allowed"
+                        size="lg"
+                        variant="outline"
+                        disabled
+                      >
+                        <Clock className="h-4 w-4 mr-2 animate-pulse" />
+                        Menunggu Persetujuan Guru
+                      </Button>
+                      <p className="text-[11px] text-center text-muted-foreground">
+                        Pengajar akan meninjau permohonan Anda sebelum akses materi dibuka.
+                      </p>
+                    </div>
+                  ) : enrollmentStatus === "REJECTED" ? (
+                    <div className="space-y-2">
+                      <Button
+                        className="w-full"
+                        size="lg"
+                        onClick={handleEnroll}
+                        disabled={isEnrolling}
+                      >
+                        {isEnrolling ? "Memproses..." : "Ajukan Pendaftaran Ulang"}
+                      </Button>
+                      <p className="text-[11px] text-center text-rose-500">
+                        Permohonan sebelumnya belum disetujui.
+                      </p>
+                    </div>
                   ) : isEnrolled ? (
                     <Button
                       className="w-full"
@@ -484,7 +624,11 @@ export default function ClassDetailPage() {
                       onClick={handleEnroll}
                       disabled={isEnrolling}
                     >
-                      {isEnrolling ? "Mendaftar..." : "Daftar Sekarang"}
+                      {isEnrolling
+                        ? "Mendaftar..."
+                        : classData.registrationType === "MANUAL"
+                        ? "Ajukan Pendaftaran"
+                        : "Daftar Sekarang"}
                     </Button>
                   )}
                 </>
@@ -494,6 +638,16 @@ export default function ClassDetailPage() {
 
               {/* Class Stats */}
               <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">
+                    Mekanisme Masuk
+                  </span>
+                  <Badge variant="outline" className="text-xs font-normal">
+                    {classData.registrationType === "MANUAL"
+                      ? "Persetujuan Guru"
+                      : "Pendaftaran Terbuka"}
+                  </Badge>
+                </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">
                     Total Section
@@ -524,7 +678,7 @@ export default function ClassDetailPage() {
                 </div>
               </div>
 
-              {!isEnrolled && (
+              {!hasAccess && (
                 <>
                   <Separator />
                   <div className="p-4 bg-muted rounded-lg">
