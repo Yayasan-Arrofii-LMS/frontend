@@ -6,7 +6,17 @@ import { ClassCoverImage } from "@/components/class/class-cover-image";
 import { useSearchParams } from "next/navigation";
 import { ClassDetail } from "@/types/section";
 import { fetchClassDetail, reorderSections } from "@/lib/api/sections";
-import { ArrowLeft, Plus } from "lucide-react";
+import {
+  ArrowLeft,
+  Plus,
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  Check,
+  X,
+  Loader2,
+  AlertTriangle,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +29,17 @@ import { StudentsTable } from "@/components/class/students-table";
 import { ApplicantsTable } from "@/components/class/applicants-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/use-auth";
+import { approveClass, rejectClass } from "@/lib/api/classes";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   DndContext,
   closestCenter,
@@ -57,6 +78,41 @@ export function ClassDetailContent({ classId, basePath = "/course" }: ClassDetai
     sectionId: number;
     materialId?: number;
   } | null>(null);
+
+  const { user } = useAuth();
+  const [isProcessingApproval, setIsProcessingApproval] = useState(false);
+  const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
+  const [adminRejectionReason, setAdminRejectionReason] = useState("");
+
+  const handleAdminApprove = async () => {
+    if (!classDetail) return;
+    try {
+      setIsProcessingApproval(true);
+      await approveClass(classDetail.id);
+      toast.success("Kelas berhasil disetujui oleh Admin");
+      await loadClassDetail();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Gagal menyetujui kelas");
+    } finally {
+      setIsProcessingApproval(false);
+    }
+  };
+
+  const handleAdminReject = async () => {
+    if (!classDetail) return;
+    try {
+      setIsProcessingApproval(true);
+      await rejectClass(classDetail.id, adminRejectionReason.trim() || undefined);
+      toast.success("Kelas telah ditolak");
+      setIsRejectDialogOpen(false);
+      setAdminRejectionReason("");
+      await loadClassDetail();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Gagal menolak kelas");
+    } finally {
+      setIsProcessingApproval(false);
+    }
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -233,6 +289,24 @@ export function ClassDetailContent({ classId, basePath = "/course" }: ClassDetai
                   Pendaftaran Terbuka
                 </Badge>
               )}
+              {classDetail.approvalStatus === "PENDING" && (
+                <Badge variant="outline" className="text-xs bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  Menunggu Persetujuan Admin
+                </Badge>
+              )}
+              {classDetail.approvalStatus === "APPROVED" && (
+                <Badge variant="outline" className="text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3" />
+                  Disetujui Admin
+                </Badge>
+              )}
+              {classDetail.approvalStatus === "REJECTED" && (
+                <Badge variant="outline" className="text-xs bg-destructive/10 text-destructive border-destructive/30 flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  Ditolak Admin
+                </Badge>
+              )}
             </div>
             <p className="text-muted-foreground mb-4 break-all line-clamp-2">{classDetail.description}</p>
             <div className="flex gap-4 text-sm text-muted-foreground flex-wrap">
@@ -245,6 +319,69 @@ export function ClassDetailContent({ classId, basePath = "/course" }: ClassDetai
           </div>
         </div>
       </div>
+
+      {/* Approval Status Banners */}
+      {classDetail.approvalStatus === "REJECTED" && (
+        <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-destructive flex items-start gap-3 mb-6">
+          <AlertCircle className="h-5 w-5 mt-0.5 shrink-0" />
+          <div className="space-y-1">
+            <h4 className="font-semibold text-sm">Kelas Ditolak oleh Admin</h4>
+            <p className="text-sm text-destructive/90">
+              {classDetail.rejectionReason
+                ? `Alasan penolakan: "${classDetail.rejectionReason}"`
+                : "Kelas ini ditolak oleh Admin dan saat ini tidak dapat diakses atau didaftarkan oleh siswa."}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {classDetail.approvalStatus === "PENDING" && (
+        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 text-amber-700 dark:text-amber-300 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div className="flex items-start gap-3">
+            <Clock className="h-5 w-5 mt-0.5 shrink-0" />
+            <div className="space-y-1">
+              <h4 className="font-semibold text-sm">Menunggu Persetujuan Admin</h4>
+              <p className="text-sm text-amber-700/90 dark:text-amber-300/90">
+                {user?.role === "Admin"
+                  ? "Kelas ini diajukan oleh Guru dan memerlukan keputusan persetujuan Anda."
+                  : "Kelas ini telah diajukan dan sedang menunggu peninjauan oleh Admin. Setelah disetujui, kelas akan otomatis muncul di katalog dan dapat diikuti siswa."}
+              </p>
+            </div>
+          </div>
+          {user?.role === "Admin" && (
+            <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+              <Button
+                size="sm"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-8"
+                disabled={isProcessingApproval}
+                onClick={handleAdminApprove}
+              >
+                {isProcessingApproval ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <>
+                    <Check className="h-3.5 w-3.5 mr-1" />
+                    Setujui Kelas
+                  </>
+                )}
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                className="text-xs h-8"
+                disabled={isProcessingApproval}
+                onClick={() => {
+                  setAdminRejectionReason("");
+                  setIsRejectDialogOpen(true);
+                }}
+              >
+                <X className="h-3.5 w-3.5 mr-1" />
+                Tolak Kelas
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -352,6 +489,63 @@ export function ClassDetailContent({ classId, basePath = "/course" }: ClassDetai
         onAdd={handleSectionAdded}
         classId={classId}
       />
+
+      {/* Admin Reject Dialog */}
+      <Dialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Tolak Persetujuan Kelas
+            </DialogTitle>
+            <DialogDescription>
+              Apakah Anda yakin ingin menolak kelas{" "}
+              <span className="font-semibold text-foreground">
+                "{classDetail.title}"
+              </span>
+              ? Berikan alasan penolakan agar Guru dapat memperbaiki kelas ini.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-2 py-2">
+            <label className="text-sm font-medium">Alasan Penolakan (Opsional)</label>
+            <Textarea
+              placeholder="Contoh: Deskripsi kelas belum lengkap, materi belum memenuhi standar, dsb..."
+              value={adminRejectionReason}
+              onChange={(e) => setAdminRejectionReason(e.target.value)}
+              rows={4}
+              maxLength={500}
+            />
+            <p className="text-xs text-muted-foreground text-right">
+              {adminRejectionReason.length}/500 karakter
+            </p>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setIsRejectDialogOpen(false)}
+              disabled={isProcessingApproval}
+            >
+              Batal
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleAdminReject}
+              disabled={isProcessingApproval}
+            >
+              {isProcessingApproval ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Menolak...
+                </>
+              ) : (
+                "Tolak Kelas"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

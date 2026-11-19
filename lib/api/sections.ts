@@ -173,6 +173,11 @@ export async function fetchClassDetail(classId: string): Promise<ClassDetail> {
       categoryId: classInfo.categoryId ?? null,
       category: classInfo.category ?? null,
       registrationType: classInfo.registrationType || "AUTO",
+      approvalStatus: (classInfo as any).approvalStatus || "APPROVED",
+      rejectionReason: (classInfo as any).rejectionReason || null,
+      approvedById: (classInfo as any).approvedById || null,
+      approvedAt: (classInfo as any).approvedAt || null,
+      approver: (classInfo as any).approver || null,
       createdAt: new Date().toISOString(), // TODO: Get from API when available
       updatedAt: new Date().toISOString(), // TODO: Get from API when available
     };

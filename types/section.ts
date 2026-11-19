@@ -406,6 +406,11 @@ export interface ClassDetail {
   categoryId?: number | null;
   category?: { id: number; name: string } | string | null;
   registrationType?: "AUTO" | "MANUAL";
+  approvalStatus?: "PENDING" | "APPROVED" | "REJECTED";
+  rejectionReason?: string | null;
+  approvedById?: string | null;
+  approvedAt?: string | null;
+  approver?: { id: string; name: string } | null;
   sections: Section[];
   students: Student[];
   createdAt: string;

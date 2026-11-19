@@ -98,6 +98,10 @@ export async function fetchClasses(
         categoryId: apiClass.categoryId ?? null,
         category: (typeof apiClass.category === "object" && apiClass.category !== null) ? apiClass.category.name : (apiClass.category || null),
         registrationType: (apiClass as any).registrationType || "AUTO",
+        approvalStatus: (apiClass as any).approvalStatus || "APPROVED",
+        rejectionReason: (apiClass as any).rejectionReason || null,
+        approvedById: (apiClass as any).approvedById || null,
+        approvedAt: (apiClass as any).approvedAt || null,
       })
     );
 
@@ -179,6 +183,10 @@ export async function createClass(data: CreateClassRequest): Promise<Class> {
       categoryId: apiClass.categoryId ?? null,
       category: (typeof apiClass.category === "object" && apiClass.category !== null) ? apiClass.category.name : (apiClass.category || null),
       registrationType: apiClass.registrationType || "AUTO",
+      approvalStatus: apiClass.approvalStatus || "PENDING",
+      rejectionReason: apiClass.rejectionReason || null,
+      approvedById: apiClass.approvedById || null,
+      approvedAt: apiClass.approvedAt || null,
     };
 
     return newClass;
@@ -254,6 +262,10 @@ export async function updateClass(
       categoryId: apiClass.categoryId ?? null,
       category: (typeof apiClass.category === "object" && apiClass.category !== null) ? apiClass.category.name : (apiClass.category || null),
       registrationType: apiClass.registrationType || "AUTO",
+      approvalStatus: apiClass.approvalStatus || "PENDING",
+      rejectionReason: apiClass.rejectionReason || null,
+      approvedById: apiClass.approvedById || null,
+      approvedAt: apiClass.approvedAt || null,
     };
 
     return updatedClass;
@@ -339,6 +351,11 @@ export async function getClassById(id: string): Promise<Class> {
       categoryId: apiClass.categoryId ?? null,
       category: (typeof apiClass.category === "object" && apiClass.category !== null) ? apiClass.category.name : (apiClass.category || null),
       registrationType: apiClass.registrationType || "AUTO",
+      approvalStatus: apiClass.approvalStatus || "APPROVED",
+      rejectionReason: apiClass.rejectionReason || null,
+      approvedById: apiClass.approvedById || null,
+      approvedAt: apiClass.approvedAt || null,
+      approver: apiClass.approver || null,
     };
 
     return classData;
@@ -477,6 +494,8 @@ export async function fetchPublicClassDetail(classId: string): Promise<{
       categoryId: apiClass.categoryId ?? null,
       category: (typeof apiClass.category === "object" && apiClass.category !== null) ? apiClass.category.name : (apiClass.category || null),
       registrationType: apiClass.registrationType || "AUTO",
+      approvalStatus: apiClass.approvalStatus || "APPROVED",
+      rejectionReason: apiClass.rejectionReason || null,
     };
 
     // Transform sections from API format
@@ -583,6 +602,8 @@ export async function fetchStudentClassDetail(classId: string): Promise<{
       categoryId: apiClass.categoryId ?? null,
       category: (typeof apiClass.category === "object" && apiClass.category !== null) ? apiClass.category.name : (apiClass.category || null),
       registrationType: apiClass.registrationType || "AUTO",
+      approvalStatus: apiClass.approvalStatus || "APPROVED",
+      rejectionReason: apiClass.rejectionReason || null,
     };
 
     // Transform sections from API format
@@ -620,6 +641,180 @@ export async function fetchStudentClassDetail(classId: string): Promise<{
       sections,
       isEnrolled: apiClass.isEnrolled || false,
       enrollmentStatus: apiClass.enrollmentStatus || null,
+    };
+  } catch (error) {
+    throw handleApiError(error);
+  }
+}
+
+/**
+ * Fetch pending classes waiting for Admin approval
+ */
+export async function fetchPendingClasses(
+  page: number = 1,
+  limit: number = 10,
+  search?: string
+): Promise<{
+  classes: Class[];
+  meta: ClassesApiResponse["meta"];
+}> {
+  try {
+    const token = await getToken();
+
+    if (!token) {
+      throw new ApiError("Authentication required", 401);
+    }
+
+    const url = new URL(`${BASE_URL}/classes/pending`);
+    url.searchParams.append("page", page.toString());
+    url.searchParams.append("limit", limit.toString());
+    if (search && search.trim() !== "") {
+      url.searchParams.append("search", search.trim());
+    }
+
+    const response = await fetch(url.toString(), {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      throw new ApiError(
+        data.message || `Failed to fetch pending classes (${response.status})`,
+        response.status
+      );
+    }
+
+    const classes: Class[] = (data.data || []).map((apiClass: any) => ({
+      id: apiClass.id.toString(),
+      title: apiClass.name,
+      description: apiClass.description,
+      coverImage: normalizeImageUrl(apiClass.image_path_relative || apiClass.image_path),
+      teacherId: apiClass.teachers?.[0]?.id || "unknown",
+      teacherName: apiClass.teachers?.[0]?.name || "Unknown Teacher",
+      teachers: apiClass.teachers || [],
+      createdAt: apiClass.createdAt || new Date().toISOString(),
+      updatedAt: apiClass.updatedAt || new Date().toISOString(),
+      studentCount: 0,
+      categoryId: apiClass.categoryId ?? null,
+      category: (typeof apiClass.category === "object" && apiClass.category !== null) ? apiClass.category.name : (apiClass.category || null),
+      registrationType: apiClass.registrationType || "AUTO",
+      approvalStatus: apiClass.approvalStatus || "PENDING",
+      rejectionReason: apiClass.rejectionReason || null,
+      approvedById: apiClass.approvedById || null,
+      approvedAt: apiClass.approvedAt || null,
+    }));
+
+    return {
+      classes,
+      meta: data.meta || {
+        itemCount: classes.length,
+        totalItems: classes.length,
+        itemsPerPage: limit,
+        totalPages: 1,
+        currentPage: page,
+      },
+    };
+  } catch (error) {
+    throw handleApiError(error);
+  }
+}
+
+/**
+ * Approve a pending class (Admin only)
+ */
+export async function approveClass(classId: string | number): Promise<Class> {
+  try {
+    const token = await getToken();
+
+    if (!token) {
+      throw new ApiError("Authentication required", 401);
+    }
+
+    const response = await fetch(`${BASE_URL}/classes/${classId}/approve`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      throw new ApiError(
+        data.message || `Failed to approve class (${response.status})`,
+        response.status
+      );
+    }
+
+    const apiClass = data.data;
+    return {
+      id: apiClass.id.toString(),
+      title: apiClass.name,
+      description: apiClass.description,
+      coverImage: normalizeImageUrl(apiClass.image_path_relative || apiClass.image_path),
+      teacherId: "unknown",
+      teacherName: "Unknown",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      approvalStatus: apiClass.approvalStatus,
+      rejectionReason: apiClass.rejectionReason || null,
+    };
+  } catch (error) {
+    throw handleApiError(error);
+  }
+}
+
+/**
+ * Reject a pending class (Admin only)
+ */
+export async function rejectClass(
+  classId: string | number,
+  rejectionReason?: string
+): Promise<Class> {
+  try {
+    const token = await getToken();
+
+    if (!token) {
+      throw new ApiError("Authentication required", 401);
+    }
+
+    const response = await fetch(`${BASE_URL}/classes/${classId}/reject`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ rejectionReason }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      throw new ApiError(
+        data.message || `Failed to reject class (${response.status})`,
+        response.status
+      );
+    }
+
+    const apiClass = data.data;
+    return {
+      id: apiClass.id.toString(),
+      title: apiClass.name,
+      description: apiClass.description,
+      coverImage: normalizeImageUrl(apiClass.image_path_relative || apiClass.image_path),
+      teacherId: "unknown",
+      teacherName: "Unknown",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      approvalStatus: apiClass.approvalStatus,
+      rejectionReason: apiClass.rejectionReason || null,
     };
   } catch (error) {
     throw handleApiError(error);

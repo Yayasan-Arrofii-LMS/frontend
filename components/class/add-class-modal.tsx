@@ -208,7 +208,11 @@ export function AddClassModal({ isOpen, onClose, onAdd }: AddClassModalProps) {
         coverImage,
       });
       onAdd(newClass);
-      toast.success("Kelas baru berhasil dibuat");
+      if (newClass.approvalStatus === "PENDING") {
+        toast.success("Kelas berhasil dibuat dan menunggu persetujuan Admin");
+      } else {
+        toast.success("Kelas baru berhasil dibuat");
+      }
 
       // Reset form
       setFormData({
@@ -540,6 +544,14 @@ export function AddClassModal({ isOpen, onClose, onAdd }: AddClassModalProps) {
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* Approval Notice */}
+            <div className="rounded-md border border-muted bg-muted/40 p-3 text-xs text-muted-foreground flex items-start gap-2">
+              <span className="font-semibold text-foreground shrink-0">Catatan:</span>
+              <span>
+                Kelas yang dibuat Guru memerlukan peninjauan dan persetujuan Admin terlebih dahulu sebelum ditampilkan di katalog publik dan dapat diikuti oleh siswa.
+              </span>
             </div>
           </div>
 

@@ -16,6 +16,14 @@ export interface Class {
   categoryId?: number | null;
   category?: string | { id: number; name: string } | null;
   registrationType?: "AUTO" | "MANUAL";
+  approvalStatus?: "PENDING" | "APPROVED" | "REJECTED";
+  rejectionReason?: string | null;
+  approvedById?: string | null;
+  approvedAt?: string | null;
+  approver?: {
+    id: string;
+    name: string;
+  } | null;
 }
 
 // API Response Types
@@ -33,6 +41,14 @@ export interface ApiClass {
     name: string;
   } | null;
   registrationType?: "AUTO" | "MANUAL";
+  approvalStatus?: "PENDING" | "APPROVED" | "REJECTED";
+  rejectionReason?: string | null;
+  approvedById?: string | null;
+  approvedAt?: string | null;
+  approver?: {
+    id: string;
+    name: string;
+  } | null;
   teacher?: {
     id: string;
     name: string;

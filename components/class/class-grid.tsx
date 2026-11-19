@@ -200,8 +200,8 @@ export function ClassGrid({
                     src={classItem.coverImage}
                     alt={classItem.title}
                   />
-                  {classItem.category && (
-                    <div className="absolute top-2.5 left-2.5 z-10">
+                  <div className="absolute top-2.5 left-2.5 z-10 flex flex-col gap-1 items-start">
+                    {classItem.category && (
                       <Badge
                         variant="secondary"
                         className="backdrop-blur-md bg-background/85 font-medium text-xs shadow-xs border-0"
@@ -210,8 +210,24 @@ export function ClassGrid({
                           ? classItem.category
                           : classItem.category.name}
                       </Badge>
-                    </div>
-                  )}
+                    )}
+                    {classItem.approvalStatus === "PENDING" && (
+                      <Badge
+                        variant="secondary"
+                        className="backdrop-blur-md bg-amber-500 text-white font-medium text-xs shadow-xs border-0"
+                      >
+                        Menunggu Persetujuan
+                      </Badge>
+                    )}
+                    {classItem.approvalStatus === "REJECTED" && (
+                      <Badge
+                        variant="secondary"
+                        className="backdrop-blur-md bg-destructive text-white font-medium text-xs shadow-xs border-0"
+                      >
+                        Ditolak Admin
+                      </Badge>
+                    )}
+                  </div>
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent pointer-events-none" />
                   {/* Action Menu */}
                   <DropdownMenu>
@@ -257,6 +273,11 @@ export function ClassGrid({
                   <p className="text-sm text-muted-foreground line-clamp-2">
                     {classItem.description}
                   </p>
+                  {classItem.approvalStatus === "REJECTED" && classItem.rejectionReason && (
+                    <div className="text-xs text-destructive bg-destructive/10 rounded px-2.5 py-1.5 mt-2 line-clamp-2">
+                      <span className="font-medium">Alasan penolakan:</span> {classItem.rejectionReason}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))}

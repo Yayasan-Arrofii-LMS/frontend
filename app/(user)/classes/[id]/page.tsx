@@ -176,6 +176,11 @@ export default function ClassDetailPage() {
       return;
     }
 
+    if (classData?.approvalStatus && classData.approvalStatus !== "APPROVED") {
+      toast.error("Kelas ini belum disetujui oleh Admin dan tidak dapat didaftarkan");
+      return;
+    }
+
     try {
       setIsEnrolling(true);
       const res = await enrollClass(parseInt(classId));
@@ -555,7 +560,22 @@ export default function ClassDetailPage() {
               {/* Enrollment Button */}
               {!authLoading && (
                 <>
-                  {!isAuthenticated ? (
+                  {classData.approvalStatus && classData.approvalStatus !== "APPROVED" ? (
+                    <div className="space-y-2">
+                      <Button
+                        className="w-full bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30 cursor-not-allowed"
+                        size="lg"
+                        variant="outline"
+                        disabled
+                      >
+                        <Clock className="h-4 w-4 mr-2" />
+                        Menunggu Persetujuan Admin
+                      </Button>
+                      <p className="text-[11px] text-center text-muted-foreground">
+                        Kelas ini masih dalam peninjauan Admin dan belum dapat diikuti.
+                      </p>
+                    </div>
+                  ) : !isAuthenticated ? (
                     <Button
                       className="w-full"
                       size="lg"
