@@ -147,16 +147,16 @@ export function AdminApprovalQueue({ onCountChange }: AdminApprovalQueueProps) {
   };
 
   return (
-    <div className="space-y-6">
-      <Card>
+    <div className="space-y-6 w-full min-w-0 max-w-full">
+      <Card className="w-full min-w-0 max-w-full overflow-hidden">
         <CardHeader className="pb-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <CardTitle className="text-xl flex items-center gap-2">
-                <Clock className="h-5 w-5 text-amber-500" />
-                Antrean Persetujuan Kelas Guru
+              <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
+                <Clock className="h-5 w-5 text-amber-500 shrink-0" />
+                <span>Antrean Persetujuan Kelas Guru</span>
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-xs sm:text-sm mt-1">
                 Kelas yang dibuat oleh Guru memerlukan peninjauan dan persetujuan Admin sebelum dapat diakses siswa.
               </CardDescription>
             </div>
@@ -165,16 +165,16 @@ export function AdminApprovalQueue({ onCountChange }: AdminApprovalQueueProps) {
               size="sm"
               onClick={loadPendingClasses}
               disabled={isLoading || isProcessing}
-              className="shrink-0"
+              className="shrink-0 self-start sm:self-auto"
             >
               <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
               Segarkan
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 w-full min-w-0 max-w-full">
           {/* Search bar */}
-          <div className="relative max-w-sm">
+          <div className="relative w-full sm:max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Cari kelas atau nama guru..."
@@ -205,16 +205,16 @@ export function AdminApprovalQueue({ onCountChange }: AdminApprovalQueueProps) {
               </p>
             </div>
           ) : (
-            <div className="rounded-md border overflow-x-auto">
-              <Table>
+            <div className="rounded-md border w-full min-w-0 overflow-x-auto">
+              <Table className="min-w-[700px] w-full">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[300px]">Kelas</TableHead>
-                    <TableHead>Guru Pengajar</TableHead>
-                    <TableHead>Kategori</TableHead>
-                    <TableHead>Mekanisme Pendaftaran</TableHead>
-                    <TableHead>Tanggal Pengajuan</TableHead>
-                    <TableHead className="text-right">Aksi</TableHead>
+                    <TableHead className="w-[30%] min-w-[180px]">Kelas</TableHead>
+                    <TableHead className="min-w-[140px]">Guru Pengajar</TableHead>
+                    <TableHead className="whitespace-nowrap">Kategori</TableHead>
+                    <TableHead className="whitespace-nowrap">Mekanisme</TableHead>
+                    <TableHead className="whitespace-nowrap">Tanggal</TableHead>
+                    <TableHead className="text-right whitespace-nowrap">Aksi</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -228,12 +228,12 @@ export function AdminApprovalQueue({ onCountChange }: AdminApprovalQueueProps) {
                     return (
                       <TableRow key={cls.id}>
                         <TableCell>
-                          <div className="flex items-center gap-3">
-                            <div className="relative h-12 w-16 rounded overflow-hidden shrink-0 bg-muted">
+                          <div className="flex items-center gap-2.5">
+                            <div className="relative h-10 w-14 rounded overflow-hidden shrink-0 bg-muted">
                               <ClassCoverImage src={cls.coverImage} alt={cls.title} />
                             </div>
-                            <div className="min-w-0">
-                              <div className="font-medium line-clamp-1">{cls.title}</div>
+                            <div className="min-w-0 flex-1">
+                              <div className="font-medium line-clamp-1 text-sm">{cls.title}</div>
                               <p className="text-xs text-muted-foreground line-clamp-1">
                                 {cls.description}
                               </p>
@@ -241,14 +241,14 @@ export function AdminApprovalQueue({ onCountChange }: AdminApprovalQueueProps) {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div>
-                            <div className="font-medium text-sm">{teacher.name}</div>
+                          <div className="min-w-0">
+                            <div className="font-medium text-sm line-clamp-1">{teacher.name}</div>
                             {teacher.email && (
-                              <div className="text-xs text-muted-foreground">{teacher.email}</div>
+                              <div className="text-xs text-muted-foreground line-clamp-1">{teacher.email}</div>
                             )}
                           </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="whitespace-nowrap">
                           {cls.category ? (
                             <Badge variant="secondary" className="font-normal text-xs">
                               {typeof cls.category === "object" ? cls.category.name : cls.category}
@@ -257,7 +257,7 @@ export function AdminApprovalQueue({ onCountChange }: AdminApprovalQueueProps) {
                             <span className="text-xs text-muted-foreground">-</span>
                           )}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="whitespace-nowrap">
                           {cls.registrationType === "MANUAL" ? (
                             <Badge
                               variant="outline"
@@ -274,15 +274,15 @@ export function AdminApprovalQueue({ onCountChange }: AdminApprovalQueueProps) {
                             </Badge>
                           )}
                         </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
+                        <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                           {new Date(cls.createdAt).toLocaleDateString("id-ID", {
                             day: "numeric",
                             month: "short",
                             year: "numeric",
                           })}
                         </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-2">
+                        <TableCell className="text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-1.5">
                             <Button
                               variant="ghost"
                               size="sm"
@@ -297,7 +297,7 @@ export function AdminApprovalQueue({ onCountChange }: AdminApprovalQueueProps) {
                             <Button
                               variant="default"
                               size="sm"
-                              className="h-8 bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
+                              className="h-8 px-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
                               disabled={isProcessing}
                               onClick={() => handleApprove(cls)}
                             >
@@ -313,7 +313,7 @@ export function AdminApprovalQueue({ onCountChange }: AdminApprovalQueueProps) {
                             <Button
                               variant="destructive"
                               size="sm"
-                              className="h-8 text-xs"
+                              className="h-8 px-2.5 text-xs"
                               disabled={isProcessing}
                               onClick={() => handleOpenRejectModal(cls)}
                             >

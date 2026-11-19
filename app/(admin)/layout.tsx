@@ -47,7 +47,7 @@ export default async function DashboardLayout({
       }
     >
       <AppSidebar variant="inset" user={userProfile} />
-      <SidebarInset>
+      <SidebarInset className="min-w-0 max-w-full overflow-x-hidden">
         <SiteHeader user={userProfile} hideUserProfile={true} />
         {children}
       </SidebarInset>

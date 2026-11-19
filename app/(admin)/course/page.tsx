@@ -25,8 +25,8 @@ export default function CoursePage() {
   }, []);
 
   return (
-    <div className="container mx-auto px-4 py-6 md:px-6">
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+    <div className="w-full min-w-0 max-w-full px-4 py-6 md:px-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full min-w-0 space-y-6">
         <div className="flex items-center justify-between border-b pb-3 flex-wrap gap-4">
           <TabsList className="bg-muted">
             <TabsTrigger value="all" className="flex items-center gap-2">
@@ -48,11 +48,11 @@ export default function CoursePage() {
           </TabsList>
         </div>
 
-        <TabsContent value="all" className="mt-0">
+        <TabsContent value="all" className="mt-0 w-full min-w-0">
           <ClassManagementContent basePath="/course" />
         </TabsContent>
 
-        <TabsContent value="pending" className="mt-0">
+        <TabsContent value="pending" className="mt-0 w-full min-w-0">
           <AdminApprovalQueue onCountChange={setPendingCount} />
         </TabsContent>
       </Tabs>
