@@ -69,3 +69,47 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const cookieStore = await cookies();
+    let token = cookieStore.get("auth_token")?.value;
+
+    if (!token) {
+      const authHeader = request.headers.get("Authorization");
+      if (authHeader && authHeader.startsWith("Bearer ")) {
+        token = authHeader.substring(7);
+      }
+    }
+
+    if (!token) {
+      return NextResponse.json(
+        { success: false, message: "Not authenticated", data: null },
+        { status: 401 }
+      );
+    }
+
+    const body = await request.json();
+    const API_BASE_URL =
+      process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001/api/v1";
+
+    const response = await fetch(`${API_BASE_URL}/profile`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(body),
+    });
+
+    const data = await response.json();
+    return NextResponse.json(data, { status: response.status });
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : "Internal server error";
+    return NextResponse.json(
+      { success: false, message: errorMessage, data: null },
+      { status: 500 }
+    );
+  }
+}

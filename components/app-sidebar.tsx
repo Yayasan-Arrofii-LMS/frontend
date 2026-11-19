@@ -3,18 +3,9 @@
 import * as React from "react";
 import {
   IconCalendarEvent,
-  IconCamera,
   IconChartBar,
   IconDashboard,
-  IconDatabase,
-  IconFileAi,
-  IconFileDescription,
-  IconFileWord,
-  IconHelp,
   IconListDetails,
-  IconReport,
-  IconSearch,
-  IconSettings,
 } from "@tabler/icons-react";
 
 import { NavMain } from "@/components/nav-main";
@@ -53,88 +44,6 @@ const data = {
       title: "Workshop",
       url: "/workshop",
       icon: IconCalendarEvent,
-    },
-  ],
-  navClouds: [
-    {
-      title: "Tangkapan",
-      icon: IconCamera,
-      isActive: true,
-      url: "#",
-      items: [
-        {
-          title: "Proposal Aktif",
-          url: "#",
-        },
-        {
-          title: "Arsip",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Proposal",
-      icon: IconFileDescription,
-      url: "#",
-      items: [
-        {
-          title: "Proposal Aktif",
-          url: "#",
-        },
-        {
-          title: "Arsip",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Prompt",
-      icon: IconFileAi,
-      url: "#",
-      items: [
-        {
-          title: "Proposal Aktif",
-          url: "#",
-        },
-        {
-          title: "Arsip",
-          url: "#",
-        },
-      ],
-    },
-  ],
-  navSecondary: [
-    {
-      title: "Pengaturan",
-      url: "#",
-      icon: IconSettings,
-    },
-    {
-      title: "Bantuan",
-      url: "#",
-      icon: IconHelp,
-    },
-    {
-      title: "Cari",
-      url: "#",
-      icon: IconSearch,
-    },
-  ],
-  documents: [
-    {
-      name: "Perpustakaan Data",
-      url: "#",
-      icon: IconDatabase,
-    },
-    {
-      name: "Laporan",
-      url: "#",
-      icon: IconReport,
-    },
-    {
-      name: "Asisten Kata",
-      url: "#",
-      icon: IconFileWord,
     },
   ],
 };

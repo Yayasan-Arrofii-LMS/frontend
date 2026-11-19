@@ -36,10 +36,7 @@ export function PublicNavbar() {
   const navLinks = [
     { href: "/home", label: "Beranda" },
     { href: "/classes", label: "Kelas" },
-    {
-      href: isAuthenticated ? "/workshops" : "/login",
-      label: "Workshop",
-    },
+    { href: "/workshops", label: "Workshop" },
     ...(isAuthenticated ? [{ href: "/my-classes", label: "Kelas Saya" }] : []),
     { href: "/about", label: "Tentang Kami" },
   ];
@@ -122,6 +119,10 @@ export function PublicNavbar() {
                         <DropdownMenuSeparator />
                       </>
                     )}
+                    <DropdownMenuItem asChild>
+                      <Link href="/profile">Pengaturan Akun</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
                   </>
                 ) : (
                   <>
@@ -133,6 +134,10 @@ export function PublicNavbar() {
                         </p>
                       </div>
                     </div>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link href="/profile">Pengaturan Akun</Link>
+                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
                   </>
                 )}
