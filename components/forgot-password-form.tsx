@@ -1,1 +1,3 @@
-﻿export { ForgotPasswordForm } from './auth/forgot-password-form';
+"use client";
+
+export { ForgotPasswordForm } from "./auth/forgot-password-form";

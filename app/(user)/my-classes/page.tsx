@@ -16,6 +16,14 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/use-auth";
 import { useRecommendations } from "@/hooks/use-recommendations";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import {
   BookOpen,
@@ -79,6 +87,10 @@ export default function MyClassesPage() {
   // Dialog State
   const [whyMaterial, setWhyMaterial] = useState<RecommendedMaterial | null>(null);
   const [viewingMaterial, setViewingMaterial] = useState<RecommendedMaterial | null>(null);
+  const [unregisteredClassInfo, setUnregisteredClassInfo] = useState<{
+    material: RecommendedMaterial | null;
+    targetClassId?: number;
+  } | null>(null);
 
   // Auth Protection
   useEffect(() => {
@@ -125,10 +137,29 @@ export default function MyClassesPage() {
       }
     }
 
-    if (targetClassId && !isNaN(targetMaterialId)) {
-      router.push(`/classes/${targetClassId}/materials/${targetMaterialId}?from=my-classes`);
+    // Periksa apakah siswa sudah terdaftar pada kelas tersebut
+    const isEnrolled = classes.some((c) => c.classId === targetClassId);
+
+    if (targetClassId && isEnrolled && !isNaN(targetMaterialId)) {
+      router.push(
+        `/classes/${targetClassId}/materials/${targetMaterialId}?from=my-classes`
+      );
     } else {
-      toast.error("Kelas untuk materi ini tidak ditemukan atau belum terdaftar");
+      // Kelas belum diikuti atau belum terdaftar: Berikan opsi daftar kelas tanpa dead-end
+      setUnregisteredClassInfo({ material, targetClassId });
+
+      toast.info("Kelas belum terdaftar", {
+        description: `Materi "${material.title}" merupakan bagian dari kelas yang belum Anda ikuti.`,
+        action: {
+          label: targetClassId ? "Lihat & Daftar Kelas" : "Jelajahi Kelas",
+          onClick: () =>
+            router.push(
+              targetClassId
+                ? `/classes/${targetClassId}?from=my-classes`
+                : "/classes?from=my-classes"
+            ),
+        },
+      });
     }
   };
 
@@ -704,6 +735,42 @@ export default function MyClassesPage() {
         onMarkCompleted={handleMarkCompleted}
         onNavigateToMaterial={handleNavigateToMaterial}
       />
+
+      {/* Dialog Kelas Belum Terdaftar (Anti Dead-End) */}
+      <Dialog
+        open={!!unregisteredClassInfo}
+        onOpenChange={(open) => !open && setUnregisteredClassInfo(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Kelas Belum Terdaftar</DialogTitle>
+            <DialogDescription>
+              Materi &quot;{unregisteredClassInfo?.material?.title}&quot; merupakan bagian dari silabus kelas yang belum Anda ikuti. Silakan buka halaman kelas untuk mendaftar terlebih dahulu agar materi dan kuis dapat diakses.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0 pt-3">
+            <Button
+              variant="outline"
+              onClick={() => setUnregisteredClassInfo(null)}
+            >
+              Nanti Saja
+            </Button>
+            <Button
+              onClick={() => {
+                const targetId = unregisteredClassInfo?.targetClassId;
+                setUnregisteredClassInfo(null);
+                if (targetId) {
+                  router.push(`/classes/${targetId}?from=my-classes`);
+                } else {
+                  router.push("/classes?from=my-classes");
+                }
+              }}
+            >
+              Lihat & Daftar Kelas
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

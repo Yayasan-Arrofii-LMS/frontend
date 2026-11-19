@@ -1,1 +1,3 @@
-﻿export { SignupForm } from './auth/signup-form';
+"use client";
+
+export { SignupForm } from "./auth/signup-form";

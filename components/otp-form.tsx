@@ -1,1 +1,3 @@
-﻿export { OTPForm, OTPForm as OtpForm } from "./auth/otp-form";
+"use client";
+
+export { OTPForm, OTPForm as OtpForm } from "./auth/otp-form";

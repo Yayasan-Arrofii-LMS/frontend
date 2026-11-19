@@ -5,7 +5,7 @@ import type { NextRequest } from "next/server";
 const adminTeacherRoutes = ["/dashboard", "/course", "/teacher", "/workshop"];
 
 // Routes user yang akan redirect ke login jika tidak ada token
-const userProtectedRoutes = ["/my-classes", "/workshops"];
+const userProtectedRoutes = ["/my-classes", "/profile", "/settings"];
 
 // Routes yang hanya bisa diakses ketika belum login
 const authRoutes = [
@@ -25,7 +25,11 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Get token from cookie or check if it exists in localStorage (client-side)
-  const token = request.cookies.get("auth_token")?.value;
+  const rawToken = request.cookies.get("auth_token")?.value;
+  const token =
+    rawToken && rawToken !== "undefined" && rawToken !== "null" && rawToken.trim() !== ""
+      ? rawToken
+      : undefined;
 
   // Check if accessing admin/teacher route
   const isAdminTeacherRoute = adminTeacherRoutes.some((route) =>
@@ -54,9 +58,34 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Redirect to dashboard if accessing auth route with token
+  // Redirect based on role if accessing auth route with token
   if (isAuthRoute && token) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    let role = request.cookies.get("user_role")?.value?.toLowerCase();
+
+    // Fallback: decode role from JWT payload if user_role cookie is missing
+    if (!role) {
+      try {
+        const parts = token.split(".");
+        if (parts.length === 3) {
+          const payload = JSON.parse(
+            Buffer.from(parts[1], "base64").toString("utf-8")
+          );
+          if (payload?.role) {
+            role = String(payload.role).toLowerCase();
+          }
+        }
+      } catch {
+        // Ignore JWT parse error
+      }
+    }
+
+    if (role === "admin" || role === "superadmin") {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    } else if (role === "teacher") {
+      return NextResponse.redirect(new URL("/teacher/my-courses", request.url));
+    } else {
+      return NextResponse.redirect(new URL("/home", request.url));
+    }
   }
 
   return NextResponse.next();

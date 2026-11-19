@@ -1,4 +1,4 @@
-﻿import { getAuthToken, removeAuthToken } from "./auth";
+import { getAuthToken, removeAuthToken } from "./auth";
 import { ApiError, handleApiError } from "@/lib/errors";
 
 export { ApiError, handleApiError };
@@ -40,12 +40,6 @@ export async function authenticatedFetch<T = unknown>(
     // Handle 401 Unauthorized - token expired or invalid
     if (response.status === 401) {
       removeAuthToken();
-
-      // Redirect to login if in browser
-      if (typeof window !== "undefined") {
-        window.location.href = "/login";
-      }
-
       throw new ApiError("Unauthorized. Please login again.", 401);
     }
 

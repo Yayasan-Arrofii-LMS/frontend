@@ -1,1 +1,3 @@
-﻿export { LoginForm } from './auth/login-form';
+"use client";
+
+export { LoginForm } from "./auth/login-form";

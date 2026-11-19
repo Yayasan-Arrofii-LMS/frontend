@@ -174,6 +174,13 @@ export function setAuthToken(
       60 * 60 * 24 * 7
     }`; // 7 days
 
+    // Store user role in cookie for middleware role-based routing
+    if (userInfo?.role) {
+      document.cookie = `user_role=${encodeURIComponent(
+        userInfo.role.toLowerCase()
+      )}; path=/; max-age=${60 * 60 * 24 * 7}`;
+    }
+
     // Dispatch event to notify components
     window.dispatchEvent(new Event("auth-changed"));
   }
@@ -181,7 +188,11 @@ export function setAuthToken(
 
 export function getAuthToken(): string | null {
   if (typeof window !== "undefined") {
-    return localStorage.getItem("auth_token");
+    const token = localStorage.getItem("auth_token");
+    if (!token || token === "undefined" || token === "null" || token.trim() === "") {
+      return null;
+    }
+    return token;
   }
   return null;
 }
@@ -209,8 +220,9 @@ export function removeAuthToken() {
   if (typeof window !== "undefined") {
     localStorage.removeItem("auth_token");
     localStorage.removeItem("user_info");
-    // Also remove from cookie
+    // Also remove from cookies
     document.cookie = "auth_token=; path=/; max-age=0";
+    document.cookie = "user_role=; path=/; max-age=0";
 
     // Dispatch event to notify components
     window.dispatchEvent(new Event("auth-changed"));

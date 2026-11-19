@@ -1,1 +1,3 @@
-﻿export { ResetPasswordForm } from './auth/reset-password-form';
+"use client";
+
+export { ResetPasswordForm } from "./auth/reset-password-form";
