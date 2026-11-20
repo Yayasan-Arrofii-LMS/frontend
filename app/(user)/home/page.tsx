@@ -30,6 +30,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { TeacherApplicationModal } from "@/components/teacher";
 
 export default function HomePage() {
   const currentYear = new Date().getFullYear();
@@ -38,6 +39,7 @@ export default function HomePage() {
   const [isLoadingClasses, setIsLoadingClasses] = useState(true);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
   const [showTeacherPortalDialog, setShowTeacherPortalDialog] = useState(false);
+  const [showTeacherApplicationModal, setShowTeacherApplicationModal] = useState(false);
   const router = useRouter();
 
   const handleClassClick = (classId: string, e: React.MouseEvent) => {
@@ -70,8 +72,7 @@ export default function HomePage() {
 
   const handleTeacherRegister = () => {
     setShowTeacherPortalDialog(false);
-    window.location.href =
-      "mailto:umartaufiq8284@ugm.ac.id?subject=Pendaftaran Akun Guru LMS Sekolah Alam&body=Halo, saya ingin mendaftar sebagai guru di LMS Sekolah Alam.%0D%0A%0D%0ANama:%0D%0AEmail:%0D%0ANomor Telepon:%0D%0A%0D%0ATerima kasih.";
+    setShowTeacherApplicationModal(true);
   };
 
   const handleStudentDashboardClick = () => {
@@ -344,7 +345,7 @@ export default function HomePage() {
               onClick={handleTeacherRegister}
               className="w-full"
             >
-              Belum Punya Akun (Daftar via Email)
+              Daftar Menjadi Guru
             </Button>
           </div>
           <AlertDialogFooter>
@@ -354,6 +355,11 @@ export default function HomePage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <TeacherApplicationModal
+        isOpen={showTeacherApplicationModal}
+        onClose={() => setShowTeacherApplicationModal(false)}
+      />
     </div>
   );
 }
