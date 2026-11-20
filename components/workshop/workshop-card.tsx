@@ -6,26 +6,35 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
-  CardContent,
 } from "@/components/ui/card";
 import {
   Video,
   MapPin,
   CheckCircle2,
+  Clock,
+  XCircle,
   ArrowRight,
   Pencil,
   Trash2,
   Users,
+  Check,
+  X,
+  AlertTriangle,
 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { Workshop } from "@/types/workshop";
+import { Workshop, RegistrationStatus } from "@/types/workshop";
 import { normalizeImageUrl, cn } from "@/lib/utils";
 
 interface WorkshopCardProps {
   workshop: Workshop;
   isRegistered?: boolean;
-  onRegisterClick?: (workshop: Workshop) => void;
+  userRegistrationStatus?: RegistrationStatus;
+  showApprovalStatus?: boolean;
   showAdminActions?: boolean;
+  showApprovalActions?: boolean;
+  onApproveClick?: (workshop: Workshop) => void;
+  onRejectClick?: (workshop: Workshop) => void;
+  onRegisterClick?: (workshop: Workshop) => void;
   onEditClick?: (workshop: Workshop) => void;
   onDeleteClick?: (workshop: Workshop) => void;
   onParticipantsClick?: (workshop: Workshop) => void;
@@ -36,7 +45,12 @@ interface WorkshopCardProps {
 export function WorkshopCard({
   workshop,
   isRegistered = false,
+  userRegistrationStatus,
+  showApprovalStatus = false,
   showAdminActions = false,
+  showApprovalActions = false,
+  onApproveClick,
+  onRejectClick,
   onEditClick,
   onDeleteClick,
   onParticipantsClick,
@@ -76,6 +90,9 @@ export function WorkshopCard({
     from ? `?from=${encodeURIComponent(from)}` : ""
   }`;
 
+  // Tentukan badge status pendaftaran
+  const regStatus = userRegistrationStatus || (isRegistered ? "APPROVED" : undefined);
+
   return (
     <Card
       onClick={onCardClick ? handleCardClick : undefined}
@@ -97,8 +114,8 @@ export function WorkshopCard({
             unoptimized={!imgSrc.startsWith("/") && !imgSrc.includes("images.unsplash.com")}
           />
 
-          {/* Badges di atas gambar */}
-          <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 z-10">
+          {/* Badges di atas kiri gambar */}
+          <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 z-10 flex-wrap">
             <Badge
               variant="secondary"
               className="rounded-[var(--radius-sm)] bg-background/80 backdrop-blur-md px-2 py-0.5 text-[11px] font-medium text-foreground shadow-xs border-0"
@@ -124,15 +141,58 @@ export function WorkshopCard({
             </Badge>
           </div>
 
-          {/* Status Terdaftar */}
-          {isRegistered && (
-            <div className="absolute top-2.5 right-2.5 z-10">
-              <span className="flex items-center gap-1 rounded-[var(--radius-sm)] bg-primary/95 text-primary-foreground backdrop-blur-md px-2 py-0.5 text-[11px] font-medium shadow-xs">
-                <CheckCircle2 className="h-3 w-3" strokeWidth={2} />
-                Terdaftar
-              </span>
-            </div>
-          )}
+          {/* Badges di atas kanan: Approval status atau Registration status */}
+          <div className="absolute top-2.5 right-2.5 z-10 flex flex-col items-end gap-1">
+            {showApprovalStatus && (
+              <>
+                {workshop.approvalStatus === "PENDING_APPROVAL" && (
+                  <span className="flex items-center gap-1 rounded-[var(--radius-sm)] bg-amber-500 text-white backdrop-blur-md px-2 py-0.5 text-[11px] font-medium shadow-xs">
+                    <Clock className="h-3 w-3" strokeWidth={2} />
+                    Menunggu Approval
+                  </span>
+                )}
+                {workshop.approvalStatus === "REJECTED" && (
+                  <span
+                    className="flex items-center gap-1 rounded-[var(--radius-sm)] bg-destructive text-destructive-foreground backdrop-blur-md px-2 py-0.5 text-[11px] font-medium shadow-xs"
+                    title={workshop.rejectionReason ? `Alasan: ${workshop.rejectionReason}` : "Ditolak Admin"}
+                  >
+                    <XCircle className="h-3 w-3" strokeWidth={2} />
+                    Ditolak
+                  </span>
+                )}
+                {workshop.approvalStatus === "APPROVED" && (
+                  <span className="flex items-center gap-1 rounded-[var(--radius-sm)] bg-emerald-600 text-white backdrop-blur-md px-2 py-0.5 text-[11px] font-medium shadow-xs">
+                    <CheckCircle2 className="h-3 w-3" strokeWidth={2} />
+                    Disetujui
+                  </span>
+                )}
+              </>
+            )}
+
+            {/* Status Pendaftaran Pengguna */}
+            {regStatus && !showApprovalStatus && (
+              <>
+                {(regStatus === "APPROVED" || regStatus === "Terdaftar") && (
+                  <span className="flex items-center gap-1 rounded-[var(--radius-sm)] bg-emerald-600 text-white backdrop-blur-md px-2 py-0.5 text-[11px] font-medium shadow-xs">
+                    <CheckCircle2 className="h-3 w-3" strokeWidth={2} />
+                    Terdaftar
+                  </span>
+                )}
+                {regStatus === "PENDING_APPROVAL" && (
+                  <span className="flex items-center gap-1 rounded-[var(--radius-sm)] bg-amber-500 text-white backdrop-blur-md px-2 py-0.5 text-[11px] font-medium shadow-xs">
+                    <Clock className="h-3 w-3" strokeWidth={2} />
+                    Menunggu Persetujuan
+                  </span>
+                )}
+                {regStatus === "REJECTED" && (
+                  <span className="flex items-center gap-1 rounded-[var(--radius-sm)] bg-destructive text-destructive-foreground backdrop-blur-md px-2 py-0.5 text-[11px] font-medium shadow-xs">
+                    <XCircle className="h-3 w-3" strokeWidth={2} />
+                    Ditolak
+                  </span>
+                )}
+              </>
+            )}
+          </div>
         </div>
 
         {/* Header & Deskripsi Kursus */}
@@ -158,6 +218,18 @@ export function WorkshopCard({
           <p className="mt-0.5 text-[11px] text-muted-foreground truncate">
             Fasilitator: <span className="font-medium text-foreground/90">{workshop.instructorName}</span>
           </p>
+
+          {/* Banner jika workshop ditolak (khusus Guru/Admin) */}
+          {workshop.approvalStatus === "REJECTED" && workshop.rejectionReason && (
+            <div className="mt-2 p-2 rounded-lg bg-destructive/10 border border-destructive/20 text-xs text-destructive flex items-start gap-1.5">
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+              <div className="line-clamp-2">
+                <span className="font-semibold">Alasan penolakan: </span>
+                {workshop.rejectionReason}
+              </div>
+            </div>
+          )}
+
           <p className="mt-1.5 text-xs text-muted-foreground line-clamp-2 leading-relaxed">
             {workshop.description}
           </p>
@@ -180,8 +252,9 @@ export function WorkshopCard({
 
           <div className="truncate">
             <div
-              className={`text-xs font-semibold truncate ${isFull ? "text-destructive font-bold" : "text-foreground"
-                }`}
+              className={`text-xs font-semibold truncate ${
+                isFull ? "text-destructive font-bold" : "text-foreground"
+              }`}
             >
               {isFull ? "Penuh" : `${remainingQuota} Kursi`}
             </div>
@@ -190,7 +263,35 @@ export function WorkshopCard({
         </div>
 
         {/* Tombol Aksi */}
-        {showAdminActions ? (
+        {showApprovalActions ? (
+          <div className="flex items-center gap-1.5 shrink-0">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 border-destructive/50 text-destructive hover:bg-destructive hover:text-white px-2.5 text-xs"
+              onClick={(e) => {
+                e.stopPropagation();
+                onRejectClick?.(workshop);
+              }}
+              title="Tolak Workshop"
+            >
+              <X className="h-3.5 w-3.5 mr-1" />
+              Tolak
+            </Button>
+            <Button
+              size="sm"
+              className="h-8 bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 text-xs font-medium"
+              onClick={(e) => {
+                e.stopPropagation();
+                onApproveClick?.(workshop);
+              }}
+              title="Setujui Workshop"
+            >
+              <Check className="h-3.5 w-3.5 mr-1" />
+              Setujui
+            </Button>
+          </div>
+        ) : showAdminActions ? (
           <div className="flex items-center gap-1 shrink-0">
             <Button
               variant="outline"

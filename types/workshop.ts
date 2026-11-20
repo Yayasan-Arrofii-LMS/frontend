@@ -1,4 +1,4 @@
-﻿export type WorkshopType = "Online" | "Offline";
+export type WorkshopType = "Online" | "Offline";
 
 export type WorkshopCategory =
   | "Sains Alam"
@@ -10,7 +10,15 @@ export type WorkshopCategory =
 
 export type WorkshopStatus = "Upcoming" | "Ongoing" | "Completed" | "Cancelled";
 
-export type RegistrationStatus = "Terdaftar" | "Dibatalkan";
+export type WorkshopApprovalStatus = "PENDING_APPROVAL" | "APPROVED" | "REJECTED";
+
+export type RegistrationStatus =
+  | "PENDING_APPROVAL"
+  | "APPROVED"
+  | "REJECTED"
+  | "CANCELLED"
+  | "Terdaftar"
+  | "Dibatalkan";
 
 export interface Participant {
   id: string;
@@ -21,6 +29,13 @@ export interface Participant {
   registrationDate: string;
   status: RegistrationStatus;
   notes?: string;
+  rejectionReason?: string;
+  approvedAt?: string;
+  approvedBy?: {
+    id: string;
+    name: string;
+    email: string;
+  };
 }
 
 export interface Workshop {
@@ -42,6 +57,14 @@ export interface Workshop {
   instructorAvatar?: string | null;
   instructorBio?: string;
   status: WorkshopStatus;
+  approvalStatus: WorkshopApprovalStatus;
+  rejectionReason?: string;
+  approvedAt?: string;
+  approvedBy?: {
+    id: string;
+    name: string;
+    email: string;
+  };
   participants: Participant[];
   createdAt: string;
   updatedAt: string;

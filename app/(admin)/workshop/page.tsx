@@ -10,6 +10,16 @@ import { Workshop, WorkshopFormData } from "@/types/workshop";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -30,6 +40,12 @@ import {
   Video,
   MapPin,
   Eye,
+  Check,
+  X,
+  CheckCircle2,
+  Clock,
+  XCircle,
+  AlertCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -40,9 +56,14 @@ export default function AdminWorkshopPage() {
   const {
     workshops,
     isLoading,
+    isSubmitting,
     createWorkshop,
     updateWorkshop,
     deleteWorkshop,
+    approveWorkshop,
+    rejectWorkshop,
+    approveParticipant,
+    rejectParticipant,
   } = useWorkshops();
 
   // Pulihkan posisi scroll terakhir ketika kembali dari halaman detail
@@ -63,13 +84,26 @@ export default function AdminWorkshopPage() {
   }, [isLoading, workshops.length]);
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedTab, setSelectedTab] = useState<string>("all");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [workshopToEdit, setWorkshopToEdit] = useState<Workshop | null>(null);
   const [workshopToDelete, setWorkshopToDelete] = useState<Workshop | null>(null);
+  const [workshopToApprove, setWorkshopToApprove] = useState<Workshop | null>(null);
+  const [workshopToReject, setWorkshopToReject] = useState<Workshop | null>(null);
+  const [rejectionReason, setRejectionReason] = useState("");
   const [workshopToViewParticipants, setWorkshopToViewParticipants] =
     useState<Workshop | null>(null);
 
-  const filtered = workshops.filter(
+  const pendingCount = workshops.filter(
+    (w) => w.approvalStatus === "PENDING_APPROVAL"
+  ).length;
+
+  const tabFiltered = workshops.filter((w) => {
+    if (selectedTab === "all") return true;
+    return w.approvalStatus === selectedTab;
+  });
+
+  const filtered = tabFiltered.filter(
     (w) =>
       w.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       w.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -115,6 +149,29 @@ export default function AdminWorkshopPage() {
     }
   };
 
+  const handleConfirmApprove = async () => {
+    if (!workshopToApprove) return;
+    const res = await approveWorkshop(workshopToApprove.id);
+    if (res.success) {
+      toast.success(res.message);
+      setWorkshopToApprove(null);
+    }
+  };
+
+  const handleConfirmReject = async () => {
+    if (!workshopToReject) return;
+    if (!rejectionReason.trim()) {
+      toast.error("Alasan penolakan wajib diisi");
+      return;
+    }
+    const res = await rejectWorkshop(workshopToReject.id, rejectionReason.trim());
+    if (res.success) {
+      toast.success(res.message);
+      setWorkshopToReject(null);
+      setRejectionReason("");
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-6 md:px-6 space-y-6">
       {/* Header */}
@@ -124,7 +181,7 @@ export default function AdminWorkshopPage() {
             Manajemen Workshop & Pelatihan
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Kelola program workshop, kuota peserta, dan daftar pendaftar seluruh kegiatan Sekolah Alam.
+            Kelola persetujuan workshop guru, kuota, dan daftar pendaftar kegiatan Sekolah Alam.
           </p>
         </div>
 
@@ -135,17 +192,38 @@ export default function AdminWorkshopPage() {
       </div>
 
       {/* Stats Summary */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-medium text-muted-foreground">
-              Total Workshop Aktif
+              Total Workshop
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{workshops.length}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              Program pembelajaran & praktik
+              Program pembelajaran terdaftar
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className={pendingCount > 0 ? "border-amber-500/50 bg-amber-500/5" : ""}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-medium text-muted-foreground flex items-center justify-between">
+              <span>Menunggu Persetujuan</span>
+              {pendingCount > 0 && (
+                <Badge variant="secondary" className="bg-amber-500/20 text-amber-700 dark:text-amber-400 text-[10px]">
+                  Perlu Aksi
+                </Badge>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className={`text-2xl font-bold ${pendingCount > 0 ? "text-amber-600 dark:text-amber-400" : ""}`}>
+              {pendingCount}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Diajukan oleh instruktur/guru
             </p>
           </CardContent>
         </Card>
@@ -153,7 +231,7 @@ export default function AdminWorkshopPage() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-medium text-muted-foreground">
-              Total Peserta Terdaftar
+              Total Peserta Diterima
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -183,11 +261,32 @@ export default function AdminWorkshopPage() {
         </Card>
       </div>
 
-      {/* Search & Actions */}
+      {/* Tabs & Search & Table */}
       <Card>
-        <CardHeader className="pb-3">
+        <CardHeader className="pb-3 space-y-4">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-            <CardTitle className="text-lg">Daftar Workshop</CardTitle>
+            <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full sm:w-auto">
+              <TabsList className="grid grid-cols-2 sm:flex sm:w-auto">
+                <TabsTrigger value="all">
+                  Semua ({workshops.length})
+                </TabsTrigger>
+                <TabsTrigger value="PENDING_APPROVAL" className="relative">
+                  Menunggu
+                  {pendingCount > 0 && (
+                    <span className="ml-1.5 px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-500 text-white">
+                      {pendingCount}
+                    </span>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="APPROVED">
+                  Disetujui ({workshops.filter((w) => w.approvalStatus === "APPROVED").length})
+                </TabsTrigger>
+                <TabsTrigger value="REJECTED">
+                  Ditolak ({workshops.filter((w) => w.approvalStatus === "REJECTED").length})
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+
             <div className="relative w-full sm:w-72">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -206,6 +305,7 @@ export default function AdminWorkshopPage() {
                 <TableRow>
                   <TableHead>Workshop</TableHead>
                   <TableHead>Kategori & Format</TableHead>
+                  <TableHead>Status Publikasi</TableHead>
                   <TableHead>Pelaksanaan</TableHead>
                   <TableHead>Instruktur</TableHead>
                   <TableHead className="text-center">Peserta</TableHead>
@@ -215,7 +315,7 @@ export default function AdminWorkshopPage() {
               <TableBody>
                 {filtered.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       Tidak ada data workshop yang sesuai.
                     </TableCell>
                   </TableRow>
@@ -227,6 +327,12 @@ export default function AdminWorkshopPage() {
                         <div className="text-xs text-muted-foreground line-clamp-1">
                           {ws.description}
                         </div>
+                        {ws.approvalStatus === "REJECTED" && ws.rejectionReason && (
+                          <div className="mt-1 flex items-start gap-1 text-[11px] text-rose-600 dark:text-rose-400 bg-rose-500/10 p-1.5 rounded">
+                            <AlertCircle className="h-3 w-3 shrink-0 mt-0.5" />
+                            <span className="line-clamp-2">Alasan: {ws.rejectionReason}</span>
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-col gap-1 items-start">
@@ -248,6 +354,30 @@ export default function AdminWorkshopPage() {
                             )}
                           </Badge>
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        {ws.approvalStatus === "APPROVED" ? (
+                          <Badge
+                            variant="outline"
+                            className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 font-medium text-[11px] flex items-center gap-1 w-fit"
+                          >
+                            <CheckCircle2 className="h-3 w-3" /> Disetujui
+                          </Badge>
+                        ) : ws.approvalStatus === "PENDING_APPROVAL" ? (
+                          <Badge
+                            variant="outline"
+                            className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 font-medium text-[11px] flex items-center gap-1 w-fit"
+                          >
+                            <Clock className="h-3 w-3" /> Menunggu
+                          </Badge>
+                        ) : (
+                          <Badge
+                            variant="outline"
+                            className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20 font-medium text-[11px] flex items-center gap-1 w-fit"
+                          >
+                            <XCircle className="h-3 w-3" /> Ditolak
+                          </Badge>
+                        )}
                       </TableCell>
                       <TableCell className="text-xs">
                         <div className="flex items-center gap-1 text-muted-foreground">
@@ -289,6 +419,33 @@ export default function AdminWorkshopPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
+                          {/* Tombol Approval Khusus Pending */}
+                          {ws.approvalStatus === "PENDING_APPROVAL" && (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                                onClick={() => setWorkshopToApprove(ws)}
+                                title="Setujui Workshop"
+                              >
+                                <Check className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/30"
+                                onClick={() => {
+                                  setWorkshopToReject(ws);
+                                  setRejectionReason("");
+                                }}
+                                title="Tolak Workshop"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </>
+                          )}
+
                           <Button asChild variant="ghost" size="icon" className="h-8 w-8">
                             <Link
                               href={`/workshops/${ws.id}?from=workshop`}
@@ -353,7 +510,118 @@ export default function AdminWorkshopPage() {
         open={!!workshopToViewParticipants}
         onOpenChange={(open) => !open && setWorkshopToViewParticipants(null)}
         workshop={workshopToViewParticipants}
+        canManage={true}
+        onApproveParticipant={approveParticipant}
+        onRejectParticipant={rejectParticipant}
       />
+
+      {/* Approve Confirmation Dialog */}
+      <Dialog
+        open={!!workshopToApprove}
+        onOpenChange={(open) => !open && setWorkshopToApprove(null)}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+              Setujui Publikasi Workshop
+            </DialogTitle>
+            <DialogDescription>
+              Apakah Anda yakin ingin menyetujui workshop ini? Workshop akan langsung dipublikasikan di katalog publik dan dapat didaftar oleh siswa.
+            </DialogDescription>
+          </DialogHeader>
+
+          {workshopToApprove && (
+            <div className="p-3 rounded-lg border bg-muted/40 space-y-1 text-sm">
+              <div className="font-semibold text-foreground">
+                {workshopToApprove.title}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Instruktur: {workshopToApprove.instructorName} • Kategori: {workshopToApprove.category}
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setWorkshopToApprove(null)}
+              disabled={isSubmitting}
+            >
+              Batal
+            </Button>
+            <Button
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+              onClick={handleConfirmApprove}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Memproses..." : "Ya, Setujui Workshop"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reject Modal Dialog */}
+      <Dialog
+        open={!!workshopToReject}
+        onOpenChange={(open) => !open && setWorkshopToReject(null)}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-rose-600">
+              <XCircle className="h-5 w-5" />
+              Tolak Publikasi Workshop
+            </DialogTitle>
+            <DialogDescription>
+              Berikan alasan penolakan agar pembuat workshop dapat melakukan perbaikan yang diperlukan.
+            </DialogDescription>
+          </DialogHeader>
+
+          {workshopToReject && (
+            <div className="space-y-3">
+              <div className="p-3 rounded-lg border bg-muted/40 space-y-1 text-sm">
+                <div className="font-semibold text-foreground">
+                  {workshopToReject.title}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Instruktur: {workshopToReject.instructorName}
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium">Alasan Penolakan <span className="text-destructive">*</span></label>
+                <Textarea
+                  placeholder="Tuliskan alasan penolakan atau revisi yang dibutuhkan..."
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                  rows={3}
+                  className="text-sm"
+                />
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setWorkshopToReject(null);
+                setRejectionReason("");
+              }}
+              disabled={isSubmitting}
+            >
+              Batal
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmReject}
+              disabled={isSubmitting || !rejectionReason.trim()}
+            >
+              {isSubmitting ? "Memproses..." : "Tolak Workshop"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -10,6 +10,10 @@ import {
   deleteWorkshopApi,
   registerWorkshopApi,
   cancelWorkshopRegistrationApi,
+  approveWorkshopApi,
+  rejectWorkshopApi,
+  approveParticipantApi,
+  rejectParticipantApi,
   WorkshopFilterParams,
 } from "@/lib/api/workshop";
 import { toast } from "sonner";
@@ -169,6 +173,78 @@ export function useWorkshops(initialFilters?: WorkshopFilterParams) {
     [loadWorkshops]
   );
 
+  const approveWorkshop = useCallback(
+    async (id: string) => {
+      try {
+        setIsSubmitting(true);
+        const updated = await approveWorkshopApi(id);
+        await loadWorkshops();
+        return { success: true, message: "Workshop berhasil disetujui!", data: updated };
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "Gagal menyetujui workshop";
+        toast.error(msg);
+        return { success: false, message: msg };
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [loadWorkshops]
+  );
+
+  const rejectWorkshop = useCallback(
+    async (id: string, reason: string) => {
+      try {
+        setIsSubmitting(true);
+        const updated = await rejectWorkshopApi(id, reason);
+        await loadWorkshops();
+        return { success: true, message: "Workshop telah ditolak.", data: updated };
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "Gagal menolak workshop";
+        toast.error(msg);
+        return { success: false, message: msg };
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [loadWorkshops]
+  );
+
+  const approveParticipant = useCallback(
+    async (workshopId: string, participantId: string) => {
+      try {
+        setIsSubmitting(true);
+        const updated = await approveParticipantApi(workshopId, participantId);
+        await loadWorkshops();
+        return { success: true, message: "Peserta berhasil disetujui!", data: updated };
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "Gagal menyetujui peserta";
+        toast.error(msg);
+        return { success: false, message: msg };
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [loadWorkshops]
+  );
+
+  const rejectParticipant = useCallback(
+    async (workshopId: string, participantId: string, reason?: string) => {
+      try {
+        setIsSubmitting(true);
+        const updated = await rejectParticipantApi(workshopId, participantId, reason);
+        await loadWorkshops();
+        return { success: true, message: "Pendaftaran peserta telah ditolak.", data: updated };
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "Gagal menolak peserta";
+        toast.error(msg);
+        return { success: false, message: msg };
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [loadWorkshops]
+  );
+
   return {
     workshops,
     isLoading,
@@ -179,7 +255,11 @@ export function useWorkshops(initialFilters?: WorkshopFilterParams) {
     createWorkshop: createNewWorkshop,
     updateWorkshop: updateExistingWorkshop,
     deleteWorkshop: deleteExistingWorkshop,
+    approveWorkshop,
+    rejectWorkshop,
     registerWorkshop: registerUserToWorkshop,
     cancelRegistration: cancelUserRegistration,
+    approveParticipant,
+    rejectParticipant,
   };
 }

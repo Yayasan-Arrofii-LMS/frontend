@@ -9,6 +9,8 @@ export interface WorkshopFilterParams {
   category?: string;
   type?: string;
   status?: string;
+  approvalStatus?: string;
+  instructorId?: string;
 }
 
 /**
@@ -29,6 +31,12 @@ export async function getWorkshopsApi(
   }
   if (filters?.status && filters.status !== "Semua") {
     params.append("status", filters.status);
+  }
+  if (filters?.approvalStatus && filters.approvalStatus !== "Semua") {
+    params.append("approvalStatus", filters.approvalStatus);
+  }
+  if (filters?.instructorId) {
+    params.append("instructorId", filters.instructorId);
   }
 
   const query = params.toString() ? `?${params.toString()}` : "";
@@ -181,4 +189,58 @@ export async function getWorkshopParticipantsApi(
   return request<Participant[]>(`/workshops/${id}/participants`, {
     method: "GET",
   });
+}
+
+/**
+ * 9. Menyetujui workshop (Admin only)
+ */
+export async function approveWorkshopApi(id: string): Promise<Workshop> {
+  return request<Workshop>(`/workshops/${id}/approve`, {
+    method: "PATCH",
+  });
+}
+
+/**
+ * 10. Menolak workshop (Admin only)
+ */
+export async function rejectWorkshopApi(
+  id: string,
+  reason: string
+): Promise<Workshop> {
+  return request<Workshop>(`/workshops/${id}/reject`, {
+    method: "PATCH",
+    body: JSON.stringify({ reason }),
+  });
+}
+
+/**
+ * 11. Menyetujui pendaftar workshop (Admin / Teacher pembuat)
+ */
+export async function approveParticipantApi(
+  workshopId: string,
+  participantId: string
+): Promise<Participant> {
+  return request<Participant>(
+    `/workshops/${workshopId}/participants/${participantId}/approve`,
+    {
+      method: "PATCH",
+    }
+  );
+}
+
+/**
+ * 12. Menolak pendaftar workshop (Admin / Teacher pembuat)
+ */
+export async function rejectParticipantApi(
+  workshopId: string,
+  participantId: string,
+  reason?: string
+): Promise<Participant> {
+  return request<Participant>(
+    `/workshops/${workshopId}/participants/${participantId}/reject`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ reason }),
+    }
+  );
 }

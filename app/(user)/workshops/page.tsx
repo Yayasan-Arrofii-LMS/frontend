@@ -54,6 +54,8 @@ export default function WorkshopsPage() {
     createWorkshop,
     updateWorkshop,
     deleteWorkshop,
+    approveParticipant,
+    rejectParticipant,
   } = useWorkshops();
 
   const [activeTab, setActiveTab] = useState<string>("all");
@@ -148,12 +150,14 @@ export default function WorkshopsPage() {
     return false;
   };
 
-  // Workshop yang belum lewat / akan berjalan
+  // Workshop publik yang disetujui dan belum lewat / akan berjalan
   const upcomingWorkshops = useMemo(() => {
-    return workshops.filter((ws) => !isWorkshopPast(ws.date, ws.endTime));
+    return workshops.filter(
+      (ws) => !isWorkshopPast(ws.date, ws.endTime) && ws.approvalStatus === "APPROVED"
+    );
   }, [workshops]);
 
-  // Filtered workshops for "Semua Workshop" tab (hanya workshop yang akan berjalan)
+  // Filtered workshops for "Semua Workshop" tab (hanya workshop disetujui & yang akan berjalan)
   const filteredWorkshops = useMemo(() => {
     return upcomingWorkshops.filter((ws) => {
       const matchSearch =
@@ -174,12 +178,16 @@ export default function WorkshopsPage() {
   // Filtered workshops for "Pendaftaran Saya" tab (untuk siswa/user umum)
   const myRegisteredWorkshops = useMemo(() => {
     if (!user) return [];
-    return upcomingWorkshops.filter((ws) =>
+    return workshops.filter((ws) =>
       ws.participants.some(
-        (p) => p.userId === user.id && p.status === "Terdaftar"
+        (p) =>
+          p.userId === user.id &&
+          (p.status === "APPROVED" ||
+            p.status === "PENDING_APPROVAL" ||
+            (p.status as string) === "Terdaftar")
       )
     );
-  }, [upcomingWorkshops, user]);
+  }, [workshops, user]);
 
   // Workshop yang diampu oleh guru / admin untuk memantau pendaftaran
   const myInstructedWorkshops = useMemo(() => {
@@ -431,16 +439,20 @@ export default function WorkshopsPage() {
           ) : (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {filteredWorkshops.map((ws) => {
+                const userPart = user
+                  ? ws.participants.find((p) => p.userId === user.id)
+                  : undefined;
                 const isReg =
-                  !!user &&
-                  ws.participants.some(
-                    (p) => p.userId === user.id && p.status === "Terdaftar"
-                  );
+                  !!userPart &&
+                  (userPart.status === "APPROVED" ||
+                    userPart.status === "PENDING_APPROVAL" ||
+                    (userPart.status as string) === "Terdaftar");
                 return (
                   <WorkshopCard
                     key={ws.id}
                     workshop={ws}
                     isRegistered={isReg}
+                    userRegistrationStatus={userPart?.status}
                     showAdminActions={canManageWorkshop(ws)}
                     onEditClick={handleOpenEditModal}
                     onDeleteClick={(w) => {
@@ -499,6 +511,7 @@ export default function WorkshopsPage() {
                     <WorkshopCard
                       key={ws.id}
                       workshop={ws}
+                      showApprovalStatus={true}
                       showAdminActions={true}
                       onEditClick={handleOpenEditModal}
                       onDeleteClick={(w) => {
@@ -548,19 +561,25 @@ export default function WorkshopsPage() {
               </div>
             ) : (
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {myRegisteredWorkshops.map((ws) => (
-                  <WorkshopCard
-                    key={ws.id}
-                    workshop={ws}
-                    isRegistered={true}
-                    showAdminActions={false}
-                    onEditClick={handleOpenEditModal}
-                    onDeleteClick={(w) => setWorkshopToDelete(w)}
-                    onParticipantsClick={(w) => setWorkshopToViewParticipants(w)}
-                    onCardClick={handleWorkshopClick}
-                    from="workshops"
-                  />
-                ))}
+                {myRegisteredWorkshops.map((ws) => {
+                  const userPart = user
+                    ? ws.participants.find((p) => p.userId === user.id)
+                    : undefined;
+                  return (
+                    <WorkshopCard
+                      key={ws.id}
+                      workshop={ws}
+                      isRegistered={true}
+                      userRegistrationStatus={userPart?.status}
+                      showAdminActions={false}
+                      onEditClick={handleOpenEditModal}
+                      onDeleteClick={(w) => setWorkshopToDelete(w)}
+                      onParticipantsClick={(w) => setWorkshopToViewParticipants(w)}
+                      onCardClick={handleWorkshopClick}
+                      from="workshops"
+                    />
+                  );
+                })}
               </div>
             )}
           </TabsContent>
@@ -586,6 +605,9 @@ export default function WorkshopsPage() {
         open={!!workshopToViewParticipants}
         onOpenChange={(open) => !open && setWorkshopToViewParticipants(null)}
         workshop={workshopToViewParticipants}
+        canManage={workshopToViewParticipants ? canManageWorkshop(workshopToViewParticipants) : false}
+        onApproveParticipant={approveParticipant}
+        onRejectParticipant={rejectParticipant}
       />
 
       <AlertDialog open={showLoginDialog} onOpenChange={setShowLoginDialog}>

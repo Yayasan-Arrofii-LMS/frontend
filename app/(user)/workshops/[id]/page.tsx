@@ -35,6 +35,7 @@ import {
   Users,
   CheckCircle2,
   AlertCircle,
+  XCircle,
   ExternalLink,
   Edit,
   Trash2,
@@ -62,6 +63,10 @@ export default function WorkshopDetailPage({
     deleteWorkshop,
     registerWorkshop,
     cancelRegistration,
+    approveWorkshop,
+    rejectWorkshop,
+    approveParticipant,
+    rejectParticipant,
     isLoading: workshopLoading,
     isSubmitting,
   } = useWorkshops();
@@ -160,23 +165,51 @@ export default function WorkshopDetailPage({
   const isTeacher = user?.role?.toLowerCase() === "teacher";
 
   // Verifikasi apakah pengguna adalah pemilik/instruktur workshop ini
-  const isOwner =
-    !!user &&
-    (
-      (workshop.instructorId && String(workshop.instructorId) === String(user.id)) ||
-      (workshop.instructorName &&
-        user.name &&
-        workshop.instructorName.trim().toLowerCase() === user.name.trim().toLowerCase())
-    );
+  const isOwner = Boolean(
+    user &&
+      ((workshop.instructorId && String(workshop.instructorId) === String(user.id)) ||
+        (workshop.instructorName &&
+          user.name &&
+          workshop.instructorName.trim().toLowerCase() === user.name.trim().toLowerCase()))
+  );
 
   // Hak kelola: Admin boleh mengelola semua workshop, Guru HANYA workshop miliknya sendiri
-  const canManage = isAuthenticated && (isAdmin || (isTeacher && isOwner));
+  const canManage = Boolean(isAuthenticated && (isAdmin || (isTeacher && isOwner)));
 
-  const isRegistered =
-    !!user &&
-    workshop.participants.some(
-      (p) => p.userId === user.id && p.status === "Terdaftar"
+  // Cek apakah workshop belum disetujui (jika bukan admin dan bukan pemilik, jangan izinkan akses)
+  if (
+    workshop.approvalStatus &&
+    workshop.approvalStatus !== "APPROVED" &&
+    !isAdmin &&
+    !isOwner
+  ) {
+    return (
+      <div className="container mx-auto px-4 py-16 max-w-4xl text-center">
+        <AlertCircle className="h-14 w-14 mx-auto mb-4 text-amber-500" />
+        <h1 className="text-2xl font-bold mb-2">Workshop Belum Tersedia</h1>
+        <p className="text-muted-foreground mb-6">
+          Workshop ini masih dalam tahap peninjauan persetujuan oleh Admin atau belum dipublikasikan.
+        </p>
+        <Button asChild>
+          <Link href={backUrl} scroll={false}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Kembali ke Daftar Workshop
+          </Link>
+        </Button>
+      </div>
     );
+  }
+
+  const userParticipant = user
+    ? workshop.participants.find((p) => p.userId === user.id)
+    : null;
+  const registrationStatus = userParticipant?.status;
+  const isPendingRegistration = registrationStatus === "PENDING_APPROVAL";
+  const isApprovedRegistration =
+    registrationStatus === "APPROVED" ||
+    (registrationStatus as string) === "Terdaftar";
+  const isRejectedRegistration = registrationStatus === "REJECTED";
+  const isRegistered = isPendingRegistration || isApprovedRegistration;
 
   const isPast = isWorkshopPast(workshop.date, workshop.endTime);
   const isFull = workshop.registeredCount >= workshop.quota;
@@ -192,6 +225,13 @@ export default function WorkshopDetailPage({
     month: "long",
     year: "numeric",
   });
+
+  const handleApproveWorkshop = async () => {
+    const res = await approveWorkshop(workshop.id);
+    if (res.success) {
+      toast.success(res.message);
+    }
+  };
 
   const handleRegister = async () => {
     if (!isAuthenticated) {
@@ -311,6 +351,43 @@ export default function WorkshopDetailPage({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Content Area */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Approval Status Banner (untuk Admin & Penyelenggara) */}
+          {workshop.approvalStatus === "PENDING_APPROVAL" && (
+            <div className="p-4 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-300 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
+                <div>
+                  <p className="font-semibold text-sm">Menunggu Persetujuan Admin</p>
+                  <p className="text-xs text-amber-700/80 dark:text-amber-400/80">
+                    Workshop ini belum dipublikasikan ke katalog publik.
+                  </p>
+                </div>
+              </div>
+              {isAdmin && (
+                <Button
+                  size="sm"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shrink-0"
+                  onClick={handleApproveWorkshop}
+                  disabled={isSubmitting}
+                >
+                  Setujui Publikasi
+                </Button>
+              )}
+            </div>
+          )}
+
+          {workshop.approvalStatus === "REJECTED" && (
+            <div className="p-4 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-800 dark:text-rose-300 flex items-start gap-2.5">
+              <XCircle className="h-5 w-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-sm">Workshop Ditolak oleh Admin</p>
+                <p className="text-xs text-rose-700/80 dark:text-rose-400/80 mt-0.5">
+                  Alasan penolakan: {workshop.rejectionReason || "Tidak memenuhi standar kegiatan"}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Banner Thumbnail */}
           <div className="relative aspect-video w-full rounded-2xl overflow-hidden border bg-muted shadow-sm">
             <Image
@@ -355,14 +432,24 @@ export default function WorkshopDetailPage({
               {workshop.title}
             </h1>
             {isPast ? (
-              <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 text-sm font-semibold">
+              <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted border text-muted-foreground text-sm font-semibold">
                 <AlertCircle className="h-4 w-4" />
                 Workshop ini telah selesai dilaksanakan pada {formattedDate}
               </div>
-            ) : isRegistered ? (
+            ) : isPendingRegistration ? (
+              <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 text-sm font-semibold">
+                <Clock className="h-4 w-4" />
+                Pendaftaran Anda sedang menunggu persetujuan fasilitator/admin
+              </div>
+            ) : isApprovedRegistration ? (
               <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-sm font-semibold">
                 <CheckCircle2 className="h-4 w-4" />
-                Anda telah terdaftar sebagai peserta pada workshop ini
+                Anda telah resmi terdaftar sebagai peserta pada workshop ini
+              </div>
+            ) : isRejectedRegistration ? (
+              <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-400 text-sm font-semibold">
+                <XCircle className="h-4 w-4" />
+                Pendaftaran Anda sebelumnya ditolak: {userParticipant?.rejectionReason || "Kriteria kuota"}
               </div>
             ) : null}
           </div>
@@ -466,13 +553,13 @@ export default function WorkshopDetailPage({
                 </div>
               </div>
 
-              {/* Online Meeting Link (Shown if user is registered or admin) */}
+              {/* Online Meeting Link (Shown if user is approved or admin) */}
               {workshop.type === "Online" && workshop.meetingLink && (
                 <div className="p-3.5 rounded-xl border bg-blue-500/5 border-blue-500/20 space-y-1.5">
                   <span className="text-xs font-bold text-blue-700 dark:text-blue-400 block">
                     Ruang Virtual (Link Meeting)
                   </span>
-                  {isRegistered || canManage ? (
+                  {isApprovedRegistration || canManage ? (
                     <a
                       href={workshop.meetingLink}
                       target="_blank"
@@ -482,6 +569,10 @@ export default function WorkshopDetailPage({
                       Buka Ruang Zoom / Meet
                       <ExternalLink className="h-3 w-3" />
                     </a>
+                  ) : isPendingRegistration ? (
+                    <p className="text-[11px] text-amber-600 dark:text-amber-400 font-medium">
+                      Link meeting akan dapat diakses setelah pendaftaran Anda disetujui penyelenggara.
+                    </p>
                   ) : (
                     <p className="text-[11px] text-muted-foreground">
                       Link meeting akan dapat diakses setelah Anda berhasil terdaftar.
@@ -549,15 +640,37 @@ export default function WorkshopDetailPage({
                       Sebagai instruktur/pembuat, Anda mengelola kegiatan ini dan tidak dapat mendaftar sebagai peserta.
                     </p>
                   </div>
-                ) : isRegistered ? (
+                ) : isPendingRegistration ? (
                   <div className="space-y-2">
                     <Button
                       variant="outline"
-                      className="w-full border-emerald-600 text-emerald-700 dark:text-emerald-400 bg-emerald-500/5 hover:bg-emerald-500/10 font-semibold"
+                      className="w-full border-amber-500/50 text-amber-700 dark:text-amber-400 bg-amber-500/10 font-semibold cursor-default"
+                      disabled
+                    >
+                      <Clock className="h-4 w-4 mr-2" />
+                      Menunggu Persetujuan
+                    </Button>
+                    <p className="text-[11px] text-center text-muted-foreground">
+                      Pendaftaran Anda telah tercatat dan sedang diverifikasi oleh penyelenggara kegiatan.
+                    </p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsCancelConfirmOpen(true)}
+                      className="w-full text-xs text-muted-foreground hover:text-destructive"
+                    >
+                      Batalkan Pengajuan Pendaftaran
+                    </Button>
+                  </div>
+                ) : isApprovedRegistration ? (
+                  <div className="space-y-2">
+                    <Button
+                      variant="outline"
+                      className="w-full border-emerald-600 text-emerald-700 dark:text-emerald-400 bg-emerald-500/5 hover:bg-emerald-500/10 font-semibold cursor-default"
                       disabled
                     >
                       <CheckCircle2 className="h-4 w-4 mr-2" />
-                      Anda Sudah Terdaftar
+                      Pendaftaran Diterima
                     </Button>
                     <Button
                       variant="ghost"
@@ -567,6 +680,26 @@ export default function WorkshopDetailPage({
                     >
                       Batalkan Pendaftaran
                     </Button>
+                  </div>
+                ) : isRejectedRegistration ? (
+                  <div className="space-y-3">
+                    <div className="p-3 rounded-lg border border-rose-500/20 bg-rose-500/5 text-rose-700 dark:text-rose-400 text-xs">
+                      <p className="font-semibold flex items-center gap-1.5">
+                        <XCircle className="h-4 w-4" /> Pendaftaran Ditolak
+                      </p>
+                      {userParticipant?.rejectionReason && (
+                        <p className="mt-1 text-[11px]">Alasan: {userParticipant.rejectionReason}</p>
+                      )}
+                    </div>
+                    {!isFull && (
+                      <Button
+                        onClick={handleRegister}
+                        size="lg"
+                        className="w-full font-bold shadow-md"
+                      >
+                        Ajukan Pendaftaran Ulang
+                      </Button>
+                    )}
                   </div>
                 ) : isFull ? (
                   <Button
@@ -674,6 +807,9 @@ export default function WorkshopDetailPage({
         open={isParticipantsModalOpen}
         onOpenChange={setIsParticipantsModalOpen}
         workshop={workshop}
+        canManage={canManage}
+        onApproveParticipant={approveParticipant}
+        onRejectParticipant={rejectParticipant}
       />
     </div>
   );
