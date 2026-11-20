@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import {
   AlertDialog,
@@ -48,12 +49,14 @@ import {
   getSavedAnswers,
   getMyAttempts,
   getQuizQuestions,
+  getQuizReview,
 } from "@/lib/api/quizzes";
 import {
   QuizAttempt,
   SavedAnswersData,
   Question,
   Answer,
+  SavedAnswerQuestion,
 } from "@/types/section";
 import { cn } from "@/lib/utils";
 
@@ -77,6 +80,7 @@ export default function QuizPage() {
   const [quizData, setQuizData] = useState<SavedAnswersData | null>(null);
   const [attemptId, setAttemptId] = useState<number | null>(null);
   const [answers, setAnswers] = useState<Record<number, number[]>>({});
+  const [essayAnswers, setEssayAnswers] = useState<Record<number, string>>({});
   const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(
     new Set()
   );
@@ -87,9 +91,10 @@ export default function QuizPage() {
   const [result, setResult] = useState<QuizAttempt | null>(null);
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const [showReview, setShowReview] = useState(false);
-  const [reviewQuestions, setReviewQuestions] = useState<Question[]>([]);
+  const [reviewQuestions, setReviewQuestions] = useState<any[]>([]);
   const questionRefs = useRef<Record<number, HTMLDivElement | null>>({});
   const lastSubmittedRef = useRef<Record<number, number>>({});
+  const lastSubmittedEssayRef = useRef<Record<number, string>>({});
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -146,18 +151,28 @@ export default function QuizPage() {
 
         if (ongoingAttempt) {
           // Resume ongoing attempt
-          setAttemptId(ongoingAttempt.id);
-          const savedData = await getSavedAnswers(sectionId, ongoingAttempt.id);
+          const currentAttemptId = ongoingAttempt.id ?? (ongoingAttempt as any).attemptId;
+          if (!currentAttemptId) {
+            throw new Error("ID percobaan kuis tidak valid");
+          }
+          setAttemptId(currentAttemptId);
+          const savedData = await getSavedAnswers(sectionId, currentAttemptId);
           setQuizData(savedData);
 
           // Load saved answers
           const savedAnswers: Record<number, number[]> = {};
+          const savedEssayAnswers: Record<number, string> = {};
           savedData.questions.forEach((q) => {
-            if (q.savedAnswer?.selectedAnswerIds) {
+            if (q.type === "Essay") {
+              if (q.savedAnswer?.answer) {
+                savedEssayAnswers[q.id] = q.savedAnswer.answer;
+              }
+            } else if (q.savedAnswer?.selectedAnswerIds) {
               savedAnswers[q.id] = q.savedAnswer.selectedAnswerIds;
             }
           });
           setAnswers(savedAnswers);
+          setEssayAnswers(savedEssayAnswers);
 
           // Calculate time remaining
           if (savedData.timeLimit) {
@@ -172,9 +187,13 @@ export default function QuizPage() {
           // User already confirmed in class detail page
           try {
             const newAttempt = await startQuiz(sectionId, quizId);
-            setAttemptId(newAttempt.id);
+            const currentAttemptId = newAttempt.id ?? (newAttempt as any).attemptId;
+            if (!currentAttemptId) {
+              throw new Error("ID percobaan kuis baru tidak valid");
+            }
+            setAttemptId(currentAttemptId);
 
-            const savedData = await getSavedAnswers(sectionId, newAttempt.id);
+            const savedData = await getSavedAnswers(sectionId, currentAttemptId);
             setQuizData(savedData);
 
             if (savedData.timeLimit) {
@@ -257,6 +276,34 @@ export default function QuizPage() {
     }
   };
 
+  const handleEssayChange = (questionId: number, value: string) => {
+    setEssayAnswers((prev) => ({
+      ...prev,
+      [questionId]: value,
+    }));
+  };
+
+  const handleEssayBlur = async (questionId: number) => {
+    if (!attemptId) return;
+    const answerText = essayAnswers[questionId] ?? "";
+    if (lastSubmittedEssayRef.current[questionId] === answerText) {
+      return;
+    }
+    lastSubmittedEssayRef.current[questionId] = answerText;
+
+    try {
+      await saveAnswer(sectionId, {
+        attemptId,
+        questionId,
+        answer: answerText,
+      });
+    } catch (error) {
+      console.error("Failed to save essay answer:", error);
+      toast.error("Gagal menyimpan jawaban uraian");
+      delete lastSubmittedEssayRef.current[questionId];
+    }
+  };
+
   const handleSubmit = async () => {
     if (!attemptId) return;
 
@@ -279,7 +326,16 @@ export default function QuizPage() {
 
   const loadReview = async () => {
     try {
-      // Use questions from result.quiz.quiz_question which has quiz_answer with is_correct
+      if (attemptId) {
+        const reviewData = await getQuizReview(sectionId, attemptId);
+        if (reviewData && reviewData.questions) {
+          setReviewQuestions(reviewData.questions);
+          setShowReview(true);
+          return;
+        }
+      }
+
+      // Fallback
       if (result && result.quiz && result.quiz.quiz_question) {
         const questions = result.quiz.quiz_question;
         console.log("Review questions from result.quiz:", questions);
@@ -349,7 +405,11 @@ export default function QuizPage() {
 
   // Show result if quiz is submitted
   if (result) {
+    const isGraded = result.is_graded;
     const passed = result.isPassed ?? false;
+    const finalScore = result.final_score ?? result.finalScore ?? result.score;
+    const mcqScore = result.mcq_score ?? result.mcqScore;
+    const hasEssay = result.hasEssay ?? quizData?.questions.some(q => q.type === "Essay");
 
     // Show review mode
     if (showReview && reviewQuestions.length > 0) {
@@ -374,13 +434,77 @@ export default function QuizPage() {
           </Card>
 
           <div className="space-y-6">
-            {reviewQuestions.map((question, index) => {
+            {reviewQuestions.map((question: any, index: number) => {
+              const isEssay = question.type === "Essay";
+
+              if (isEssay) {
+                const studentText = question.studentAnswerText || essayAnswers[question.id] || "";
+                const isEssayGraded = question.studentScore !== null && question.studentScore !== undefined;
+
+                return (
+                  <Card key={question.id}>
+                    <CardHeader>
+                      <div className="flex gap-3">
+                        <Badge variant="outline" className="shrink-0">
+                          {index + 1}
+                        </Badge>
+                        <div className="flex-1">
+                          <CardTitle className="text-lg font-medium prose prose-slate dark:prose-invert max-w-none">
+                            <div dangerouslySetInnerHTML={{ __html: question.question }} />
+                          </CardTitle>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge variant="secondary" className="text-xs">Uraian (Essay)</Badge>
+                            <span className="text-xs text-muted-foreground">{question.points} poin maks</span>
+                          </div>
+                        </div>
+                        {isEssayGraded ? (
+                          <Badge variant="default" className="shrink-0 bg-blue-600 hover:bg-blue-700">
+                            {question.studentScore} / {question.points} Poin
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="shrink-0 border-amber-500 text-amber-600 bg-amber-50">
+                            <Clock className="h-3 w-3 mr-1" />
+                            Menunggu Penilaian
+                          </Badge>
+                        )}
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {question.instructions && (
+                        <div className="p-3 bg-muted/40 rounded-lg text-xs border">
+                          <span className="font-semibold block mb-1">Instruksi:</span>
+                          <p className="whitespace-pre-line text-muted-foreground">{question.instructions}</p>
+                        </div>
+                      )}
+
+                      <div className="space-y-1.5">
+                        <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                          Jawaban Siswa:
+                        </Label>
+                        <div className="p-4 rounded-lg border bg-muted/20 text-sm whitespace-pre-line">
+                          {studentText || <span className="italic text-muted-foreground">Tidak menjawab</span>}
+                        </div>
+                      </div>
+
+                      {question.feedback && (
+                        <div className="p-4 rounded-lg border border-blue-200 bg-blue-50/50 dark:bg-blue-950/20 text-sm">
+                          <span className="font-semibold text-xs text-blue-800 dark:text-blue-300 block mb-1">
+                            Feedback / Catatan Guru:
+                          </span>
+                          <p className="whitespace-pre-line text-foreground/90">{question.feedback}</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              }
+
               const userAnswer = answers[question.id]?.[0];
               const questionAnswers =
-                question.Answer || question.quiz_answer || [];
+                question.Answer || question.quiz_answer || question.answers || [];
 
               const correctAnswer = questionAnswers.find(
-                (a: Answer) => a.is_correct
+                (a: any) => a.is_correct
               );
               const isCorrect = userAnswer === correctAnswer?.id;
 
@@ -415,7 +539,7 @@ export default function QuizPage() {
                   <CardContent className="space-y-4">
                     {/* Answer Options */}
                     <div className="space-y-2">
-                      {questionAnswers.map((answer: Answer) => {
+                      {questionAnswers.map((answer: any) => {
                         const isUserAnswer = answer.id === userAnswer;
                         const isCorrectAnswer = answer.is_correct;
 
@@ -503,52 +627,94 @@ export default function QuizPage() {
         <Card className="max-w-2xl mx-auto">
           <CardHeader className="text-center">
             <div className="mx-auto mb-4">
-              {passed ? (
+              {!isGraded ? (
+                <Clock className="h-16 w-16 text-amber-500" />
+              ) : passed ? (
                 <Trophy className="h-16 w-16 text-yellow-500" />
               ) : (
                 <RotateCcw className="h-16 w-16 text-blue-500" />
               )}
             </div>
             <CardTitle className="text-2xl">
-              {passed ? "Selamat! Anda Lulus" : "Belum Lulus"}
+              {!isGraded
+                ? "Menunggu Penilaian Guru"
+                : passed
+                ? "Selamat! Anda Lulus"
+                : "Belum Lulus"}
             </CardTitle>
-            <CardDescription>Hasil kuis {quizData?.quizTitle}</CardDescription>
+            <CardDescription>
+              {!isGraded
+                ? "Kuis Anda berhasil dikumpulkan dan jawaban uraian sedang dalam antrean pemeriksaan Guru"
+                : `Hasil kuis ${quizData?.quizTitle}`}
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Score Summary */}
             <div className="space-y-4">
-              <div className="flex justify-between items-center p-4 bg-muted rounded-lg">
-                <span className="font-semibold">Nilai Anda:</span>
-                <div className="text-right">
-                  <div className="text-3xl font-bold">{result.score}</div>
-                  {result.totalScore && (
-                    <div className="text-sm text-muted-foreground">
-                      dari {result.totalScore} poin
+              {!isGraded ? (
+                <>
+                  {mcqScore !== null && mcqScore !== undefined && (
+                    <div className="flex justify-between items-center p-4 bg-muted rounded-lg">
+                      <div>
+                        <span className="font-semibold block">Skor Sementara (Pilihan Ganda):</span>
+                        <span className="text-xs text-muted-foreground">Dinilai secara otomatis oleh sistem</span>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-3xl font-bold">{mcqScore}</div>
+                      </div>
                     </div>
                   )}
-                </div>
-              </div>
 
-              {result.quiz &&
-                result.quiz.passing_grade &&
-                result.totalScore && (
-                  <div className="flex justify-between items-center p-4 bg-muted rounded-lg">
-                    <span className="font-semibold">Nilai Kelulusan:</span>
-                    <span className="text-xl font-bold">
-                      {(
-                        (result.quiz.passing_grade / 100) *
-                        result.totalScore
-                      ).toFixed(2)}
-                    </span>
+                  <div className="flex justify-between items-center p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
+                    <div>
+                      <span className="font-semibold block text-amber-900 dark:text-amber-200">Status Penilaian:</span>
+                      <span className="text-xs text-amber-700 dark:text-amber-400">Menunggu penilaian manual untuk soal uraian</span>
+                    </div>
+                    <Badge variant="outline" className="border-amber-500 text-amber-600 bg-amber-100/50 dark:bg-amber-950">
+                      {result.gradingStatus || "Menunggu Penilaian Guru"}
+                    </Badge>
                   </div>
-                )}
 
-              <div className="flex justify-between items-center p-4 bg-muted rounded-lg">
-                <span className="font-semibold">Status:</span>
-                <Badge variant={passed ? "default" : "secondary"}>
-                  {passed ? "LULUS" : "BELUM LULUS"}
-                </Badge>
-              </div>
+                  <div className="p-3 text-xs text-muted-foreground bg-muted/40 rounded-lg">
+                    ℹ️ Nilai akhir kuis = (Total skor diperoleh / Total skor maksimal seluruh soal) × 100. Nilai akhir akan tersedia setelah Guru selesai memeriksa jawaban uraian Anda.
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex justify-between items-center p-4 bg-muted rounded-lg">
+                    <span className="font-semibold">Nilai Akhir:</span>
+                    <div className="text-right">
+                      <div className="text-3xl font-bold">{finalScore}</div>
+                      {result.totalScore && (
+                        <div className="text-sm text-muted-foreground">
+                          dari {result.totalScore} poin
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {result.quiz &&
+                    result.quiz.passing_grade &&
+                    result.totalScore && (
+                      <div className="flex justify-between items-center p-4 bg-muted rounded-lg">
+                        <span className="font-semibold">Nilai Kelulusan:</span>
+                        <span className="text-xl font-bold">
+                          {(
+                            (result.quiz.passing_grade / 100) *
+                            result.totalScore
+                          ).toFixed(2)}
+                        </span>
+                      </div>
+                    )}
+
+                  <div className="flex justify-between items-center p-4 bg-muted rounded-lg">
+                    <span className="font-semibold">Status:</span>
+                    <Badge variant={passed ? "default" : "secondary"}>
+                      {passed ? "LULUS" : "BELUM LULUS"}
+                    </Badge>
+                  </div>
+                </>
+              )}
 
               {/* Quiz Statistics */}
               {result.quiz && result.quiz.quiz_question && (
@@ -570,7 +736,7 @@ export default function QuizPage() {
                       ).length || 0}
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      Jawaban Benar
+                      Pilihan Ganda Benar
                     </div>
                   </div>
                 </div>
@@ -580,7 +746,7 @@ export default function QuizPage() {
             <div className="flex flex-col gap-3">
               <Button onClick={loadReview} variant="outline" size="lg">
                 <BookOpen className="h-4 w-4 mr-2" />
-                Lihat Pembahasan
+                Lihat Pembahasan & Jawaban
               </Button>
 
               <div className="flex gap-3">
@@ -590,7 +756,7 @@ export default function QuizPage() {
                 >
                   Kembali ke Kelas
                 </Button>
-                {!passed && result.quiz && (
+                {isGraded && !passed && result.quiz && (
                   <Button
                     onClick={() => window.location.reload()}
                     variant="outline"
@@ -610,7 +776,14 @@ export default function QuizPage() {
 
   if (!quizData) return null;
 
-  const answeredCount = Object.keys(answers).length;
+  const isQuestionAnswered = (q: SavedAnswerQuestion) => {
+    if (q.type === "Essay") {
+      return !!essayAnswers[q.id] && essayAnswers[q.id].trim().length > 0;
+    }
+    return !!answers[q.id] && answers[q.id].length > 0;
+  };
+
+  const answeredCount = quizData.questions.filter(isQuestionAnswered).length;
   const totalQuestions = quizData.questions.length;
   const progress = (answeredCount / totalQuestions) * 100;
 
@@ -683,87 +856,120 @@ export default function QuizPage() {
             </Card>
 
             {/* Question Cards */}
-            {quizData.questions.map((question, index) => (
-              <Card
-                key={question.id}
-                ref={(el) => {
-                  questionRefs.current[question.id] = el;
-                }}
-              >
-                <CardHeader>
-                  <div className="flex gap-3">
-                    <Badge variant="outline" className="shrink-0">
-                      {index + 1}
-                    </Badge>
-                    <div className="flex-1">
-                      <CardTitle className="text-lg font-medium prose prose-slate dark:prose-invert max-w-none">
-                        <div dangerouslySetInnerHTML={{ __html: question.question }} />
-                      </CardTitle>
-                      <CardDescription className="mt-1">
-                        {question.points} poin
-                      </CardDescription>
-                    </div>
-                    <div className="flex gap-2 shrink-0">
-                      <Button
-                        variant={
-                          flaggedQuestions.has(question.id)
-                            ? "default"
-                            : "outline"
-                        }
-                        size="sm"
-                        onClick={() => toggleFlag(question.id)}
-                      >
-                        <Flag
-                          className={cn(
-                            "h-4 w-4",
-                            flaggedQuestions.has(question.id) && "fill-current"
+            {quizData.questions.map((question, index) => {
+              const isEssay = question.type === "Essay";
+              const answered = isQuestionAnswered(question);
+
+              return (
+                <Card
+                  key={question.id}
+                  ref={(el) => {
+                    questionRefs.current[question.id] = el;
+                  }}
+                >
+                  <CardHeader>
+                    <div className="flex gap-3">
+                      <Badge variant="outline" className="shrink-0">
+                        {index + 1}
+                      </Badge>
+                      <div className="flex-1">
+                        <CardTitle className="text-lg font-medium prose prose-slate dark:prose-invert max-w-none">
+                          <div dangerouslySetInnerHTML={{ __html: question.question }} />
+                        </CardTitle>
+                        <div className="flex items-center gap-2 mt-1">
+                          {isEssay && (
+                            <Badge variant="secondary" className="text-xs">Uraian (Essay)</Badge>
                           )}
-                        />
-                      </Button>
-                      {answers[question.id] && (
-                        <CheckCircle className="h-5 w-5 text-green-600" />
-                      )}
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <RadioGroup
-                    value={answers[question.id]?.[0]?.toString()}
-                    onValueChange={(value: string) =>
-                      handleAnswerChange(question.id, parseInt(value))
-                    }
-                  >
-                    <div className="space-y-3">
-                      {question.answers.map((answer) => (
-                        <div
-                          key={answer.id}
-                          onClick={(e) => {
-                            // Prevent double triggering when clicking label (which triggers radio change)
-                            if ((e.target as HTMLElement).closest("label")) {
-                              return;
-                            }
-                            handleAnswerChange(question.id, answer.id);
-                          }}
-                          className="flex items-center space-x-3 border rounded-lg p-4 hover:bg-accent cursor-pointer transition-colors"
-                        >
-                          <RadioGroupItem
-                            value={answer.id.toString()}
-                            id={`q${question.id}-a${answer.id}`}
-                            className="pointer-events-none"
-                          />
-                          <Label
-                            htmlFor={`q${question.id}-a${answer.id}`}
-                            className="flex-1 cursor-pointer"
-                          >
-                            {answer.answer}
-                          </Label>
+                          <span className="text-xs text-muted-foreground">{question.points} poin</span>
                         </div>
-                      ))}
+                      </div>
+                      <div className="flex gap-2 shrink-0">
+                        <Button
+                          variant={
+                            flaggedQuestions.has(question.id)
+                              ? "default"
+                              : "outline"
+                          }
+                          size="sm"
+                          onClick={() => toggleFlag(question.id)}
+                        >
+                          <Flag
+                            className={cn(
+                              "h-4 w-4",
+                              flaggedQuestions.has(question.id) && "fill-current"
+                            )}
+                          />
+                        </Button>
+                        {answered && (
+                          <CheckCircle className="h-5 w-5 text-green-600" />
+                        )}
+                      </div>
                     </div>
-                  </RadioGroup>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardHeader>
+                  <CardContent>
+                    {isEssay ? (
+                      <div className="space-y-3">
+                        {question.instructions && (
+                          <div className="p-3 bg-muted/40 rounded-lg text-xs border">
+                            <span className="font-semibold block mb-1">Instruksi Tambahan:</span>
+                            <p className="whitespace-pre-line text-muted-foreground">{question.instructions}</p>
+                          </div>
+                        )}
+                        <div className="space-y-2">
+                          <Label htmlFor={`essay-${question.id}`}>Jawaban Uraian Anda:</Label>
+                          <Textarea
+                            id={`essay-${question.id}`}
+                            placeholder="Tuliskan jawaban Anda di sini..."
+                            value={essayAnswers[question.id] || ""}
+                            onChange={(e) => handleEssayChange(question.id, e.target.value)}
+                            onBlur={() => handleEssayBlur(question.id)}
+                            rows={6}
+                            className="resize-y min-h-[140px] text-base leading-relaxed"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Jawaban tersimpan otomatis saat Anda berpindah soal atau kolom.
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <RadioGroup
+                        value={answers[question.id]?.[0]?.toString()}
+                        onValueChange={(value: string) =>
+                          handleAnswerChange(question.id, parseInt(value))
+                        }
+                      >
+                        <div className="space-y-3">
+                          {question.answers.map((answer) => (
+                            <div
+                              key={answer.id}
+                              onClick={(e) => {
+                                if ((e.target as HTMLElement).closest("label")) {
+                                  return;
+                                }
+                                handleAnswerChange(question.id, answer.id);
+                              }}
+                              className="flex items-center space-x-3 border rounded-lg p-4 hover:bg-accent cursor-pointer transition-colors"
+                            >
+                              <RadioGroupItem
+                                value={answer.id.toString()}
+                                id={`q${question.id}-a${answer.id}`}
+                                className="pointer-events-none"
+                              />
+                              <Label
+                                htmlFor={`q${question.id}-a${answer.id}`}
+                                className="flex-1 cursor-pointer"
+                              >
+                                {answer.answer}
+                              </Label>
+                            </div>
+                          ))}
+                        </div>
+                      </RadioGroup>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
 
           {/* Fixed Sidebar Navigator - Desktop */}
@@ -779,7 +985,7 @@ export default function QuizPage() {
                 <CardContent>
                   <div className="grid grid-cols-5 gap-2">
                     {quizData.questions.map((question, index) => {
-                      const isAnswered = !!answers[question.id];
+                      const isAnswered = isQuestionAnswered(question);
                       const isFlagged = flaggedQuestions.has(question.id);
                       const isCurrent = index === currentQuestionIndex;
 

@@ -115,8 +115,10 @@ export default function QuizDetailPage() {
     if (!quizData?.ongoingAttempt) return;
 
     const fromParam = from ? `&from=${encodeURIComponent(from)}` : "";
+    const resolvedAttemptId =
+      quizData.ongoingAttempt.id ?? (quizData.ongoingAttempt as any).attemptId;
     router.push(
-      `/classes/${classId}/quizzes/${quizId}?sectionId=${quizData.sectionId}&attemptId=${quizData.ongoingAttempt.id}${fromParam}`
+      `/classes/${classId}/quizzes/${quizId}?sectionId=${quizData.sectionId}&attemptId=${resolvedAttemptId}${fromParam}`
     );
   };
 
@@ -526,9 +528,15 @@ export default function QuizDetailPage() {
                     <Separator orientation="vertical" className="h-12" />
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <p className="text-2xl font-bold">{attempt.score}</p>
+                        <p className="text-2xl font-bold">
+                          {attempt.is_graded
+                            ? (attempt.finalScore ?? attempt.score)
+                            : (attempt.mcqScore !== null && attempt.mcqScore !== undefined
+                                ? `${attempt.mcqScore}`
+                                : "-")}
+                        </p>
                         {attempt.is_graded ? (
-                          (attempt.isPassed !== undefined ? attempt.isPassed : attempt.score >= quizData.passing_grade) ? (
+                          (attempt.isPassed !== undefined ? attempt.isPassed : (attempt.score ?? 0) >= quizData.passing_grade) ? (
                             <Badge variant="default" className="bg-green-500">
                               <CheckCircle2 className="h-3 w-3 mr-1" />
                               Lulus
@@ -540,7 +548,10 @@ export default function QuizDetailPage() {
                             </Badge>
                           )
                         ) : (
-                          <Badge variant="secondary">Dinilai</Badge>
+                          <Badge variant="outline" className="border-amber-500 text-amber-600 bg-amber-50">
+                            <Clock className="h-3 w-3 mr-1" />
+                            {attempt.gradingStatus || "Menunggu Penilaian Guru"}
+                          </Badge>
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground">

@@ -2,12 +2,18 @@
 
 export interface QuizAttemptSummary {
   id: number;
-  score: number;
+  score: number | null;
+  mcq_score?: number | null;
+  final_score?: number | null;
+  mcqScore?: number | null;
+  finalScore?: number | null;
   is_graded: boolean;
   started_at: string;
   submitted_at: string | null;
-  percentage?: number;
+  percentage?: number | null;
   isPassed?: boolean;
+  gradingStatus?: "Menunggu Penilaian" | "Sedang Dinilai" | "Penilaian Selesai" | string;
+  hasEssay?: boolean;
 }
 
 export interface QuizDetail {

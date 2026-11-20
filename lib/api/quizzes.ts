@@ -18,6 +18,11 @@ import {
   CreateQuestionInput,
   UpdateQuestionInput,
   SaveAnswerInput,
+  QuizSubmissionItem,
+  QuizSubmissionsResponse,
+  QuizAttemptGradingDetail,
+  QuizAttemptGradingResponse,
+  GradeEssayItemInput,
 } from "@/types/section";
 import { authenticatedFetch } from "./client";
 
@@ -65,6 +70,8 @@ export async function fetchQuizzes(sectionId: number): Promise<Quiz[]> {
           question: q.question,
           type: q.type,
           points: q.points,
+          instructions: q.instructions,
+          rubric: q.rubric,
           quizId: q.quizId,
           createdAt: q.createdAt,
           updatedAt: q.updatedAt,
@@ -127,6 +134,8 @@ export async function fetchQuizDetail(
         question: q.question,
         type: q.type,
         points: q.points,
+        instructions: q.instructions,
+        rubric: q.rubric,
         quizId: q.quizId,
         createdAt: q.createdAt,
         updatedAt: q.updatedAt,
@@ -386,7 +395,11 @@ export async function startQuiz(
         method: "POST",
       }
     );
-    return response.data;
+    const data = response.data as any;
+    if (data && !data.id && data.attemptId) {
+      data.id = data.attemptId;
+    }
+    return data;
   } catch (error) {
     console.error("Error starting quiz:", error);
     throw error;
@@ -489,6 +502,9 @@ export async function getSavedAnswers(
   attemptId: number
 ): Promise<SavedAnswersData> {
   try {
+    if (!attemptId || isNaN(Number(attemptId))) {
+      throw new Error(`Attempt ID tidak valid: ${attemptId}`);
+    }
     const response = await apiCall<SavedAnswersResponse>(
       `/classes/sections/${sectionId}/quizzes/attempts/${attemptId}/questions`
     );
@@ -533,6 +549,91 @@ export async function getQuestionById(
     return response.data;
   } catch (error) {
     console.error("Error getting question:", error);
+    throw error;
+  }
+}
+
+// ============================================
+// TEACHER GRADING OPERATIONS
+// ============================================
+
+/**
+ * Fetch all quiz submissions for teacher grading
+ * GET /classes/sections/:sectionId/quizzes/:quizId/submissions
+ */
+export async function fetchQuizSubmissions(
+  sectionId: number,
+  quizId: number
+): Promise<QuizSubmissionItem[]> {
+  try {
+    const response = await apiCall<QuizSubmissionsResponse>(
+      `/classes/sections/${sectionId}/quizzes/${quizId}/submissions`
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching quiz submissions:", error);
+    throw error;
+  }
+}
+
+/**
+ * Fetch single student attempt details for grading
+ * GET /classes/sections/:sectionId/quizzes/attempts/:attemptId/grading
+ */
+export async function fetchAttemptForGrading(
+  sectionId: number,
+  attemptId: number
+): Promise<QuizAttemptGradingDetail> {
+  try {
+    const response = await apiCall<QuizAttemptGradingResponse>(
+      `/classes/sections/${sectionId}/quizzes/attempts/${attemptId}/grading`
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching attempt for grading:", error);
+    throw error;
+  }
+}
+
+/**
+ * Grade essay questions for an attempt
+ * POST /classes/sections/:sectionId/quizzes/attempts/:attemptId/grade
+ */
+export async function gradeAttemptEssays(
+  sectionId: number,
+  attemptId: number,
+  grades: GradeEssayItemInput[]
+): Promise<QuizAttemptGradingDetail> {
+  try {
+    const response = await apiCall<QuizAttemptGradingResponse>(
+      `/classes/sections/${sectionId}/quizzes/attempts/${attemptId}/grade`,
+      {
+        method: "POST",
+        body: JSON.stringify({ grades }),
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error grading attempt essays:", error);
+    throw error;
+  }
+}
+
+/**
+ * Get quiz review (questions, student answers, feedback, correct choices)
+ * GET /classes/sections/:sectionId/quizzes/attempts/:attemptId/review
+ */
+export async function getQuizReview(
+  sectionId: number,
+  attemptId: number
+): Promise<any> {
+  try {
+    const response = await apiCall<{ success: boolean; message: string; data: any }>(
+      `/classes/sections/${sectionId}/quizzes/attempts/${attemptId}/review`
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching quiz review:", error);
     throw error;
   }
 }

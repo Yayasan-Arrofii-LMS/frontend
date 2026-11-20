@@ -20,6 +20,8 @@ export interface Question {
   createdAt: string;
   updatedAt: string;
   explanation?: string | null;
+  instructions?: string | null;
+  rubric?: string | null;
   Answer: Answer[];
   quiz_answer?: Answer[]; // Backend uses snake_case
 }
@@ -79,6 +81,9 @@ export interface AttemptAnswer {
   id: number;
   path: string | null;
   answer: string | null;
+  score?: number | null;
+  feedback?: string | null;
+  graded_at?: string | null;
   createdAt: string;
   updatedAt: string;
   attemptId: number;
@@ -90,7 +95,12 @@ export interface AttemptAnswer {
 // Quiz Attempt from API
 export interface QuizAttempt {
   id: number;
+  attemptId?: number;
   score: number | null;
+  mcq_score?: number | null;
+  final_score?: number | null;
+  mcqScore?: number | null;
+  finalScore?: number | null;
   started_at: string;
   submitted_at: string | null;
   is_graded: boolean;
@@ -103,6 +113,10 @@ export interface QuizAttempt {
   totalScore?: number;
   percentage?: number;
   isPassed?: boolean;
+  hasEssay?: boolean;
+  gradingStatus?: "Menunggu Penilaian" | "Sedang Dinilai" | "Penilaian Selesai" | string;
+  totalEarnedPoints?: number;
+  totalMaxPoints?: number;
 }
 
 // Saved Answer Format (for getSavedAnswers)
@@ -111,6 +125,8 @@ export interface SavedAnswerQuestion {
   question: string;
   type: "MultipleChoice" | "TrueFalse" | "Essay";
   points: number;
+  instructions?: string | null;
+  rubric?: string | null;
   answers: {
     id: number;
     answer: string;
@@ -275,6 +291,8 @@ export interface CreateQuestionInput {
   question: string;
   type: "MultipleChoice" | "TrueFalse" | "Essay";
   points: number;
+  instructions?: string;
+  rubric?: string;
   answers?: CreateAnswerInput[];
 }
 
@@ -282,6 +300,8 @@ export interface UpdateQuestionInput {
   question?: string;
   type?: "MultipleChoice" | "TrueFalse" | "Essay";
   points?: number;
+  instructions?: string;
+  rubric?: string;
   answers?: CreateAnswerInput[];
 }
 
@@ -415,4 +435,100 @@ export interface ClassDetail {
   students: Student[];
   createdAt: string;
   updatedAt: string;
+}
+
+// === Teacher Grading Interfaces ===
+
+export interface QuizSubmissionItem {
+  attemptId: number;
+  quizId: number;
+  quizTitle: string;
+  passingGrade: number;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    profileImage?: string | null;
+  };
+  startedAt: string;
+  submittedAt: string | null;
+  isGraded: boolean;
+  score: number | null;
+  mcqScore: number | null;
+  finalScore: number | null;
+  totalQuestions: number;
+  essayCount: number;
+  ungradedEssayCount: number;
+  gradingStatus: "Menunggu Penilaian" | "Sedang Dinilai" | "Penilaian Selesai";
+}
+
+export interface GradingQuestionDetail {
+  answerId: number;
+  questionId: number;
+  question: string;
+  type: "MultipleChoice" | "TrueFalse" | "Essay";
+  maxPoints: number;
+  instructions: string | null;
+  rubric: string | null;
+  studentAnswer: string | null;
+  score: number | null;
+  feedback: string | null;
+  gradedAt: string | null;
+  isCorrect?: boolean | null;
+  selectedAnswers?: {
+    id: number;
+    answer: string;
+    isCorrect: boolean;
+  }[];
+  allChoices?: {
+    id: number;
+    answer: string;
+    isCorrect: boolean;
+  }[];
+}
+
+export interface QuizAttemptGradingDetail {
+  attemptId: number;
+  quizId: number;
+  quizTitle: string;
+  passingGrade: number;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    profileImage?: string | null;
+  };
+  startedAt: string;
+  submittedAt: string | null;
+  isGraded: boolean;
+  score: number | null;
+  mcqScore: number | null;
+  finalScore: number | null;
+  totalEarnedPoints: number;
+  totalMaxPoints: number;
+  percentage: number | null;
+  gradingStatus: "Menunggu Penilaian" | "Sedang Dinilai" | "Penilaian Selesai";
+  questions: GradingQuestionDetail[];
+}
+
+export interface GradeEssayItemInput {
+  questionId: number;
+  score: number;
+  feedback?: string;
+}
+
+export interface GradeEssayAttemptInput {
+  grades: GradeEssayItemInput[];
+}
+
+export interface QuizSubmissionsResponse {
+  success: boolean;
+  message: string;
+  data: QuizSubmissionItem[];
+}
+
+export interface QuizAttemptGradingResponse {
+  success: boolean;
+  message: string;
+  data: QuizAttemptGradingDetail;
 }

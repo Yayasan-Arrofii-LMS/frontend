@@ -28,6 +28,7 @@ import {
   Clock,
   ClipboardList,
   Eye,
+  GraduationCap,
 } from "lucide-react";
 import { EditSectionModal } from "@/components/class/edit-section-modal";
 import { AddMaterialModal } from "@/components/class/add-material-modal";
@@ -35,6 +36,7 @@ import { EditMaterialModal } from "@/components/class/edit-material-modal";
 import { AddQuizModal } from "@/components/class/add-quiz-modal";
 import { EditQuizModal } from "@/components/class/edit-quiz-modal";
 import { ManageQuestionsModal } from "@/components/class/manage-questions-modal";
+import { QuizGradingModal } from "@/components/class/quiz-grading-modal";
 import { ViewMaterialModal } from "@/components/class/view-material-modal";
 import { processHtmlForPreview } from "@/lib/utils/html-utils";
 import {
@@ -92,6 +94,7 @@ interface QuizItemProps {
   onEdit: (quizId: number) => void;
   onDelete: (quizId: number) => void;
   onManageQuestions: (quizId: number, quizTitle: string) => void;
+  onGrade: (quizId: number, quizTitle: string) => void;
 }
 
 const QuizItem = memo(function QuizItem({
@@ -99,6 +102,7 @@ const QuizItem = memo(function QuizItem({
   onEdit,
   onDelete,
   onManageQuestions,
+  onGrade,
 }: QuizItemProps) {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -134,14 +138,23 @@ const QuizItem = memo(function QuizItem({
               <span>Tutup: {formatDate(quiz.close_at)}</span>
             </div>
           </div>
-          <div className="mt-3">
+          <div className="mt-3 flex items-center gap-2 flex-wrap">
             <Button
               variant="outline"
               size="sm"
               onClick={() => onManageQuestions(quiz.id, quiz.title)}
             >
-              <FileText className="h-4 w-4 mr-2" />
+              <FileText className="h-4 w-4 mr-1.5" />
               Kelola Pertanyaan
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onGrade(quiz.id, quiz.title)}
+              className="border-primary/40 hover:bg-primary/5 text-primary"
+            >
+              <GraduationCap className="h-4 w-4 mr-1.5" />
+              Penilaian Siswa
             </Button>
           </div>
         </div>
@@ -152,6 +165,10 @@ const QuizItem = memo(function QuizItem({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => onGrade(quiz.id, quiz.title)}>
+              <GraduationCap className="mr-2 h-4 w-4" />
+              Penilaian Siswa
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => onEdit(quiz.id)}>
               <Pencil className="mr-2 h-4 w-4" />
               Edit Quiz
@@ -295,6 +312,16 @@ export function SectionCard({
     quizId: number;
     quizTitle: string;
   } | null>(null);
+  const [isGradingQuizOpen, setIsGradingQuizOpen] = useState(false);
+  const [selectedQuizForGrading, setSelectedQuizForGrading] = useState<{
+    quizId: number;
+    quizTitle: string;
+  } | null>(null);
+
+  const handleGradeQuiz = (quizId: number, quizTitle: string) => {
+    setSelectedQuizForGrading({ quizId, quizTitle });
+    setIsGradingQuizOpen(true);
+  };
 
   const {
     attributes,
@@ -663,6 +690,7 @@ export function SectionCard({
                       onEdit={handleEditQuiz}
                       onDelete={setDeletingQuizId}
                       onManageQuestions={handleManageQuestions}
+                      onGrade={handleGradeQuiz}
                     />
                   ))}
                 </div>
@@ -858,6 +886,20 @@ export function SectionCard({
           sectionId={section.id}
           quizId={selectedQuizForQuestions.quizId}
           quizTitle={selectedQuizForQuestions.quizTitle}
+        />
+      )}
+
+      {/* Quiz Grading Modal */}
+      {selectedQuizForGrading && (
+        <QuizGradingModal
+          isOpen={isGradingQuizOpen}
+          onClose={() => {
+            setIsGradingQuizOpen(false);
+            setSelectedQuizForGrading(null);
+          }}
+          sectionId={section.id}
+          quizId={selectedQuizForGrading.quizId}
+          quizTitle={selectedQuizForGrading.quizTitle}
         />
       )}
 

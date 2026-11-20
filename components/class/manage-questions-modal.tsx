@@ -11,6 +11,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { MaterialEditor } from "@/components/material-editor";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -48,6 +56,8 @@ interface QuestionForm {
   id?: number;
   question: string;
   type: "MultipleChoice" | "TrueFalse" | "Essay";
+  instructions?: string;
+  rubric?: string;
   points: string;
   answers: {
     id?: number;
@@ -91,6 +101,8 @@ export function ManageQuestionsModal({
         question: q.question,
         type: q.type,
         points: q.points.toString(),
+        instructions: q.instructions || "",
+        rubric: q.rubric || "",
         answers:
           q.Answer?.map((a) => ({
             id: a.id,
@@ -122,6 +134,8 @@ export function ManageQuestionsModal({
       question: "",
       type: "MultipleChoice",
       points: "10",
+      instructions: "",
+      rubric: "",
       answers: [
         { answer: "", is_correct: false },
         { answer: "", is_correct: false },
@@ -296,7 +310,11 @@ export function ManageQuestionsModal({
             points: parseInt(q.points),
           };
 
-          if (q.type !== "Essay") {
+          if (q.type === "Essay") {
+            questionData.instructions = q.instructions?.trim() || undefined;
+            questionData.rubric = q.rubric?.trim() || undefined;
+            questionData.answers = [];
+          } else {
             questionData.answers = q.answers
               .filter((a) => a.answer.trim())
               .map((a) => ({
@@ -313,7 +331,11 @@ export function ManageQuestionsModal({
             points: parseInt(q.points),
           };
 
-          if (q.type !== "Essay") {
+          if (q.type === "Essay") {
+            questionData.instructions = q.instructions?.trim() || undefined;
+            questionData.rubric = q.rubric?.trim() || undefined;
+            questionData.answers = [];
+          } else {
             questionData.answers = q.answers
               .filter((a) => a.answer.trim())
               .map((a) => ({
@@ -437,15 +459,24 @@ export function ManageQuestionsModal({
 
                             <div className="grid grid-cols-2 gap-4">
                               <div className="space-y-2">
-                                <Label>Tipe</Label>
-                                <Input
-                                  value="Multiple Choice"
-                                  disabled
-                                  className="bg-muted"
-                                />
+                                <Label>Tipe Pertanyaan</Label>
+                                <Select
+                                  value={question.type}
+                                  onValueChange={(val: "MultipleChoice" | "Essay") =>
+                                    updateQuestionField(actualIndex, "type", val)
+                                  }
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="MultipleChoice">Pilihan Ganda</SelectItem>
+                                    <SelectItem value="Essay">Uraian (Essay)</SelectItem>
+                                  </SelectContent>
+                                </Select>
                               </div>
                               <div className="space-y-2">
-                                <Label>Poin</Label>
+                                <Label>Skor Maksimal (Poin)</Label>
                                 <Input
                                   type="number"
                                   min="1"
@@ -461,83 +492,125 @@ export function ManageQuestionsModal({
                               </div>
                             </div>
 
-                            <div className="space-y-2">
-                              <div className="flex items-center justify-between">
-                                <Label>Pilihan Jawaban</Label>
-                                <div className="flex gap-1">
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() =>
-                                      removeAnswer(
+                            {question.type === "Essay" ? (
+                              <div className="space-y-3 rounded-lg border border-dashed p-4 bg-muted/20">
+                                <div className="space-y-2">
+                                  <Label>
+                                    Instruksi Tambahan <span className="text-xs text-muted-foreground">(Opsional)</span>
+                                  </Label>
+                                  <Textarea
+                                    placeholder="Contoh: Jelaskan secara terstruktur minimal 2 alasan..."
+                                    value={question.instructions || ""}
+                                    onChange={(e) =>
+                                      updateQuestionField(
                                         actualIndex,
-                                        question.answers.length - 1
+                                        "instructions",
+                                        e.target.value
                                       )
                                     }
-                                    disabled={question.answers.length <= 2}
-                                    title="Kurangi pilihan"
-                                  >
-                                    <MinusCircle className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => addAnswer(actualIndex)}
-                                    disabled={question.answers.length >= 5}
-                                    title="Tambah pilihan"
-                                  >
-                                    <Plus className="h-4 w-4" />
-                                  </Button>
+                                    rows={2}
+                                  />
                                 </div>
-                              </div>
-                              <div className="space-y-2">
-                                {question.answers.map((answer, aIndex) => {
-                                  const label = String.fromCharCode(65 + aIndex);
-                                  return (
-                                    <div
-                                      key={aIndex}
-                                      className="flex items-center gap-2"
-                                    >
-                                      <input
-                                        type="radio"
-                                        id={`correct-${actualIndex}-${aIndex}`}
-                                        name={`correct-${actualIndex}`}
-                                        checked={answer.is_correct}
-                                        onChange={() =>
-                                          setCorrectAnswer(actualIndex, aIndex)
-                                        }
-                                        className="h-4 w-4"
-                                      />
-                                      <Label
-                                        htmlFor={`correct-${actualIndex}-${aIndex}`}
-                                        className="font-semibold min-w-[24px]"
-                                      >
-                                        {label}.
-                                      </Label>
-                                      <Input
-                                        placeholder={`Pilihan ${label}`}
-                                        value={answer.answer}
-                                        onChange={(e) =>
-                                          updateAnswer(
-                                            actualIndex,
-                                            aIndex,
-                                            "answer",
-                                            e.target.value
-                                          )
-                                        }
-                                        className="flex-1"
-                                      />
-                                    </div>
-                                  );
-                                })}
-                                <p className="text-xs text-muted-foreground">
-                                  Pilih radio button untuk menandai jawaban yang
-                                  benar
+                                <div className="space-y-2">
+                                  <Label>
+                                    Rubrik / Pedoman Penilaian <span className="text-xs text-muted-foreground">(Opsional - Untuk Panduan Guru)</span>
+                                  </Label>
+                                  <Textarea
+                                    placeholder="Contoh: Kriteria nilai 10: argumen lengkap; Kriteria 5: argumen kurang..."
+                                    value={question.rubric || ""}
+                                    onChange={(e) =>
+                                      updateQuestionField(
+                                        actualIndex,
+                                        "rubric",
+                                        e.target.value
+                                      )
+                                    }
+                                    rows={2}
+                                  />
+                                </div>
+                                <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                                  <span>💡</span> Soal uraian dinilai manual oleh Guru setelah siswa submit kuis.
                                 </p>
                               </div>
-                            </div>
+                            ) : (
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <Label>Pilihan Jawaban</Label>
+                                  <div className="flex gap-1">
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() =>
+                                        removeAnswer(
+                                          actualIndex,
+                                          question.answers.length - 1
+                                        )
+                                      }
+                                      disabled={question.answers.length <= 2}
+                                      title="Kurangi pilihan"
+                                    >
+                                      <MinusCircle className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => addAnswer(actualIndex)}
+                                      disabled={question.answers.length >= 5}
+                                      title="Tambah pilihan"
+                                    >
+                                      <Plus className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                                <div className="space-y-2">
+                                  {question.answers.map((answer, aIndex) => {
+                                    const label = String.fromCharCode(65 + aIndex);
+                                    return (
+                                      <div
+                                        key={aIndex}
+                                        className="flex items-center gap-2"
+                                      >
+                                        <input
+                                          type="radio"
+                                          id={`correct-${actualIndex}-${aIndex}`}
+                                          name={`correct-${actualIndex}`}
+                                          checked={answer.is_correct}
+                                          onChange={() =>
+                                            setCorrectAnswer(actualIndex, aIndex)
+                                          }
+                                          className="h-4 w-4"
+                                        />
+                                        <Label
+                                          htmlFor={`correct-${actualIndex}-${aIndex}`}
+                                          className="font-semibold min-w-[24px]"
+                                        >
+                                          {label}.
+                                        </Label>
+                                        <Input
+                                          placeholder={`Pilihan ${label}`}
+                                          value={answer.answer}
+                                          onChange={(e) =>
+                                            updateAnswer(
+                                              actualIndex,
+                                              aIndex,
+                                              "answer",
+                                              e.target.value
+                                            )
+                                          }
+                                          className="flex-1"
+                                        />
+                                      </div>
+                                    );
+                                  })}
+                                  <p className="text-xs text-muted-foreground">
+                                    Pilih radio button untuk menandai jawaban yang
+                                    benar
+                                  </p>
+                                </div>
+                              </div>
+                            )}
                           </CardContent>
                         </Card>
                       );

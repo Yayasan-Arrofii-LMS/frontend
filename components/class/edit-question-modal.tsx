@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { MaterialEditor } from "@/components/material-editor";
 import {
   Select,
@@ -56,6 +57,8 @@ export function EditQuestionModal({
     "MultipleChoice"
   );
   const [points, setPoints] = useState("5");
+  const [instructions, setInstructions] = useState("");
+  const [rubric, setRubric] = useState("");
   const [answers, setAnswers] = useState<Answer[]>([
     { answer: "", is_correct: false },
     { answer: "", is_correct: false },
@@ -68,6 +71,8 @@ export function EditQuestionModal({
       setQuestion(initialQuestion.question);
       setType(initialQuestion.type);
       setPoints(initialQuestion.points.toString());
+      setInstructions(initialQuestion.instructions || "");
+      setRubric(initialQuestion.rubric || "");
 
       if (initialQuestion.Answer && initialQuestion.Answer.length > 0) {
         setAnswers(
@@ -167,8 +172,11 @@ export function EditQuestionModal({
         points: pointsValue,
       };
 
-      // Only include answers for Multiple Choice and True/False
-      if (type === "MultipleChoice" || type === "TrueFalse") {
+      if (type === "Essay") {
+        questionData.instructions = instructions.trim() || undefined;
+        questionData.rubric = rubric.trim() || undefined;
+        questionData.answers = [];
+      } else if (type === "MultipleChoice" || type === "TrueFalse") {
         questionData.answers = answers
           .filter((ans) => ans.answer.trim() !== "")
           .map((ans) => ({
@@ -355,9 +363,39 @@ export function EditQuestionModal({
             )}
 
             {type === "Essay" && (
-              <p className="text-sm text-muted-foreground">
-                Pertanyaan essay akan dinilai secara manual oleh pengajar.
-              </p>
+              <div className="space-y-3 rounded-lg border border-dashed p-4 bg-muted/20">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-instructions">
+                    Instruksi Tambahan <span className="text-xs text-muted-foreground">(Opsional)</span>
+                  </Label>
+                  <Textarea
+                    id="edit-instructions"
+                    placeholder="Contoh: Jelaskan secara terstruktur minimal 2 alasan dan sertakan contoh..."
+                    value={instructions}
+                    onChange={(e) => setInstructions(e.target.value)}
+                    disabled={isSubmitting}
+                    rows={2}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-rubric">
+                    Rubrik / Pedoman Penilaian <span className="text-xs text-muted-foreground">(Opsional - Untuk Panduan Guru)</span>
+                  </Label>
+                  <Textarea
+                    id="edit-rubric"
+                    placeholder="Contoh: Kriteria nilai penuh (10): mencakup konsep A dan B; Kriteria nilai (5): hanya salah satu..."
+                    value={rubric}
+                    onChange={(e) => setRubric(e.target.value)}
+                    disabled={isSubmitting}
+                    rows={2}
+                  />
+                </div>
+
+                <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                  <span>💡</span> Soal uraian akan masuk ke antrean penilaian Guru dan dinilai secara manual setelah siswa mengumpulkan kuis.
+                </p>
+              </div>
             )}
           </div>
 

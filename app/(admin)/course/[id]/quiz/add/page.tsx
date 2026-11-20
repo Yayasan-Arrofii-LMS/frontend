@@ -6,6 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { MaterialEditor } from "@/components/material-editor";
 import { bulkCreateQuiz } from "@/lib/api/quizzes";
 import { toast } from "sonner";
@@ -24,6 +31,9 @@ interface Choice {
 interface QuestionData {
   id: string;
   question: string;
+  type?: "MultipleChoice" | "Essay";
+  instructions?: string;
+  rubric?: string;
   choices: Choice[];
   correctAnswer: string;
   points: number;
@@ -99,6 +109,9 @@ export default function AddQuizPage({
     const newQuestion: QuestionData = {
       id: Math.random().toString(36).substr(2, 9),
       question: "",
+      type: "MultipleChoice",
+      instructions: "",
+      rubric: "",
       choices: [
         { id: "0", text: "", label: "A" },
         { id: "1", text: "", label: "B" },
@@ -201,15 +214,22 @@ export default function AddQuizPage({
         return;
       }
 
-      const emptyChoices = q.choices.filter(c => !c.text.trim());
-      if (emptyChoices.length > 0) {
-        toast.error(`Pertanyaan ${i + 1}: Semua pilihan jawaban harus diisi`);
-        return;
-      }
+      if (q.type === "Essay") {
+        if (!q.points || Number(q.points) < 1) {
+          toast.error(`Pertanyaan ${i + 1}: Skor maksimal minimal 1`);
+          return;
+        }
+      } else {
+        const emptyChoices = q.choices.filter(c => !c.text.trim());
+        if (emptyChoices.length > 0) {
+          toast.error(`Pertanyaan ${i + 1}: Semua pilihan jawaban harus diisi`);
+          return;
+        }
 
-      if (!q.correctAnswer && q.correctAnswer !== "0") {
-        toast.error(`Pertanyaan ${i + 1}: Pilih jawaban yang benar`);
-        return;
+        if (!q.correctAnswer && q.correctAnswer !== "0") {
+          toast.error(`Pertanyaan ${i + 1}: Pilih jawaban yang benar`);
+          return;
+        }
       }
     }
 
@@ -260,6 +280,17 @@ export default function AddQuizPage({
     try {
       // Convert questions to API format
       const questionsData = questions.map((q) => {
+        if (q.type === "Essay") {
+          return {
+            question: q.question.trim(),
+            type: "Essay" as const,
+            points: Number(q.points) || 10,
+            instructions: q.instructions?.trim() || undefined,
+            rubric: q.rubric?.trim() || undefined,
+            answers: [],
+          };
+        }
+
         const correctAnswerIndex = parseInt(q.correctAnswer);
         const answers = q.choices.map((choice, index) => ({
           answer: choice.text.trim(),
@@ -269,7 +300,7 @@ export default function AddQuizPage({
         return {
           question: q.question.trim(),
           type: "MultipleChoice" as const,
-          points: q.points,
+          points: Number(q.points) || 10,
           answers: answers,
         };
       });
@@ -530,82 +561,142 @@ export default function AddQuizPage({
                     )}
                   </div>
 
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label>Pilihan Jawaban</Label>
-                      <div className="flex gap-1">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeChoice(question.id)}
-                          disabled={isSubmitting || question.choices.length <= 2}
-                          title="Kurangi pilihan"
-                        >
-                          <MinusCircle className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => addChoice(question.id)}
-                          disabled={isSubmitting || question.choices.length >= 5}
-                          title="Tambah pilihan"
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor={`type-${question.id}`}>Tipe Soal</Label>
+                      <Select
+                        value={question.type || "MultipleChoice"}
+                        onValueChange={(val: "MultipleChoice" | "Essay") =>
+                          updateQuestion(question.id, "type", val)
+                        }
+                        disabled={isSubmitting}
+                      >
+                        <SelectTrigger id={`type-${question.id}`}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="MultipleChoice">Pilihan Ganda</SelectItem>
+                          <SelectItem value="Essay">Uraian (Essay)</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
 
-                    {question.choices.map((choice) => (
-                      <div key={choice.id} className="flex items-center gap-2">
-                        <input
-                          type="radio"
-                          id={`correct-${question.id}-${choice.id}`}
-                          name={`correct-${question.id}`}
-                          checked={question.correctAnswer === choice.id}
-                          onChange={() =>
-                            updateQuestion(question.id, "correctAnswer", choice.id)
-                          }
-                          disabled={isSubmitting}
-                          className="h-4 w-4"
-                        />
-                        <Label
-                          htmlFor={`correct-${question.id}-${choice.id}`}
-                          className="font-semibold min-w-[24px]"
-                        >
-                          {choice.label}.
-                        </Label>
-                        <Input
-                          placeholder={`Pilihan ${choice.label}`}
-                          value={choice.text}
-                          onChange={(e) =>
-                            updateChoice(question.id, choice.id, e.target.value)
-                          }
-                          disabled={isSubmitting}
-                          className="flex-1"
-                        />
-                      </div>
-                    ))}
-                    <p className="text-xs text-muted-foreground">
-                      Pilih radio button untuk menandai jawaban yang benar
-                    </p>
+                    <div className="space-y-2">
+                      <Label htmlFor={`points-${question.id}`}>Skor Maksimal (Poin) <span className="text-destructive">*</span></Label>
+                      <Input
+                        id={`points-${question.id}`}
+                        type="number"
+                        min="1"
+                        value={question.points}
+                        onChange={(e) =>
+                          updateQuestion(question.id, "points", e.target.value)
+                        }
+                        disabled={isSubmitting}
+                      />
+                    </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor={`points-${question.id}`}>Poin</Label>
-                    <Input
-                      id={`points-${question.id}`}
-                      type="number"
-                      min="1"
-                      value={question.points}
-                      onChange={(e) =>
-                        updateQuestion(question.id, "points", e.target.value)
-                      }
-                      disabled={isSubmitting}
-                      className="w-32"
-                    />
-                  </div>
+                  {question.type === "Essay" ? (
+                    <div className="space-y-3 rounded-lg border border-dashed p-4 bg-muted/20">
+                      <div className="space-y-2">
+                        <Label htmlFor={`instructions-${question.id}`}>
+                          Instruksi Tambahan <span className="text-xs text-muted-foreground">(Opsional)</span>
+                        </Label>
+                        <Textarea
+                          id={`instructions-${question.id}`}
+                          placeholder="Contoh: Jelaskan secara terstruktur minimal 2 alasan dan sertakan contoh..."
+                          value={question.instructions || ""}
+                          onChange={(e) =>
+                            updateQuestion(question.id, "instructions", e.target.value)
+                          }
+                          disabled={isSubmitting}
+                          rows={2}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor={`rubric-${question.id}`}>
+                          Rubrik / Pedoman Penilaian <span className="text-xs text-muted-foreground">(Opsional - Untuk Panduan Guru)</span>
+                        </Label>
+                        <Textarea
+                          id={`rubric-${question.id}`}
+                          placeholder="Contoh: Kriteria nilai penuh (10): mencakup konsep A dan B; Kriteria nilai (5): hanya salah satu..."
+                          value={question.rubric || ""}
+                          onChange={(e) =>
+                            updateQuestion(question.id, "rubric", e.target.value)
+                          }
+                          disabled={isSubmitting}
+                          rows={2}
+                        />
+                      </div>
+
+                      <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                        <span>💡</span> Soal uraian akan masuk ke antrean penilaian Guru dan dinilai secara manual setelah siswa mengumpulkan kuis.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label>Pilihan Jawaban</Label>
+                        <div className="flex gap-1">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeChoice(question.id)}
+                            disabled={isSubmitting || question.choices.length <= 2}
+                            title="Kurangi pilihan"
+                          >
+                            <MinusCircle className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => addChoice(question.id)}
+                            disabled={isSubmitting || question.choices.length >= 5}
+                            title="Tambah pilihan"
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {question.choices.map((choice) => (
+                        <div key={choice.id} className="flex items-center gap-2">
+                          <input
+                            type="radio"
+                            id={`correct-${question.id}-${choice.id}`}
+                            name={`correct-${question.id}`}
+                            checked={question.correctAnswer === choice.id}
+                            onChange={() =>
+                              updateQuestion(question.id, "correctAnswer", choice.id)
+                            }
+                            disabled={isSubmitting}
+                            className="h-4 w-4"
+                          />
+                          <Label
+                            htmlFor={`correct-${question.id}-${choice.id}`}
+                            className="font-semibold min-w-[24px]"
+                          >
+                            {choice.label}.
+                          </Label>
+                          <Input
+                            placeholder={`Pilihan ${choice.label}`}
+                            value={choice.text}
+                            onChange={(e) =>
+                              updateChoice(question.id, choice.id, e.target.value)
+                            }
+                            disabled={isSubmitting}
+                            className="flex-1"
+                          />
+                        </div>
+                      ))}
+                      <p className="text-xs text-muted-foreground">
+                        Pilih radio button untuk menandai jawaban yang benar
+                      </p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))}
