@@ -315,9 +315,18 @@ export default function WorkshopDetailPage({
           <div className="relative aspect-video w-full rounded-2xl overflow-hidden border bg-muted shadow-sm">
             <Image
               src={imgSrc}
+              alt=""
+              fill
+              aria-hidden="true"
+              className="object-cover blur-md scale-110 opacity-30 dark:opacity-20 pointer-events-none select-none"
+              onError={() => setImgSrc("/placeholder.svg")}
+              unoptimized={!imgSrc.startsWith("/") && !imgSrc.includes("images.unsplash.com")}
+            />
+            <Image
+              src={imgSrc}
               alt={workshop.title}
               fill
-              className="object-cover"
+              className="object-contain"
               priority
               sizes="(max-width: 1024px) 100vw, 66vw"
               onError={() => setImgSrc("/placeholder.svg")}

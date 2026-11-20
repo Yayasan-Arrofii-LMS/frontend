@@ -323,9 +323,16 @@ export default function ClassDetailPage() {
           <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-muted">
             <Image
               src={classData.coverImage || "/placeholder.svg"}
+              alt=""
+              fill
+              aria-hidden="true"
+              className="object-cover blur-md scale-110 opacity-30 dark:opacity-20 pointer-events-none select-none"
+            />
+            <Image
+              src={classData.coverImage || "/placeholder.svg"}
               alt={classData.title}
               fill
-              className="object-cover"
+              className="object-contain"
               priority
             />
           </div>

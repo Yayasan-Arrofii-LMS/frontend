@@ -266,10 +266,11 @@ export function ClassDetailContent({ classId, basePath = "/course" }: ClassDetai
         </Button>
 
         <div className="flex items-start gap-6 min-w-0">
-          <div className="relative w-32 h-32 flex-shrink-0 rounded-lg overflow-hidden">
+          <div className="relative w-32 h-32 flex-shrink-0 rounded-lg overflow-hidden bg-muted">
             <ClassCoverImage
               src={classDetail.coverImage}
               alt={classDetail.title}
+              className="object-contain"
             />
           </div>
           <div className="flex-1 min-w-0">

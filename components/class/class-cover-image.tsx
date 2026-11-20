@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Image from "next/image";
 import { useState, useEffect } from "react";
@@ -25,6 +25,12 @@ export function ClassCoverImage({
     setImgSrc(normalizeImageUrl(src));
   }, [src]);
 
+  const isUnoptimized =
+    imgSrc.endsWith(".svg") ||
+    imgSrc.startsWith("/placeholder") ||
+    imgSrc.includes("localhost") ||
+    (!imgSrc.startsWith("/") && !imgSrc.includes("images.unsplash.com"));
+
   return (
     <Image
       src={imgSrc}
@@ -38,12 +44,7 @@ export function ClassCoverImage({
           setImgSrc("/placeholder.svg");
         }
       }}
-      unoptimized={
-        imgSrc.endsWith(".svg") ||
-        imgSrc.startsWith("/placeholder") ||
-        imgSrc.includes("localhost") ||
-        (!imgSrc.startsWith("/") && !imgSrc.includes("images.unsplash.com"))
-      }
+      unoptimized={isUnoptimized}
     />
   );
 }

@@ -138,9 +138,16 @@ export function MaterialPreviewDialog({
           <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-muted border">
             <Image
               src={material.thumbnail}
+              alt=""
+              fill
+              aria-hidden="true"
+              className="object-cover blur-md scale-110 opacity-30 dark:opacity-20 pointer-events-none select-none"
+            />
+            <Image
+              src={material.thumbnail}
               alt={material.title}
               fill
-              className="object-cover"
+              className="object-contain"
               sizes="(max-width: 768px) 100vw, 600px"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex items-end p-4">
