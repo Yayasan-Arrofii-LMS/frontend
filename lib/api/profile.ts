@@ -122,7 +122,14 @@ export async function changeUserPassword(data: {
   const result = await response.json().catch(() => ({}));
 
   if (!response.ok || (result && result.success === false)) {
-    throw new Error(result.message || "Gagal mengubah kata sandi");
+    let errorMsg = result?.message || "Gagal mengubah kata sandi";
+    if (result?.errors && typeof result.errors === "object") {
+      const firstError = Object.values(result.errors).flat()[0];
+      if (typeof firstError === "string") {
+        errorMsg = firstError;
+      }
+    }
+    throw new Error(errorMsg);
   }
 
   return {
